@@ -985,6 +985,9 @@ bot.on('message', async msg  => {
             case 'Clovis':
                 lang = 'fr_ca';
                 break;
+            case 'Lottie':
+                lang = 'fr_ca';
+                break;
         }
         const connection = await msg.member.voice.channel.join();
         const dispatcher = connection.play('https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=' + lang + '&q=' + msg.content.slice(0, msg.content.length).toString().replace(/ /gi, '+'));
