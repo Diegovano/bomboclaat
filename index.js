@@ -27,6 +27,8 @@ var serverPlaylists;
 var allPlaylists;
 var args;
 
+console.log("Check you are running node.js v12 or later!");
+
 async function scrapeSubreddit(sub, message) {
 
     const r = new snoowrap({
@@ -557,7 +559,7 @@ bot.on('message', async message => {
         break;
 
     case 'insult':
-        var insults = ['you burnt piece of celery.', 'you cunt.','you SIMP.','you Smol BRaIn.', 'you idiot sandwich.'];
+        var insults = ['you burnt piece of celery.', 'you cunt.','you SIMP.','you Smol BRaIn.', 'you idiot sandwich.', 'you GAB!'];
 
         var a = fs.readFileSync('slurs.txt', 'utf8', function(err, data) {
             if (err) throw err;
@@ -683,7 +685,8 @@ bot.on('message', async message => {
 
     case 'q':
     case 'queue':
-        console.log(allSongs[songIndex].songs);
+        message.channel.send("broken so let's not break me... Thanks!");
+      /*console.log(allSongs[songIndex].songs);
         if (!allSongs[songIndex].songs || allSongs[songIndex].songs.length === 0){
             message.channel.send('there is no available queue');
         } else {
@@ -712,8 +715,8 @@ bot.on('message', async message => {
             }
 
             message.channel.send(queue_embed);
-        }
-        break;
+        }*/
+        break;    //Very broken will fix later
 
     case 'playlist':
 
@@ -955,15 +958,25 @@ bot.on('message', async message => {
 
 // uses no prefix
 
-bot.on('message', async msg  => {
+bot.on('message', async msg  => 
+{
+    var lang;
 
-    if (msg.content === 'fuck you hugo'){
+    if (msg.content === 'fuck you hugo')
+    {
         msg.reply('Yeah I agree!');
-    } else if (msg.content == 'show me your beautiful self'){
-        msg.channel.send({files : ['https://i.kym-cdn.com/entries/icons/facebook/000/030/873/screenshot_20.jpg' ]})
     }
 
-    var lang;
+    else if (msg.content == 'show me your beautiful self')
+    {
+        msg.channel.send({files : [ 'https://i.kym-cdn.com/entries/icons/facebook/000/030/873/screenshot_20.jpg' ]});
+    }
+    
+    else if (msg.content === '╭∩╮')
+    {
+        const connection = await msg.member.voice.channel.join();
+        const dispatcher = connection.play('https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=it&q=that+is+a+little+dick,+just+saying');
+    }
 
     if (!msg.content.startsWith(PREFIX) && msg.author.username != 'Bomboclaat Bot') {
         switch (msg.author.username){
@@ -997,9 +1010,22 @@ bot.on('message', async msg  => {
 	    case 'oli137':
 	        lang = 'fr_ca';
 	        break;
+        case 'Lottie':
+            lang = 'fr_ca';
+            break;
         }
+
+        if (!msg.member.voice.channel)
+        {
+            message.channel.send("WARNING: User's channel cannot be connected to!");  // tbh idk if this even helps in any way so can probably delete later...
+            console.log("WARNING: User's channel cannot be connected to!");
+            throw "idk what just happened tbh";
+        }
+
+        link = 'https://translate.google.com/translate_tts?ie=UTF-8&&client=tw-ob&tl=' + lang + '&q=' + msg.content.slice(0, msg.content.length).toString().replace(/ /gi, '+');
         const connection = await msg.member.voice.channel.join();
-        const dispatcher = connection.play('https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=' + lang + '&q=' + msg.content.slice(0, msg.content.length).toString().replace(/ /gi, '+'));
+        const dispatcher = connection.play(link);
+        //msg.channel.send(link);
     }
 })
 
