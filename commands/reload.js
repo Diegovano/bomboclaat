@@ -1,4 +1,17 @@
-const { execute } = require("./ping");
+const { execute } = require(`./ping`);
+function log(text)
+{
+    let date_ob = new Date();
+
+    console.log(`[${date_ob.getHours()}:${date_ob.getMinutes()}:${date_ob.getSeconds()}] INFO: ${text}`);
+}
+
+function logError(text)
+{
+    let date_ob = new Date();
+
+    console.error(`[${date_ob.getHours()}:${date_ob.getMinutes()}:${date_ob.getSeconds()}] ${text}`);
+}
 
 module.exports =
 {
@@ -22,8 +35,8 @@ module.exports =
         } 
         catch (error) 
         {
-            console.error(`SEVERE: "${commandName}" could not be reloaded!`);
-            message.channel.send(`There was an error while reloading a command ${command.name}:\n${error.message}`);
+            logError(`SEVERE: "${commandName}" could not be reloaded! ${command.name}: ${error.message}`);
+            message.channel.send(`There was an error while reloading a command `);
         }
     },
 };

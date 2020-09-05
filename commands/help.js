@@ -25,7 +25,7 @@ module.exports =
 
         if (!command)
         {
-            return message.reply(`that's not a valid command!`);
+            return message.reply(`That's not a valid command!`);
         }
 
         const helpEmbed = new Discord.MessageEmbed()

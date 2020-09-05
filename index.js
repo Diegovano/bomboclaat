@@ -1,7 +1,21 @@
+function log(text)
+{
+    let date_ob = new Date();
+
+    console.log(`[${date_ob.getHours()}:${date_ob.getMinutes()}:${date_ob.getSeconds()}] INFO: ${text}`);
+}
+
+function logError(text)
+{
+    let date_ob = new Date();
+
+    console.error(`[${date_ob.getHours()}:${date_ob.getMinutes()}:${date_ob.getSeconds()}] ${text}`);
+}
+
 function checkNodeVersion()
 {
     if (parseInt(process.version[1] + process.version[2]) < 12) throw `Use node version 12 or greater!`;
-    console.log("You're running node.js " + process.version);
+    log("You're running node.js " + process.version);
 }
 
 checkNodeVersion();
@@ -12,7 +26,7 @@ const client = new Discord.Client();
 var token = fs.readFileSync(`.token`, `utf8`, function(err, data)
 {
     if (err) throw `FATAL: Cannot read token`;
-    // console.log(data);
+    // log(data);
 });
 
 const prefix = "|";
@@ -29,7 +43,7 @@ for (const file of commandFiles)
 
 // run
 
-client.once("ready", () => console.log(`Ready!`));
+client.once("ready", () => log(`Ready!`));
 
 // basic command handler
 client.on("message", message => 
@@ -49,7 +63,7 @@ client.on("message", message =>
     } 
     catch (error) // Catches the exception that could be thrown should the try block not find the command
     {
-        console.log(`INFO: Command "${commandName}" doesn't exist!`);
+        log(`Command "${commandName}" doesn't exist!`);
         message.reply(`sorry, unable to find command...`);
         return;
     }
@@ -77,7 +91,7 @@ client.on("message", message =>
     } 
     catch (error) // If any exceptions are thrown during the execution of a command, stop running the command and run the following
     {
-        console.error(`SEVERE: Execution of "${commandName}" stopped! ${error.message}`); // For example when running a guild-related query in a DM environment without setting guildOnly to true.
+        logError(`SEVERE: Execution of "${commandName}" stopped! ${error.message}`); // For example when running a guild-related query in a DM environment without setting guildOnly to true.
         message.reply(`There was an error trying to execute that command!`);
     }
 });
