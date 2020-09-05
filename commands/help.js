@@ -1,3 +1,4 @@
+const Discord = require("discord.js");
 const prefix = `|`; // static prefix for now
 
 module.exports =
@@ -8,16 +9,15 @@ module.exports =
     usage: `[command name]`,
     execute(message, args)
     {
-        const data = [];
         const { commands } = message.client;
 
         if (!args.length) // Show help for all commands
         {
-            data.push(`Here's a list of all commands:`);
-            data.push(commands.map(command => command.name).join(`\n`));
-            data.push(`\nYou can sent ${prefix}help [command name] to get info on a specific command!`);
+            const helpEmbed = new Discord.MessageEmbed()
+                .setTitle(`Here's a list of all commands:`)
+                .addField(commands.map(command => command.name).join(`\n`), `\nYou can sent ${prefix}help [command name] to get info on a specific command!`);
 
-            return message.channel.send(data, { split: true }); // split true means that should the message be too long, it will be cut into multiple messages.
+            return message.channel.send(helpEmbed); // split true means that should the message be too long, it will be cut into multiple messages.
         }
 
         const name = args[0].toLowerCase(0);
@@ -28,12 +28,15 @@ module.exports =
             return message.reply(`that's not a valid command!`);
         }
 
-        data.push(`NAME: ${command.name}`);
+        const helpEmbed = new Discord.MessageEmbed()
+              .setTitle(`NAME:\n${command.name}`)
+              .setColor(`0xF1C40F`)
+              .setThumbnail(`https://allthatsinteresting.com/wordpress/wp-content/uploads/2014/10/weird-jesus-rasta-jesus.jpg`);
 
-        if (command.aliases) data.push(`ALIASES: ${command.aliases}`);
-        if (command.description) data.push(`DESCRIPTION: ${command.description}`);
-        if (command.usage) data.push(`USAGE: ${command.usage}`);
+        if (command.aliases && command.description && command.usage) helpEmbed.addField(`ALIASES:`, `${command.aliases}`);
+        if (command.description) helpEmbed.addField(`DESCRIPTION:`, `${command.description}`)
+        if (command.usage) helpEmbed.addField(`USAGE:`, `${command.usage}`);
 
-        message.channel.send(data, { split: true });
+        message.channel.send(helpEmbed);
     },
 };
