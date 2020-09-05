@@ -1,5 +1,5 @@
 # Ignore all .json
-*.json
+/*.json
 
 # Except
 !package*.json
