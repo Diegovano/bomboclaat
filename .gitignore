@@ -1,5 +1,8 @@
 # Ignore all .json
-*.json
+/*.json
 
 # Except
 !package*.json
+
+# Exclude token
+.token
