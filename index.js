@@ -967,24 +967,36 @@ bot.on('message', async msg  => {
 
     if (!msg.content.startsWith(PREFIX) && msg.author.username != 'Bomboclaat Bot') {
         switch (msg.author.username){
-            case 'Jesus du 89':
-                lang = 'de';
-                break;
-            case 'Diegovo':
-                lang = 'es';
-                break;
-            case 'Bobnotarobot':
-                lang = 'ru';
-                break;
-            case 'miam-miam':
-                lang = 'en_gb';
-                break;
-            case 'Terminator00702':
-                lang = 'fr';
-                break;
-            case 'Clovis':
-                lang = 'fr_ca';
-                break;
+        case 'Jesus du 89':
+            lang = 'de';
+            break;
+        case 'Diegovo':
+            lang = 'es';
+            break;
+        case 'Bobnotarobot':
+            lang = 'ru';
+            break;
+        case 'miam-miam':
+            lang = 'en_gb';
+            break;
+        case 'Terminator00702':
+            lang = 'fr';
+            break;
+        case 'Clovis':
+            lang = 'fr_ca';
+            break;
+        case 'Bobbomania':
+            lang = 'it';
+            break;
+        case 'Jacko':
+            lang = 'tr';
+            break;
+        case 'WasteMax😤':
+            lang = 'hi';
+            break;
+	    case 'oli137':
+	        lang = 'fr_ca';
+	        break;
         }
         const connection = await msg.member.voice.channel.join();
         const dispatcher = connection.play('https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=' + lang + '&q=' + msg.content.slice(0, msg.content.length).toString().replace(/ /gi, '+'));
