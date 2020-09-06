@@ -38,15 +38,20 @@ client.on("message", message =>
 {
     if (!message.content.startsWith(prefix) || message.author.bot) return;
 
-  /*if (message.channel.id !== `697492398070300763`)
+    //l.log(message.guild.id);
+
+    if (message.guild.id === `684842282926473287` && message.channel.id !== `697492398070300763`)
     {
-        message.channel.send(`Please use the bot channel to interact with me!`)
+        return message.channel.send(`Please use the bot channel to interact with me!`)
             .then( msg =>
                 {
-                    //return msg.delete( { timeout: 10000 } );
-                    message.delete();
-                }).catch( l.logError(`Unable to delete message!`));
-    }*/
+                    setTimeout(() =>
+                    {
+                        msg.delete();
+                        message.delete();
+                    }, 10000) //wait 10000ms then delete
+                })
+    }
 
     const args = message.content.slice(prefix.length).trim().split(/ +/);
     const commandName = args.shift().toLowerCase();

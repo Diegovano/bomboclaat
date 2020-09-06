@@ -1,9 +1,7 @@
-const { VoiceChannel, GuildMember } = require("discord.js")
-
 module.exports = 
 {
     name: `join`,
-    aliases: [`j`, `hello`],
+    aliases: [`j`, `hello`, `hi`],
     description: `Tell the bot to join your voice channel.`,
     guildOnly: true,
     execute(message, args)

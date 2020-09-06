@@ -15,7 +15,7 @@ module.exports =
         {
             const helpEmbed = new Discord.MessageEmbed()
                 .setTitle(`Here's a list of all commands:`)
-                .addField(commands.map(command => command.name).join(`\n`), `\nYou can sent ${prefix}help [command name] to get info on a specific command!`);
+                .addField(commands.map(command => command.name).join(`\n`), `\nYou can send \`${prefix}help [command name]\` to get info on a specific command!`);
 
             return message.channel.send(helpEmbed); // split true means that should the message be too long, it will be cut into multiple messages.
         }
@@ -35,7 +35,7 @@ module.exports =
 
         if (command.aliases && command.description && command.usage) helpEmbed.addField(`ALIASES:`, `${command.aliases}`);
         if (command.description) helpEmbed.addField(`DESCRIPTION:`, `${command.description}`)
-        if (command.usage) helpEmbed.addField(`USAGE:`, `${command.usage}`);
+        if (command.usage) helpEmbed.addField(`USAGE:`, `\`${prefix}${command.name} ${command.usage}\``);
 
         message.channel.send(helpEmbed);
     },
