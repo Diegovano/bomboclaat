@@ -1,21 +1,9 @@
-function log(text)
-{
-    let date_ob = new Date();
-
-    console.log(`[${date_ob.getHours()}:${date_ob.getMinutes()}:${date_ob.getSeconds()}] INFO: ${text}`);
-}
-
-function logError(text)
-{
-    let date_ob = new Date();
-
-    console.error(`[${date_ob.getHours()}:${date_ob.getMinutes()}:${date_ob.getSeconds()}] ${text}`);
-}
+const l = require(`./log.js`);
 
 function checkNodeVersion()
 {
     if (parseInt(process.version[1] + process.version[2]) < 12) throw `Use node version 12 or greater!`;
-    log("You're running node.js " + process.version);
+    l.log("You're running node.js " + process.version);
 }
 
 checkNodeVersion();
@@ -26,7 +14,7 @@ const client = new Discord.Client();
 var token = fs.readFileSync(`.token`, `utf8`, function(err, data)
 {
     if (err) throw `FATAL: Cannot read token`;
-    // log(data);
+    // l.log(data);
 });
 
 const prefix = "|";
@@ -43,14 +31,24 @@ for (const file of commandFiles)
 
 // run
 
-client.once("ready", () => log(`Ready!`));
+client.once("ready", () => l.log(`Ready!`));
 
 // basic command handler
 client.on("message", message => 
 {
     if (!message.content.startsWith(prefix) || message.author.bot) return;
 
-    const args = message.content.slice(prefix.length).trim().split(/ +/); // Look into regex to understand / +/
+  /*if (message.channel.id !== `697492398070300763`)
+    {
+        message.channel.send(`Please use the bot channel to interact with me!`)
+            .then( msg =>
+                {
+                    //return msg.delete( { timeout: 10000 } );
+                    message.delete();
+                }).catch( l.logError(`Unable to delete message!`));
+    }*/
+
+    const args = message.content.slice(prefix.length).trim().split(/ +/);
     const commandName = args.shift().toLowerCase();
 
      let command;
@@ -63,7 +61,7 @@ client.on("message", message =>
     } 
     catch (error) // Catches the exception that could be thrown should the try block not find the command
     {
-        log(`Command "${commandName}" doesn't exist!`);
+        l.log(`Command "${commandName}" doesn't exist!`);
         message.reply(`sorry, unable to find command...`);
         return;
     }
@@ -91,7 +89,7 @@ client.on("message", message =>
     } 
     catch (error) // If any exceptions are thrown during the execution of a command, stop running the command and run the following
     {
-        logError(`SEVERE: Execution of "${commandName}" stopped! ${error.message}`); // For example when running a guild-related query in a DM environment without setting guildOnly to true.
+        l.logError(`SEVERE: Execution of "${commandName}" stopped! ${error.message}`); // For example when running a guild-related query in a DM environment without setting guildOnly to true.
         message.reply(`There was an error trying to execute that command!`);
     }
 });

@@ -5,6 +5,7 @@ module.exports =
     name: `join`,
     aliases: [`j`, `hello`],
     description: `Tell the bot to join your voice channel.`,
+    guildOnly: true,
     execute(message, args)
     {
         if (!message.member.voice.channel)

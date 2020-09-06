@@ -1,17 +1,5 @@
 const { execute } = require(`./ping`);
-function log(text)
-{
-    let date_ob = new Date();
-
-    console.log(`[${date_ob.getHours()}:${date_ob.getMinutes()}:${date_ob.getSeconds()}] INFO: ${text}`);
-}
-
-function logError(text)
-{
-    let date_ob = new Date();
-
-    console.error(`[${date_ob.getHours()}:${date_ob.getMinutes()}:${date_ob.getSeconds()}] ${text}`);
-}
+const l = require(`../log.js`);
 
 module.exports =
 {
@@ -32,10 +20,11 @@ module.exports =
             const newCommand = require(`./${commandName}.js`);
             message.client.commands.set(newCommand.name, newCommand);
             message.channel.send(`Command "${command.name}" was successfully reloaded!`);
+            l.log(`Reloaded "${commandName}" successfully!`);
         } 
         catch (error) 
         {
-            logError(`SEVERE: "${commandName}" could not be reloaded! ${command.name}: ${error.message}`);
+            l.logError(`SEVERE: "${commandName}" could not be reloaded! ${command.name}: ${error.message}`);
             message.channel.send(`There was an error while reloading a command `);
         }
     },

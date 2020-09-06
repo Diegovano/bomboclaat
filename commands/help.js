@@ -31,7 +31,7 @@ module.exports =
         const helpEmbed = new Discord.MessageEmbed()
               .setTitle(`NAME:\n${command.name}`)
               .setColor(`0xF1C40F`)
-              .setThumbnail(`https://allthatsinteresting.com/wordpress/wp-content/uploads/2014/10/weird-jesus-rasta-jesus.jpg`);
+              .setThumbnail(message.client.user.displayAvatarURL());
 
         if (command.aliases && command.description && command.usage) helpEmbed.addField(`ALIASES:`, `${command.aliases}`);
         if (command.description) helpEmbed.addField(`DESCRIPTION:`, `${command.description}`)
