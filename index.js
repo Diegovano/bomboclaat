@@ -3,13 +3,13 @@ const l = require(`./log.js`);
 function checkNodeVersion()
 {
     if (parseInt(process.version[1] + process.version[2]) < 12) throw `Use node version 12 or greater!`;
-    l.log("You're running node.js " + process.version);
+    l.log(`You're running node.js ${process.version}`);
 }
 
 checkNodeVersion();
 
-const fs = require("fs");
-const Discord = require("discord.js");
+const fs = require(`fs`);
+const Discord = require(`discord.js`);
 const client = new Discord.Client();
 var token = fs.readFileSync(`.token`, `utf8`, function(err, data)
 {
@@ -22,7 +22,7 @@ const prefix = "|";
 client.commands = new Discord.Collection(); // Holds all commands
 
 // Add commands to collection
-const commandFiles = fs.readdirSync("./commands").filter(file => file.endsWith(".js"));
+const commandFiles = fs.readdirSync(`./commands`).filter(file => file.endsWith(`.js`));
 for (const file of commandFiles)
 {
     const command = require(`./commands/${file}`);
