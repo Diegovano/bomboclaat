@@ -1,8 +1,12 @@
-# Ignore all .json
+# All top level .json
 /*.json
+
 
 # Except
 !package*.json
+!allPlaylists.json
+!prefixes.json
+!songs.json
 
 # Exclude token
 .token

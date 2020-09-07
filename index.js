@@ -12,7 +12,7 @@ var stringify = require('json-stringify-safe');
 
 var queue = new Map();
 const bot  = new Discord.Client();
-const token = 'Njk3NTA0MTIxNzk1NjQxNDU1.Xo8BXg.xG8ZOQU26vUrzY1GwxHbSMw8F4Q';
+const token = fs.readFileSync(`.token`, `utf8`, function(err, data) { if (err) throw `FATAL: CANNOT READ TOKEN` } );
 
 
 var queueContruct;
