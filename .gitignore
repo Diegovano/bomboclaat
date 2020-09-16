@@ -9,4 +9,4 @@
 !songs.json
 
 # Exclude token
-.token
+.*token

@@ -7,7 +7,7 @@ const fs = require('fs');
 var readline = require('readline');
 var {google} = require('googleapis');
 const search = require('youtube-search');
-var fetchVideoInfo = require('youtube-info');
+var fetchVideoInfo = require('youtube-info-ant');
 var stringify = require('json-stringify-safe');
 
 var queue = new Map();
