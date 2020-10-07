@@ -23,6 +23,7 @@ client.commands = new Discord.Collection(); // Holds all commands
 
 // Add commands to collection
 const commandFiles = fs.readdirSync(`./commands`).filter(file => file.endsWith(`.js`));
+console.log(commandFiles)
 for (const file of commandFiles)
 {
     const command = require(`./commands/${file}`);
