@@ -74,7 +74,6 @@ module.exports =
                 break;
         }
 
-        var msgs = [];
 
         while (ms.length > 203)
         {
@@ -82,6 +81,7 @@ module.exports =
             ms = ms.slice(203, ms.length);
             console.log(ms, msgs);
         }
+        msgs.push(ms);
 
         if (message.member.voice.channel)
         {
