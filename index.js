@@ -25,7 +25,6 @@ client.commands = new Discord.Collection(); // Holds all commands
 
 // Add commands to collection
 const commandFiles = fs.readdirSync(`./commands`).filter(file => file.endsWith(`.js`));
-console.log(commandFiles)
 for (const file of commandFiles)
 {
     const command = require(`./commands/${file}`);
@@ -53,9 +52,9 @@ client.on("message", message =>
                     message.delete();
                 }, 10000).catch(() =>
                 {
-                    l.logError(`WARNING: Unable to delete message! Has it already been deleted?`)
-                })
-            })
+                    l.logError(`WARNING: Unable to delete message! Has it already been deleted?`);
+                });
+            });
     }
 
     const args = message.content.slice(prefix.length).trim().split(/ +/);

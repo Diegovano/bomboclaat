@@ -13,4 +13,4 @@ module.exports =
 
         return message.channel.send(`Decidément.`);
     }
-}
+};

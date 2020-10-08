@@ -11,4 +11,4 @@ module.exports =
         l.log(`Bomboclaat version ${package.version}`);
         message.channel.send(`Bomboclaat version ${package.version}`);
     }
-}
+};

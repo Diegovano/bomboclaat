@@ -33,28 +33,26 @@ class song
         {
             part: `contentDetails`,
             id: videoID,
-            key: fs.readFileSync(`.yttoken`, `utf8`, (err, data) => { if (err) throw `SEVERE: Cannot read YouTube key!` } )
+            key: fs.readFileSync(`.yttoken`, `utf8`, (err, data) => { if (err) throw `SEVERE: Cannot read YouTube key!`; } )
         };
         // this.duration = youtube.videos.list(opts);
     }
-};
+}
 
 class queue
 {
-    guildID;
-    textChannel;
-    voiceChannel;
-    connection;
-    songList = [];
-    queuePos = 0;
-    volume = 5;
-    playing = false;
-
     constructor(message)
     {
         this.guildID = message.guild.id;
         queueMap[this.guildID] = this;
         this.textChannel = message.channel.id;
+
+        this.voiceChannel;
+        this.connection;
+        this.songList = [];
+        this.queuePos = 0;
+        this.volume = 5;
+        this.playing = false;
     }
 
     async play()
@@ -68,7 +66,7 @@ class queue
         {
             return l.logError(`WARNING: Unable to join voice channel!`);
         }
-        if (this.queuePos > this.songList.length - 1) return l.logError(`WARNING: queuePos out of range`)
+        if (this.queuePos > this.songList.length - 1) return l.logError(`WARNING: queuePos out of range`);
         const dispatcher = this.connection.play(ytdl(`https://www.youtube.com/watch?v=${this.songList[this.queuePos].videoID}`,
             { filter: `audio` }))
             .on(`finish`, () =>
@@ -100,7 +98,7 @@ class queue
         
     }
 
-};
+}
 
 function playOnline(song)
 {

@@ -19,4 +19,4 @@ module.exports =
         
         message.channel.send(`Fuck you, ${message.author.username}, ${insults[Math.floor(Math.random() * insults.length)]}`);
     }
-}
+};

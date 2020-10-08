@@ -13,4 +13,4 @@ module.exports =
 
         const connection = message.member.voice.channel.join();
     }
-}
+};

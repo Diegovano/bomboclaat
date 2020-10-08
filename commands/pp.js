@@ -16,4 +16,4 @@ module.exports =
 
         return message.channel.send(`${message.author.username}'s cock size is:\n${penis.toString().replace(/,/gi, "")}D    ${iter} inches!`);
     }
-}
+};
