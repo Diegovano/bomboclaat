@@ -33,7 +33,7 @@ module.exports =
               .setColor(`0xF1C40F`)
               .setThumbnail(message.client.user.displayAvatarURL());
 
-        if (command.aliases && command.description && command.usage) helpEmbed.addField(`ALIASES:`, `${command.aliases}`);
+        if (command.aliases && command.description && command.usage) helpEmbed.addField(`ALIASES:`, `${command.aliases.join(`, `)}`);
         if (command.description) helpEmbed.addField(`DESCRIPTION:`, `${command.description}`)
         if (command.usage) helpEmbed.addField(`USAGE:`, `\`${prefix}${command.name} ${command.usage}\``);
 

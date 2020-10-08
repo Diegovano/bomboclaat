@@ -1,8 +1,7 @@
-# Ignore all .json
-/*.json
+# .vscode
+.vscode
+.eslintrc*
 
-# Except
-!package*.json
 
 # Ignore file with token
-.token
+.*token

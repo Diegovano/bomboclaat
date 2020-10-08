@@ -1,4 +1,6 @@
 const l = require(`./log.js`);
+const fs = require(`fs`);
+const Discord = require(`discord.js`);
 
 function checkNodeVersion()
 {
@@ -8,14 +10,14 @@ function checkNodeVersion()
 
 checkNodeVersion();
 
-const fs = require(`fs`);
-const Discord = require(`discord.js`);
 const client = new Discord.Client();
-var token = fs.readFileSync(`.token`, `utf8`, function(err, data)
+const tokens = fs.readFileSync(`.token`, `utf8`, (err, data) =>
 {
     if (err) throw `FATAL: Cannot read token`;
     // l.log(data);
-});
+}).split(`\n`);
+
+const token = tokens[0];
 
 const prefix = "|";
 
@@ -41,17 +43,19 @@ client.on("message", message =>
 
     //l.log(message.guild.id);
 
-    if (message.guild.id === `684842282926473287` && message.channel.id !== `697492398070300763`)
+    if (message.channel.type === `text` && message.guild.id === `684842282926473287` && message.channel.id !== `697492398070300763`)
     {
-        return message.channel.send(`Please use the bot channel to interact with me!`)
-            .then( msg =>
+        return message.channel.send(`Please use the bot channel to interact with me!`).then( msg =>
+            {
+                setTimeout(() =>
                 {
-                    setTimeout(() =>
-                    {
-                        msg.delete();
-                        message.delete();
-                    }, 10000) //wait 10000ms then delete
+                    msg.delete();
+                    message.delete();
+                }, 10000).catch(() =>
+                {
+                    l.logError(`WARNING: Unable to delete message! Has it already been deleted?`)
                 })
+            })
     }
 
     const args = message.content.slice(prefix.length).trim().split(/ +/);
@@ -96,9 +100,8 @@ client.on("message", message =>
     catch (error) // If any exceptions are thrown during the execution of a command, stop running the command and run the following
     {
         l.logError(`SEVERE: Execution of "${commandName}" stopped! ${error.message}`); // For example when running a guild-related query in a DM environment without setting guildOnly to true.
-        message.reply(`There was an error trying to execute that command!`);
+        message.reply(`there was an error trying to execute that command!`);
     }
 });
-
 
 client.login(token);
