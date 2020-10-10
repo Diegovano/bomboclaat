@@ -3,11 +3,10 @@ const am = require(`../audio.js`);
 const { google } = require(`googleapis`);
 const Discord = require(`discord.js`);
 const l = require(`../log.js`);
+const youtube = google.youtube(`v3`);
 
 function ytSearch(searchTerm, message, callback)
 {
-    var youtube = google.youtube(`v3`);
-
     var opts =
     {
         q: searchTerm,
@@ -17,8 +16,7 @@ function ytSearch(searchTerm, message, callback)
         key: fs.readFileSync(`.yttoken`, `utf8`, (err, data) => { if (err) throw `SEVERE: Cannot read YouTube key!`; } )
     };
 
-    youtube.search.list(opts)
-        .then( res =>
+    youtube.search.list(opts).then( res =>
         {
             var resArr = [];
         
@@ -170,8 +168,8 @@ function userSelect(results, message, callback)
 
 module.exports =
 {
-    name: `p`,
-    aliases: [`play`, `unpause`],
+    name: `play`,
+    aliases: [`p`, `unpause`, `go`],
     description: `If paused, unpause, otherwise add song to queue.`,
     usage: `[song name]`,
     execute(message, args)
@@ -189,16 +187,42 @@ module.exports =
             return;
         }
 
-        if (args.includes(`/[1-5]/g`))
+        if (/[1-5]w/.test(args[0]))
         {
             // play third option, then return
             return;
         }
 
-        ytSearch(args.join(` `), message, (song) => 
+        if (args[0].includes(`http`))
+        {
+            var videoID;
+            try 
+            {
+                videoID = (args[0].match(/(?<=(\?v=))(.)\w+/))[0];
+            } 
+            catch (error) 
+            {
+                return l.logError(`WARNING: Unable to filter videoID from URL! Probably something wrong with my regex...`);
+            }
+            var opts =
+            {
+                part: `snippet`,
+                id: videoID,
+                key: fs.readFileSync(`.yttoken`, `utf8`, (err, data) => { if (err) throw `SEVERE: Cannot read YouTube key!`; } )
+            };
+
+                return youtube.videos.list(opts).then( res =>
+                {
+                    var song = new am.song(res.data.items[0].id, res.data.items[0].snippet.channelTitle,
+                        res.data.items[0].snippet.localized.title, res.data.items[0].snippet.localized.description,
+                        res.data.items[0].snippet.thumbnails.default.url, message.author);
+                    currentQueue.add(song, message);
+                });
+        }
+
+        ytSearch(args.join(` `), message, song => 
             {
                 currentQueue.add(song, message);
-                currentQueue.printQueue(message);
             });
     }
 };

@@ -2,6 +2,7 @@ const fs = require(`fs`);
 const { google } = require(`googleapis`);
 const l = require(`./log.js`);
 const ytdl = require(`ytdl-core`);
+const Discord = require(`discord.js`);
 
 var youtube = google.youtube(`v3`);
 
@@ -20,8 +21,15 @@ function getQueue(message)
 
 function deleteQueue(message)
 {
-    if (queueMap[message.guild.id]) return delete queueMap[message.guild.id];
-    throw `Attempting to delete non-existant queue!`;
+    if (queueMap[message.guild.id]) 
+    {
+        return delete queueMap[message.guild.id];
+    }
+    // else if (typeof(message) === typeof(queue) && queueMap[message.guildID])
+    // {
+    //     return delete queueMap[message.guildID];
+    // }
+    else l.logError(`WARNING: Attempting to delete non-existant queue!`);
 }
 
 class song
@@ -42,7 +50,6 @@ class song
             id: videoID,
             key: fs.readFileSync(`.yttoken`, `utf8`, (err, data) => { if (err) throw `SEVERE: Cannot read YouTube key!`; } )
         };
-        // this.duration = youtube.videos.list(opts);
     }
 }
 
@@ -86,13 +93,14 @@ class queue
                 if (this.queuePos >= this.songList.length) 
                 {
                     this.voiceChannel.leave();
+                    // return deleteQueue(this);
                     return this.playing = false;
                 }
                 this.play();
             })
             .on(`error`, error => l.logError(`WARNING: Unable to play song! ${error}`));
         
-        this.textChannel.send(`Now playing ${this.songList[this.queuePos].title}, requested by ${this.songList[this.queuePos].requestedBy}`);
+        this.textChannel.send(`Now playing [${this.songList[this.queuePos].title}](${this.songList[this.queuePos].sourceLink}), requested by ${this.songList[this.queuePos].requestedBy}`);
     }
     
     add(song, message)
@@ -108,7 +116,26 @@ class queue
 
     printQueue(message)
     {
+        var queueMessage = `Queue for ${message.guild.name}`;
+
+        if (this.songList.length === 0) return message.channel.send(`Queue is empty!`);
         
+        if (this.queuePos !== 0) queueMessage += `\nPast Tracks:`;
+        for (var i = 0; i < this.queuePos; i++) // Print past tracks
+        {
+            queueMessage += `\nTrack ${i + 1}: ${this.songList[i].title}, requested by ${this.songList[i].requestedBy}`;
+        }
+        
+        queueMessage += `\nCurrent Track:`;
+        queueMessage += `\nTrack ${this.queuePos + 1}: ${this.songList[this.queuePos].title}, requested by ${this.songList[this.queuePos].requestedBy}`;
+
+        if (this.songList.length - 1 > this.queuePos) queueMessage += `\nUpcoming Tracks:`;
+        for (i++; i < this.songList.length; i++)
+        {
+            queueMessage += `\nTrack ${i + 1}: ${this.songList[i].title}, requested by ${this.songList[i].requestedBy}`;
+        }
+
+        message.channel.send(queueMessage);
     }
 
 }

@@ -4,7 +4,7 @@ const l = require(`../log.js`);
 module.exports = 
 {
     name: `leave`,
-    aliases: [`quit`, `q`, `l`, `bye`],
+    aliases: [`quit`, `l`, `bye`],
     description: `Tells the bot to disconnect from the voice channel.`,
     guildOnly: true,
     execute(message, args)
