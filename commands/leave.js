@@ -1,3 +1,6 @@
+const am = require(`../audio.js`);
+const l = require(`../log.js`);
+
 module.exports = 
 {
     name: `leave`,
@@ -6,6 +9,14 @@ module.exports =
     guildOnly: true,
     execute(message, args)
     {
-        message.member.voice.channel.leave();
+        try 
+        {
+            message.member.voice.channel.leave();
+            am.deleteQueue(message);
+        }
+        catch (error) 
+        {
+            l.logError(`WARNING: ${error}`);
+        }
     }
 };

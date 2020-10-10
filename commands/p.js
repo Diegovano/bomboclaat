@@ -22,11 +22,11 @@ function ytSearch(searchTerm, message, callback)
         {
             var resArr = [];
         
-            for (var i = 0; i < opts.maxResults; i++)
+            for (var i = 0; i < res.data.items.length; i++)
             {
                 resArr.push(new am.song(res.data.items[i].id.videoId, res.data.items[i].snippet.channelTitle,
                         res.data.items[i].snippet.title, res.data.items[i].snippet.description,
-                        res.data.items[i].snippet.thumbnails.default.url));
+                        res.data.items[i].snippet.thumbnails.default.url, message.author));
             }
         
             userSelect(resArr, message, callback);
@@ -58,16 +58,16 @@ function userSelect(results, message, callback)
         {
             var embedDeleted;
 
-            for (i = 0; i < results.length && i < reactionList.length; i++)
+            for (var i = 0; i < results.length && i < reactionList.length; i++)
             {
-                try 
+                if (!embedDeleted) 
                 {
-                    msg.react(reactionList[i]);
-                } 
-                catch (error) // most likely error is that embed has already been deleted before all reactions are added. No action necessary.
-                {
-                    // empty
+                    msg.react(reactionList[i]).catch( reason =>
+                        {
+                            l.logError(`WARNING: Unable to add reaction to embed! Has message been deleted? ${reason}`);
+                        });
                 }
+                // most likely error is that embed has already been deleted before all reactions are added. No action necessary.
             }
             
             // smart way but not working...
@@ -90,6 +90,8 @@ function userSelect(results, message, callback)
                     
                     // semi-dumb method
                     
+                    var waitTime = 5000;
+                    
                     var filters = [
                         (reaction, user) => reaction.emoji.name == reactionList[0] && user.id === message.author.id,
                         (reaction, user) => reaction.emoji.name == reactionList[1] && user.id === message.author.id,
@@ -111,7 +113,7 @@ function userSelect(results, message, callback)
                         {
                             if (!embedDeleted) msg.delete();
                             embedDeleted = true;
-                        }, 2000);
+                        }, waitTime);
                     });
                     
                     var collector1 = msg.createReactionCollector( filters[1], options );
@@ -122,7 +124,7 @@ function userSelect(results, message, callback)
                         {
                             if (!embedDeleted) msg.delete();
                             embedDeleted = true;
-                        }, 2000);
+                        }, waitTime);
                     });
                     
                     var collector2 = msg.createReactionCollector( filters[2], options );
@@ -133,7 +135,7 @@ function userSelect(results, message, callback)
                         {
                             if (!embedDeleted) msg.delete();
                             embedDeleted = true;
-                        }, 2000);
+                        }, waitTime);
                     });
                     
                     var collector3 = msg.createReactionCollector( filters[3], options );
@@ -144,7 +146,7 @@ function userSelect(results, message, callback)
                         {
                             if (!embedDeleted) msg.delete();
                             embedDeleted = true;
-                        }, 2000);
+                        }, waitTime);
                     });
                     
                     var collector4 = msg.createReactionCollector( filters[4], options );
@@ -155,7 +157,7 @@ function userSelect(results, message, callback)
                         {
                             if (!embedDeleted) msg.delete();
                             embedDeleted = true;
-                        }, 2000);
+                        }, waitTime);
                     });
 
                     setTimeout( () => 

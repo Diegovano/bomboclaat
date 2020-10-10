@@ -11,7 +11,7 @@ function checkNodeVersion()
 checkNodeVersion();
 
 const client = new Discord.Client();
-const tokens = fs.readFileSync(`.token`, `utf8`, (err, data) =>
+const tokens = fs.readFileSync(`.token`, `utf8`, (err, data) => 
 {
     if (err) throw `FATAL: Cannot read token`;
     // l.log(data);
@@ -48,12 +48,16 @@ client.on("message", message =>
             {
                 setTimeout(() =>
                 {
-                    msg.delete();
-                    message.delete();
-                }, 10000).catch(() =>
-                {
-                    l.logError(`WARNING: Unable to delete message! Has it already been deleted?`);
-                });
+                    try 
+                    {
+                        msg.delete();
+                        message.delete();
+                    } 
+                    catch (error) 
+                    {
+                        l.logError(`WARNING: Unable to delete message! Has it already been deleted?`);
+                    }
+                }, 10000);
             });
     }
 
@@ -61,7 +65,7 @@ client.on("message", message =>
     const commandName = args.shift().toLowerCase();
 
      let command;
-
+ 
     try 
     {        
         command = client.commands.get(commandName)

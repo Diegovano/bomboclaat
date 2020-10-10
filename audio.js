@@ -18,9 +18,15 @@ function getQueue(message)
     return new queue(message);
 }
 
+function deleteQueue(message)
+{
+    if (queueMap[message.guild.id]) return delete queueMap[message.guild.id];
+    throw `Attempting to delete non-existant queue!`;
+}
+
 class song
 {
-    constructor(videoID, author, title, description, icon, file = undefined)
+    constructor(videoID, author, title, description, icon, requestedBy, file = undefined)
     {
         this.videoID = videoID;
         this.sourceLink = `https://www.youtube.com/watch?v=${videoID}`;
@@ -28,6 +34,7 @@ class song
         this.title = replaceUnicode(title);
         this.description = replaceUnicode(description);
         this.icon = icon;
+        this.requestedBy = requestedBy;
         this.file = file;
         var opts =
         {
@@ -45,7 +52,7 @@ class queue
     {
         this.guildID = message.guild.id;
         queueMap[this.guildID] = this;
-        this.textChannel = message.channel.id;
+        this.textChannel = message.channel;
 
         this.voiceChannel;
         this.connection;
@@ -60,37 +67,43 @@ class queue
         this.playing = true;
         try
         {
-            if (!this.connection) this.connection = await this.voiceChannel.join();
+            if (this.connection !== this.voiceChannel) this.connection = await this.voiceChannel.join();
         }
         catch (err)
         {
             return l.logError(`WARNING: Unable to join voice channel!`);
         }
+
         if (this.queuePos > this.songList.length - 1) return l.logError(`WARNING: queuePos out of range`);
-        const dispatcher = this.connection.play(ytdl(`https://www.youtube.com/watch?v=${this.songList[this.queuePos].videoID}`,
-            { filter: `audio` }))
+        const dispatcher = this.connection.play(ytdl(this.songList[this.queuePos].sourceLink,
+                {
+                    quality: `highestaudio`,
+                    highWaterMark: 1 << 25
+                }))
             .on(`finish`, () =>
             {
                 this.queuePos++;
-                if (!(this.queuePos < this.songList.length)) 
+                if (this.queuePos >= this.songList.length) 
                 {
-                    this.playing = false;
-                    return this.voiceChannel.leave();
+                    this.voiceChannel.leave();
+                    return this.playing = false;
                 }
                 this.play();
             })
             .on(`error`, error => l.logError(`WARNING: Unable to play song! ${error}`));
+        
+        this.textChannel.send(`Now playing ${this.songList[this.queuePos].title}, requested by ${this.songList[this.queuePos].requestedBy}`);
     }
     
     add(song, message)
     {
-        if (message.channel.id !== this.textChannel) 
+        if (message.channel.id !== this.textChannel.id) 
             return message.channel.send(`Bot is bound to ${message.channel.name}, please use this channel to queue!`);
 
         this.voiceChannel = message.member.voice.channel;
         this.songList.push(song);
         if (!this.playing) this.play();
-        message.channel.send(`${song.title} has been added to the queue by ${message.author}`);
+        else message.channel.send(`${song.title} has been added to the queue by ${message.author}`);
     }
 
     printQueue(message)
@@ -107,6 +120,7 @@ function playOnline(song)
 }
 
 exports.getQueue = getQueue;
+exports.deleteQueue = deleteQueue;
 exports.playOnline = playOnline;
 exports.song = song;
 

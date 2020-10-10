@@ -9,6 +9,7 @@ module.exports =
         var languages = ['french', 'german', 'russian', 'japanese', 'chinese', 'english', 'arabic', 'italian', 'spanish', 'korean', 'portuguese', 'swedish', 'dutch', 'nz', 'aussie', 'quebec', 'indian', 'american', 'welsh'];
 
         var lang;
+        var msgs = [];
         var ms = args.slice(1, args.length).toString().replace(/,/gi, '+');
 
         switch(args[0])
