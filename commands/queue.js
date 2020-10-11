@@ -9,4 +9,4 @@ module.exports =
     {
         am.getQueue(message).printQueue(message);        
     }
-}
+};

@@ -24,7 +24,7 @@ function ytSearch(searchTerm, message, callback)
             {
                 resArr.push(new am.song(res.data.items[i].id.videoId, res.data.items[i].snippet.channelTitle,
                         res.data.items[i].snippet.title, res.data.items[i].snippet.description,
-                        res.data.items[i].snippet.thumbnails.default.url, message.author));
+                        res.data.items[i].snippet.thumbnails.default.url, message.member.nickname));
             }
         
             userSelect(resArr, message, callback);
@@ -172,6 +172,7 @@ module.exports =
     aliases: [`p`, `unpause`, `go`],
     description: `If paused, unpause, otherwise add song to queue.`,
     usage: `[song name]`,
+    guidOnly: true,
     execute(message, args)
     {
         if (!message.member.voice.channel) return message.reply(`please join a voice channel to queue songs!`);
@@ -198,7 +199,8 @@ module.exports =
             var videoID;
             try 
             {
-                videoID = (args[0].match(/(?<=(\?v=))(.)\w+/))[0];
+                var VIdRegex = /(.*?)(^|\/|v=)([a-z0-9_-]{11})(.*)?/i;
+                videoID = args[0].match(VIdRegex)[3]; // https://regexr.com/3nsop
             } 
             catch (error) 
             {
@@ -215,7 +217,7 @@ module.exports =
                 {
                     var song = new am.song(res.data.items[0].id, res.data.items[0].snippet.channelTitle,
                         res.data.items[0].snippet.localized.title, res.data.items[0].snippet.localized.description,
-                        res.data.items[0].snippet.thumbnails.default.url, message.author);
+                        res.data.items[0].snippet.thumbnails.default.url, message.member.nickname);
                     currentQueue.add(song, message);
                 });
         }

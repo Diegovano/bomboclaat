@@ -5,7 +5,6 @@ module.exports =
     name: `info`,
     aliases: [`i`, `inf`],
     description: `Gives critical information about the person.`,
-    args: false,
     guildOnly: true,
     execute(message, args)
     {

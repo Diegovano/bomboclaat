@@ -100,7 +100,7 @@ class queue
             })
             .on(`error`, error => l.logError(`WARNING: Unable to play song! ${error}`));
         
-        this.textChannel.send(`Now playing [${this.songList[this.queuePos].title}](${this.songList[this.queuePos].sourceLink}), requested by ${this.songList[this.queuePos].requestedBy}`);
+        this.textChannel.send(`Now playing ${this.songList[this.queuePos].title}, requested by ${this.songList[this.queuePos].requestedBy}`);
     }
     
     add(song, message)
@@ -111,11 +111,14 @@ class queue
         this.voiceChannel = message.member.voice.channel;
         this.songList.push(song);
         if (!this.playing) this.play();
-        else message.channel.send(`${song.title} has been added to the queue by ${message.author}`);
+        else message.channel.send(`${song.title} has been added to the queue by ${message.member.nickname}`);
     }
 
     printQueue(message)
     {
+        if (message.channel.id !== this.textChannel.id) 
+            return message.channel.send(`Bot is bound to ${message.channel.name}, please use this channel to see the queue!`);
+
         var queueMessage = `Queue for ${message.guild.name}`;
 
         if (this.songList.length === 0) return message.channel.send(`Queue is empty!`);
@@ -123,21 +126,45 @@ class queue
         if (this.queuePos !== 0) queueMessage += `\nPast Tracks:`;
         for (var i = 0; i < this.queuePos; i++) // Print past tracks
         {
-            queueMessage += `\nTrack ${i + 1}: ${this.songList[i].title}, requested by ${this.songList[i].requestedBy}`;
+            queueMessage += `\nTrack ${i + 1}: ${this.songList[i].title}, requested by ${this.songList[i].requestedBy}.`;
         }
         
         queueMessage += `\nCurrent Track:`;
-        queueMessage += `\nTrack ${this.queuePos + 1}: ${this.songList[this.queuePos].title}, requested by ${this.songList[this.queuePos].requestedBy}`;
+        queueMessage += `\nTrack ${this.queuePos + 1}: ${this.songList[this.queuePos].title}, requested by ${this.songList[this.queuePos].requestedBy}.`;
 
         if (this.songList.length - 1 > this.queuePos) queueMessage += `\nUpcoming Tracks:`;
         for (i++; i < this.songList.length; i++)
         {
-            queueMessage += `\nTrack ${i + 1}: ${this.songList[i].title}, requested by ${this.songList[i].requestedBy}`;
+            queueMessage += `\nTrack ${i + 1}: ${this.songList[i].title}, requested by ${this.songList[i].requestedBy}.`;
         }
 
         message.channel.send(queueMessage);
     }
 
+    skip(message)
+    {
+        if (message.channel.id !== this.textChannel.id) 
+            return message.channel.send(`Bot is bound to ${message.channel.name}, please use this channel to skip!`);
+
+        if (this.songList.length === 0) return message.channel.send(`No track to skip!`);
+        if (this.queuePos >= this.songList.length - 1) // -1 becuase the last track is being played 
+        {
+            message.channel.send(`Skipping final track: ${this.songList[this.queuePos].title} and disconnecting.`);
+            this.queuePos++;
+            this.voiceChannel.leave();
+            this.playing = false;
+            return;
+        }
+
+        this.play();
+        return message.channel.send(`Skipping ${this.songList[this.queuePos++].title},`);
+    }
+
+    getSong()
+    {
+        if (this.playing) return this.songList[this.queuePos];
+        else throw `No track playing!`;
+    }
 }
 
 function playOnline(song)
@@ -150,4 +177,3 @@ exports.getQueue = getQueue;
 exports.deleteQueue = deleteQueue;
 exports.playOnline = playOnline;
 exports.song = song;
-
