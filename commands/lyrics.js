@@ -13,8 +13,9 @@ module.exports =
 
         try 
         {
-            let lyrics = await lyricsFinder(``, currentQueue.getSong().title) || `Lyrics not found!`;
-            message.channel.send(lyrics);
+            message.channel.send(`Artist: ${currentQueue.getSong().author}\nTrack: ${currentQueue.getSong().title}`);
+            let lyricsLF = await lyricsFinder(currentQueue.getSong().author, currentQueue.getSong().title);
+            message.channel.send(`LyricsFinder: ${lyricsLF}`);
         } 
         catch(error) 
         {

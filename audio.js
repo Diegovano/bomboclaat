@@ -32,6 +32,17 @@ function deleteQueue(message)
     else l.logError(`WARNING: Attempting to delete non-existant queue!`);
 }
 
+function subArrayCumulativeLength(array)
+{
+    var chars = 0;
+    for (var i = 0; i < array.length; i++)
+    {
+        chars += array[i].length;
+    }
+
+    return chars;
+}
+
 class song
 {
     constructor(videoID, author, title, description, icon, requestedBy, file = undefined)
@@ -67,6 +78,8 @@ class queue
         this.queuePos = 0;
         this.volume = 5;
         this.playing = false;
+        this.paused = false;
+        this.dispatcher = false;
     }
 
     async play()
@@ -82,7 +95,7 @@ class queue
         }
 
         if (this.queuePos > this.songList.length - 1) return l.logError(`WARNING: queuePos out of range`);
-        const dispatcher = this.connection.play(ytdl(this.songList[this.queuePos].sourceLink,
+        this.dispatcher = this.connection.play(ytdl(this.songList[this.queuePos].sourceLink,
                 {
                     quality: `highestaudio`,
                     highWaterMark: 1 << 25
@@ -92,9 +105,10 @@ class queue
                 this.queuePos++;
                 if (this.queuePos >= this.songList.length) 
                 {
+                    this.playing = false;
+                    this.dispatcher.destroy();
                     this.voiceChannel.leave();
-                    // return deleteQueue(this);
-                    return this.playing = false;
+                    return;
                 }
                 this.play();
             })
@@ -138,7 +152,37 @@ class queue
             queueMessage += `\nTrack ${i + 1}: ${this.songList[i].title}, requested by ${this.songList[i].requestedBy}.`;
         }
 
-        message.channel.send(queueMessage);
+        if (queueMessage.length < 2000) message.channel.send(queueMessage);
+        else
+        {
+            var messageArray = [];
+            
+            for (let i2 = 0; subArrayCumulativeLength(messageArray) < queueMessage.length; i2++)
+            {
+                let i3 = 0;
+
+                if (queueMessage.length - subArrayCumulativeLength(messageArray) <= 2000)
+                {
+                    messageArray.push(queueMessage.substring(subArrayCumulativeLength(messageArray)));
+                }
+
+                else 
+                {
+                    while (queueMessage[(i2 + 1) * 2000 - i3] !== `\n`) 
+                    {
+                        if (i3 > 200) return l.logError(`WARNING: Unable to cut queue message on newline!`);
+                        i3++;
+                    }
+
+                    messageArray.push(queueMessage.substring(i2 * 2000, (i2 + 1) * 2000 - i3));
+                }
+            }
+
+            for (let i = 0; i < messageArray.length; i++)
+            {
+                message.channel.send(messageArray[i]);
+            }
+        }
     }
 
     skip(message)
@@ -151,8 +195,9 @@ class queue
         {
             message.channel.send(`Skipping final track: ${this.songList[this.queuePos].title} and disconnecting.`);
             this.queuePos++;
-            this.voiceChannel.leave();
             this.playing = false;
+            this.dispatcher.destroy();
+            this.voiceChannel.leave();
             return;
         }
 
@@ -164,6 +209,24 @@ class queue
     {
         if (this.playing) return this.songList[this.queuePos];
         else throw `No track playing!`;
+    }
+
+    pause()
+    {
+        if (!this.playing) throw `Nothing playing!`;
+        if (this.paused) throw `Player is already paused!`;
+
+        this.paused = true;
+        this.dispatcher.pause();
+    }
+
+    unpause()
+    {
+        if (!this.playing) throw `Noting playing!`;
+        if (!this.paused) throw `Player is not paused!`;
+
+        this.paused = false;
+        this.dispatcher.resume();
     }
 }
 

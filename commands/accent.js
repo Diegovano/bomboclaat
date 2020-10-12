@@ -80,14 +80,14 @@ module.exports =
         {
             msgs.push(ms.slice(0,203));
             ms = ms.slice(203, ms.length);
-            console.log(ms, msgs);
+            // console.log(ms, msgs);
         }
         msgs.push(ms);
 
         if (message.member.voice.channel)
         {
             const connection = await message.member.voice.channel.join();
-            for(var i = 0; i < msgs.length; i++)
+            for (let i = 0; i < msgs.length; i++)
             {
                 var link = 'https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=' + lang + '&q=' + msgs[i];
                 const dispatcher = connection.play(link);

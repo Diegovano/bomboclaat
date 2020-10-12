@@ -169,7 +169,7 @@ function userSelect(results, message, callback)
 module.exports =
 {
     name: `play`,
-    aliases: [`p`, `unpause`, `go`],
+    aliases: [`p`],
     description: `If paused, unpause, otherwise add song to queue.`,
     usage: `[song name]`,
     guidOnly: true,
@@ -184,7 +184,14 @@ module.exports =
 
         if (!args[0])
         {
-            // unpause player, if paused, then return
+            try 
+            {
+                currentQueue.unpause();
+            } 
+            catch (error) 
+            {
+                message.channel.send(`Unable to unpause the player! Is anything in queue? ${error}`);
+            }
             return;
         }
 
