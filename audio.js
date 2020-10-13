@@ -228,6 +228,14 @@ class queue
         this.paused = false;
         this.dispatcher.resume();
     }
+
+    setVolume(volumeAmount)
+    {
+        if (!this.playing) throw `Noting playing!`;
+        if (this.paused) throw `Player is paused!`;
+
+        this.dispatcher.setVolume(volumeAmount);
+    }
 }
 
 function playOnline(song)
