@@ -43,9 +43,13 @@ function subArrayCumulativeLength(array)
     return chars;
 }
 
+function stupidTimeToSeconds(stupidTime) {
+
+}
+
 class song
 {
-    constructor(videoID, author, title, description, icon, requestedBy, file = undefined)
+    constructor(videoID, author, title, description, icon, requestedBy, duration = undefined, file = undefined)
     {
         this.videoID = videoID;
         this.sourceLink = `https://www.youtube.com/watch?v=${videoID}`;
@@ -54,13 +58,22 @@ class song
         this.description = replaceUnicode(description);
         this.icon = icon;
         this.requestedBy = requestedBy;
+        this.duration = duration;
         this.file = file;
-        var opts =
-        {
-            part: `contentDetails`,
-            id: videoID,
-            key: fs.readFileSync(`.yttoken`, `utf8`, (err, data) => { if (err) throw `SEVERE: Cannot read YouTube key!`; } )
-        };
+        if (!this.duration){
+            var opts =
+                {
+                    part: `contentDetails`,
+                    id: videoID,
+                    key: fs.readFileSync(`.yttoken`, `utf8`, (err, data) => { if (err) throw `SEVERE: Cannot read YouTube key!`; } )
+                };
+            youtube.videos.list(opts).then(res => {
+                this.duration = res.data.items[0].contentDetails.duration;
+                console.log(this.duration);
+            }, reason => {
+                l.logError(`WARNING: Unable to get duration! ${reason}`);
+            })
+        }
     }
 }
 
@@ -140,16 +153,16 @@ class queue
         if (this.queuePos !== 0) queueMessage += `\nPast Tracks:`;
         for (var i = 0; i < this.queuePos; i++) // Print past tracks
         {
-            queueMessage += `\nTrack ${i + 1}: ${this.songList[i].title}, requested by ${this.songList[i].requestedBy}.`;
+            queueMessage += `\nTrack ${i + 1}: ${this.songList[i].title} [${this.songList[i].duration}], requested by ${this.songList[i].requestedBy}.`;
         }
         
         queueMessage += `\nCurrent Track:`;
-        queueMessage += `\nTrack ${this.queuePos + 1}: ${this.songList[this.queuePos].title}, requested by ${this.songList[this.queuePos].requestedBy}.`;
+        queueMessage += `\nTrack ${this.queuePos + 1}: ${this.songList[this.queuePos].title} [${this.songList[i].duration}], requested by ${this.songList[this.queuePos].requestedBy}.`;
 
         if (this.songList.length - 1 > this.queuePos) queueMessage += `\nUpcoming Tracks:`;
         for (i++; i < this.songList.length; i++)
         {
-            queueMessage += `\nTrack ${i + 1}: ${this.songList[i].title}, requested by ${this.songList[i].requestedBy}.`;
+            queueMessage += `\nTrack ${i + 1}: ${this.songList[i].title} [${this.songList[i].duration}], requested by ${this.songList[i].requestedBy}.`;
         }
 
         if (queueMessage.length < 2000) message.channel.send(queueMessage);
@@ -235,6 +248,30 @@ class queue
         if (this.paused) throw `Player is paused!`;
 
         this.dispatcher.setVolume(volumeAmount);
+    }
+    seek(seconds)
+    {
+        if (!this.playing) throw `Noting playing!`;
+        if (this.paused) throw `Player is paused!`;
+        if (this.duration > seconds) {
+            this.dispatcher = this.connection.play(ytdl(this.songList[this.queuePos].sourceLink), {
+                quality: `highestaudio`,
+                highWaterMark: 1 << 25,
+                seek : seconds
+            }).on(`finish`, () => {
+                this.queuePos++;
+                if (this.queuePos >= this.songList.length)
+                {
+                    this.playing = false;
+                    this.dispatcher.destroy();
+                    this.voiceChannel.leave();
+                    return;
+                }
+                this.play();
+            })
+        } else {
+            channel.message.send(`Can't seek this far its too long bitch`);
+        }
     }
 }
 

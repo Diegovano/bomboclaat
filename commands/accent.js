@@ -1,3 +1,5 @@
+const am = require(`../audio.js`);
+
 module.exports =
 {
     name: `accent`,
@@ -7,6 +9,7 @@ module.exports =
     async execute(message, args)
     {
         var languages = ['french', 'german', 'russian', 'japanese', 'chinese', 'english', 'arabic', 'italian', 'spanish', 'korean', 'portuguese', 'swedish', 'dutch', 'nz', 'aussie', 'quebec', 'indian', 'american', 'welsh'];
+        var currentQueue = am.getQueue(message);
 
         var lang;
         var msgs = [];
