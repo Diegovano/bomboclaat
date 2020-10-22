@@ -3,9 +3,10 @@ const l = require(`../log.js`);
 
 module.exports = {
     name : `volume`,
+    aliases: [`vol`],
     description : 'earrape',
-    execute(message, args){
-
+    execute(message, args)
+    {
         var currentQueue = am.getQueue(message);
 
         try

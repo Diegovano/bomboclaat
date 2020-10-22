@@ -18,10 +18,10 @@ module.exports =
 
         try 
         {
-            const newCommand = require(`./${commandName}.js`);
+            const newCommand = require(`./${command.name}.js`);
             message.client.commands.set(newCommand.name, newCommand);
             message.channel.send(`Command "${command.name}" was successfully reloaded!`);
-            l.log(`Reloaded "${commandName}" successfully!`);
+            l.log(`Reloaded "${command.name}" successfully!`);
         } 
         catch (error) 
         {

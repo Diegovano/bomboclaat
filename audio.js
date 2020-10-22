@@ -2,11 +2,31 @@ const fs = require(`fs`);
 const { google } = require(`googleapis`);
 const l = require(`./log.js`);
 const ytdl = require(`ytdl-core`);
-const Discord = require(`discord.js`);
-
+const moment = require(`moment`);
 var youtube = google.youtube(`v3`);
 
 let queueMap = new Map();
+
+function pad(num)
+{
+    var s = num + ``;
+    while (s.length < 2) s = `0` + s;
+    return s;
+}
+
+function formatDuration(momentDuration)
+{
+    if (!momentDuration.isValid()) return `INVALID DURATION`;
+
+    const seconds = momentDuration.seconds();
+    const minutes = momentDuration.minutes();
+    const hours = Math.floor(momentDuration.asHours());
+
+    if (hours > 0) return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+    if (minutes > 0) return `${pad(minutes)}:${pad(seconds)}`;
+    if (seconds > 0) return `00:${pad(seconds)}`;
+    return `probably a livestream!`;
+}
 
 function replaceUnicode(origStr)
 {
@@ -43,13 +63,13 @@ function subArrayCumulativeLength(array)
     return chars;
 }
 
-function stupidTimeToSeconds(stupidTime) {
+// function stupidTimeToSeconds(stupidTime) {
 
-}
+// }
 
 class song
 {
-    constructor(videoID, author, title, description, icon, requestedBy, duration = undefined, file = undefined)
+    constructor(videoID, author, title, description, icon, requestedBy, startOffset, duration = undefined)
     {
         this.videoID = videoID;
         this.sourceLink = `https://www.youtube.com/watch?v=${videoID}`;
@@ -58,22 +78,26 @@ class song
         this.description = replaceUnicode(description);
         this.icon = icon;
         this.requestedBy = requestedBy;
-        this.duration = duration;
-        this.file = file;
-        if (!this.duration){
+        this.startOffset = startOffset;
+        if (!duration)
+        {
             var opts =
                 {
                     part: `contentDetails`,
                     id: videoID,
                     key: fs.readFileSync(`.yttoken`, `utf8`, (err, data) => { if (err) throw `SEVERE: Cannot read YouTube key!`; } )
                 };
-            youtube.videos.list(opts).then(res => {
-                this.duration = res.data.items[0].contentDetails.duration;
-                console.log(this.duration);
-            }, reason => {
-                l.logError(`WARNING: Unable to get duration! ${reason}`);
-            })
+            youtube.videos.list(opts).then(res => 
+                {
+                    this.duration = moment.duration(res.data.items[0].contentDetails.duration, moment.ISO_8601);
+                    // this.duration = res.data.items[0].contentDetails.duration;
+                    // console.log(this.duration);
+                }, reason => 
+                {
+                    l.logError(`WARNING: Unable to get duration! ${reason}`);
+                });
         }
+        this.duration = duration;
     }
 }
 
@@ -93,26 +117,32 @@ class queue
         this.playing = false;
         this.paused = false;
         this.dispatcher = false;
+        this.volume = 1;
     }
 
-    async play()
+    async play(seconds = 0, isSeek = false)
     {
-        this.playing = true;
         try
         {
             if (this.connection !== this.voiceChannel) this.connection = await this.voiceChannel.join();
         }
         catch (err)
         {
-            return l.logError(`WARNING: Unable to join voice channel!`);
+            return l.logError(`WARNING: Unable to join voice channel! ${err.reason}`);
         }
-
+        
+        this.playing = true;
+        let begin = seconds !== 0 ? `${seconds}s` : `${this.songList[this.queuePos].startOffset}s`;
         if (this.queuePos > this.songList.length - 1) return l.logError(`WARNING: queuePos out of range`);
         this.dispatcher = this.connection.play(ytdl(this.songList[this.queuePos].sourceLink,
                 {
                     quality: `highestaudio`,
-                    highWaterMark: 1 << 25
-                }))
+                    highWaterMark: 1 << 25,
+                    // begin: begin // NOT WORKING?!
+                }),
+                {
+                    seek: begin,
+                })
             .on(`finish`, () =>
             {
                 this.queuePos++;
@@ -127,45 +157,49 @@ class queue
             })
             .on(`error`, error => l.logError(`WARNING: Unable to play song! ${error}`));
         
-        this.textChannel.send(`Now playing ${this.songList[this.queuePos].title}, requested by ${this.songList[this.queuePos].requestedBy}`);
+        this.dispatcher.setVolume(this.volume);
+        if (!isSeek) this.textChannel.send(`Now playing ${this.songList[this.queuePos].title}, requested by ${this.songList[this.queuePos].requestedBy}`);
     }
     
     add(song, message)
     {
         if (message.channel.id !== this.textChannel.id) 
-            return message.channel.send(`Bot is bound to ${message.channel.name}, please use this channel to queue!`);
+            return message.channel.send(`Bot is bound to ${this.textChannel.name}, please use this channel to queue!`);
 
         this.voiceChannel = message.member.voice.channel;
         this.songList.push(song);
         if (!this.playing) this.play();
-        else message.channel.send(`${song.title} has been added to the queue by ${message.member.nickname}`);
+        else this.textChannel.send(`${song.title} has been added to the queue by ${message.member.nickname}`);
     }
 
     printQueue(message)
     {
         if (message.channel.id !== this.textChannel.id) 
-            return message.channel.send(`Bot is bound to ${message.channel.name}, please use this channel to see the queue!`);
+            return message.channel.send(`Bot is bound to ${this.textChannel.name}, please use this channel to see the queue!`);
 
         var queueMessage = `Queue for ${message.guild.name}`;
 
-        if (this.songList.length === 0) return message.channel.send(`Queue is empty!`);
+        if (this.songList.length === 0) return this.textChannel.send(`Queue is empty!`);
         
         if (this.queuePos !== 0) queueMessage += `\nPast Tracks:`;
         for (var i = 0; i < this.queuePos; i++) // Print past tracks
         {
-            queueMessage += `\nTrack ${i + 1}: ${this.songList[i].title} [${this.songList[i].duration}], requested by ${this.songList[i].requestedBy}.`;
+            queueMessage += `\nTrack ${i + 1}: ${this.songList[i].title} [${formatDuration(this.songList[i].duration)}], requested by ${this.songList[i].requestedBy}.`;
         }
         
-        queueMessage += `\nCurrent Track:`;
-        queueMessage += `\nTrack ${this.queuePos + 1}: ${this.songList[this.queuePos].title} [${this.songList[i].duration}], requested by ${this.songList[this.queuePos].requestedBy}.`;
+        if (this.songList.length > this.queuePos)
+        {
+            queueMessage += `\nCurrent Track:`;
+            queueMessage += `\nTrack ${this.queuePos + 1}: ${this.songList[this.queuePos].title} [${formatDuration(this.songList[i].duration)}], requested by ${this.songList[this.queuePos].requestedBy}.`;
+        }
 
         if (this.songList.length - 1 > this.queuePos) queueMessage += `\nUpcoming Tracks:`;
         for (i++; i < this.songList.length; i++)
         {
-            queueMessage += `\nTrack ${i + 1}: ${this.songList[i].title} [${this.songList[i].duration}], requested by ${this.songList[i].requestedBy}.`;
+            queueMessage += `\nTrack ${i + 1}: ${this.songList[i].title} [${formatDuration(this.songList[i].duration)}], requested by ${this.songList[i].requestedBy}.`;
         }
 
-        if (queueMessage.length < 2000) message.channel.send(queueMessage);
+        if (queueMessage.length < 2000) this.textChannel.send(queueMessage);
         else
         {
             var messageArray = [];
@@ -193,7 +227,7 @@ class queue
 
             for (let i = 0; i < messageArray.length; i++)
             {
-                message.channel.send(messageArray[i]);
+                this.textChannel.send(messageArray[i]);
             }
         }
     }
@@ -201,12 +235,12 @@ class queue
     skip(message)
     {
         if (message.channel.id !== this.textChannel.id) 
-            return message.channel.send(`Bot is bound to ${message.channel.name}, please use this channel to skip!`);
+            return message.channel.send(`Bot is bound to ${this.textChannel.name}, please use this channel to skip!`);
 
-        if (this.songList.length === 0) return message.channel.send(`No track to skip!`);
+        if (this.songList.length === 0) return this.textChannel.send(`No track to skip!`);
         if (this.queuePos >= this.songList.length - 1) // -1 becuase the last track is being played 
         {
-            message.channel.send(`Skipping final track: ${this.songList[this.queuePos].title} and disconnecting.`);
+            this.textChannel.send(`Skipping final track: ${this.songList[this.queuePos].title} and disconnecting.`);
             this.queuePos++;
             this.playing = false;
             this.dispatcher.destroy();
@@ -215,7 +249,7 @@ class queue
         }
 
         this.play();
-        return message.channel.send(`Skipping ${this.songList[this.queuePos++].title},`);
+        return this.textChannel.send(`Skipping ${this.songList[this.queuePos++].title},`);
     }
 
     getSong()
@@ -226,8 +260,8 @@ class queue
 
     pause()
     {
-        if (!this.playing) throw `Nothing playing!`;
-        if (this.paused) throw `Player is already paused!`;
+        if (!this.playing) return this.textChannel.send(`Cannot Pause: Nothing playing!`);
+        if (this.paused) return this.textChannel.send(`Cannot Pause: Player is already paused!`);
 
         this.paused = true;
         this.dispatcher.pause();
@@ -235,53 +269,46 @@ class queue
 
     unpause()
     {
-        if (!this.playing) throw `Noting playing!`;
-        if (!this.paused) throw `Player is not paused!`;
+        if (!this.playing) return this.textChannel.send(`Cannot Unpause: Noting playing!`);
+        if (!this.paused) return this.textChannel.send(`Cannot Unpause: Player is not paused!`);
 
         this.paused = false;
+        this.dispatcher.setVolume(this.volume);
         this.dispatcher.resume();
     }
 
     setVolume(volumeAmount)
     {
-        if (!this.playing) throw `Noting playing!`;
-        if (this.paused) throw `Player is paused!`;
+        if (!this.playing) return this.textChannel.send(`Cannot set Volume: Nothing playing!`);
 
-        this.dispatcher.setVolume(volumeAmount);
+        this.volume = volumeAmount;
+        this.dispatcher.setVolume(this.volume);
     }
-    seek(seconds)
+
+    seek(seconds, relative = false)
     {
-        if (!this.playing) throw `Noting playing!`;
+        if (!this.playing) throw `Nothing playing!`;
         if (this.paused) throw `Player is paused!`;
-        if (this.duration > seconds) {
-            this.dispatcher = this.connection.play(ytdl(this.songList[this.queuePos].sourceLink), {
-                quality: `highestaudio`,
-                highWaterMark: 1 << 25,
-                seek : seconds
-            }).on(`finish`, () => {
-                this.queuePos++;
-                if (this.queuePos >= this.songList.length)
-                {
-                    this.playing = false;
-                    this.dispatcher.destroy();
-                    this.voiceChannel.leave();
-                    return;
-                }
-                this.play();
-            })
-        } else {
-            channel.message.send(`Can't seek this far its too long bitch`);
+        
+        // if (relative)
+        // {
+        //     let newLocation = this.dispatcher.streamTime / 1000 + seconds;
+        //     if (newLocation < this.songList[this.queuePos].duration.asSeconds() && newLocation >= 0) this.play(this.dispatcher.streamTime / 1000 + seconds, true);
+        // }
+        // else
+        {
+            if (seconds < this.songList[this.queuePos].duration.asSeconds())
+            {
+                this.play(seconds, true);
+            }
+            else 
+            {
+                this.textChannel.send(`Can't seek this far its too long bitch`);
+            }
         }
     }
 }
 
-function playOnline(song)
-{
-    // some code here . . .
-    console.dir(song);
-}
-
 exports.getQueue = getQueue;
 exports.deleteQueue = deleteQueue;
-exports.playOnline = playOnline;
 exports.song = song;
