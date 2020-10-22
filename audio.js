@@ -181,8 +181,8 @@ class queue
 
         if (this.songList.length === 0) return this.textChannel.send(`Queue is empty!`);
         
-        if (this.queuePos !== 0) queueMessage += `\nPast Tracks:`;
-        for (var i = 0; i < this.queuePos; i++) // Print past tracks
+        if (this.queuePos !== 0) queueMessage += `\nPast Track${this.queuePos > 1 ? 's' : ''}:`;
+        for (var i = 0; i < this.queuePos; i++) // Print past tracks 
         {
             queueMessage += `\nTrack ${i + 1}: ${this.songList[i].title} [${formatDuration(this.songList[i].duration)}], requested by ${this.songList[i].requestedBy}.`;
         }
@@ -193,7 +193,7 @@ class queue
             queueMessage += `\nTrack ${this.queuePos + 1}: ${this.songList[this.queuePos].title} [${formatDuration(this.songList[i].duration)}], requested by ${this.songList[this.queuePos].requestedBy}.`;
         }
 
-        if (this.songList.length - 1 > this.queuePos) queueMessage += `\nUpcoming Tracks:`;
+        if (this.songList.length - 1 > this.queuePos) queueMessage += `\nUpcoming Track${this.queuePos < this.songList.length - 2  ? 's' : ''}:`;
         for (i++; i < this.songList.length; i++)
         {
             queueMessage += `\nTrack ${i + 1}: ${this.songList[i].title} [${formatDuration(this.songList[i].duration)}], requested by ${this.songList[i].requestedBy}.`;
