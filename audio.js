@@ -192,6 +192,7 @@ class queue
             var currentTrack = `\nTrack ${this.queuePos + 1}: ${this.songList[this.queuePos].title} [${formatDuration(this.songList[i].duration)}], requested by ${this.songList[this.queuePos].requestedBy}.`;
         }
 
+
         var nextTracks = ``;
 
         for (i++; i < this.songList.length; i++)
@@ -239,15 +240,15 @@ class queue
 
         if (pastTracks !== ``)
         {
-            queueEmbed.addField(`Past songs:`, pastTracks);
+            queueEmbed.addField(`Past Track${this.queuePos > 1 ? 's' : ''}:`, pastTracks);
         }
         if (currentTrack !== ``)
         {
-            queueEmbed.addField(`Current song:`, currentTrack);
+            queueEmbed.addField(`Current Track:`, currentTrack);
         }
         if (nextTracks !== ``)
         {
-            queueEmbed.addField(`Upcoming songs:`, nextTracks);
+            queueEmbed.addField(`Upcoming Track${this.queuePos < this.songList.length - 2  ? 's' : ''}:`, nextTracks);
         }
 
         message.channel.send(queueEmbed);

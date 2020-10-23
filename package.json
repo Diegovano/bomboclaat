@@ -5,8 +5,11 @@
   "main": "index.js",
   "dependencies": {
     "@discordjs/opus": "^0.3.2",
+    "avconv": "^3.1.0",
     "discord.js": "^12.3.1",
     "eslint": "^7.8.1",
+    "ffmpeg": "0.0.4",
+    "ffmpeg-static": "^4.2.7",
     "google-auth-library": "^6.1.1",
     "googleapis": "^61.0.0",
     "lyrics-finder": "^21.4.0",
