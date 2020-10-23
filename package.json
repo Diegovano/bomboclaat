@@ -17,7 +17,8 @@
   },
   "devDependencies": {},
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node test.js",
+    "run": "node index.js"
   },
   "repository": {
     "type": "git",
@@ -27,7 +28,7 @@
     "bot",
     "discord"
   ],
-  "author": "Hector, Gabriele, Diego",
+  "author": "Hector, Gabriele, Diego, Alec",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/hechawk/bomboclaat/issues"
