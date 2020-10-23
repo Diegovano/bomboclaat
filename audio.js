@@ -78,7 +78,7 @@ class song
         this.description = replaceUnicode(description);
         this.icon = icon;
         this.requestedBy = requestedBy;
-        this.startOffset = startOffset;
+        this.startOffset = startOffset ? startOffset : 0;
         if (!duration)
         {
             var opts =

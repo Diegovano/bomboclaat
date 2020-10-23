@@ -239,11 +239,17 @@ module.exports =
                 return l.logError(`WARNING: Unable to filter videoID from URL! Probably something wrong with my regex...`);
             }
             
-            let timestamp = 0;
-            if (args[0].includes(`t=`))
+            let timestamp;
+            try 
             {
-                timestamp = args[0].match(/((?<=t=).*(?=(&|$)))/i)[1];
-                
+                timestamp = args[0].match(/(?<=(?:&t=)|(?:\?t=))(.*?)(?=&|$)/i)[0];
+            } 
+            catch (error) 
+            {
+                timestamp = null;
+            }
+            if (timestamp)
+            {                
                 let seconds = 0;
                 if (timestamp.includes(`h`))
                 {   
