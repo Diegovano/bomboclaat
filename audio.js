@@ -4,6 +4,7 @@ const l = require(`./log.js`);
 const ytdl = require(`ytdl-core`);
 const moment = require(`moment`);
 var youtube = google.youtube(`v3`);
+const Discord = require(`discord.js`);
 
 let queueMap = new Map();
 
@@ -174,32 +175,30 @@ class queue
 
     printQueue(message)
     {
-        if (message.channel.id !== this.textChannel.id) 
+        if (message.channel.id !== this.textChannel.id)
             return message.channel.send(`Bot is bound to ${this.textChannel.name}, please use this channel to see the queue!`);
 
-        var queueMessage = `Queue for ${message.guild.name}`;
-
         if (this.songList.length === 0) return this.textChannel.send(`Queue is empty!`);
-        
-        if (this.queuePos !== 0) queueMessage += `\nPast Tracks:`;
+
+        var pastTracks = ``;
+
         for (var i = 0; i < this.queuePos; i++) // Print past tracks
         {
-            queueMessage += `\nTrack ${i + 1}: ${this.songList[i].title} [${formatDuration(this.songList[i].duration)}], requested by ${this.songList[i].requestedBy}.`;
-        }
-        
-        if (this.songList.length > this.queuePos)
-        {
-            queueMessage += `\nCurrent Track:`;
-            queueMessage += `\nTrack ${this.queuePos + 1}: ${this.songList[this.queuePos].title} [${formatDuration(this.songList[i].duration)}], requested by ${this.songList[this.queuePos].requestedBy}.`;
+            pastTracks += `\nTrack ${i + 1}: ${this.songList[i].title} [${formatDuration(this.songList[i].duration)}], requested by ${this.songList[i].requestedBy}.`;
         }
 
-        if (this.songList.length - 1 > this.queuePos) queueMessage += `\nUpcoming Tracks:`;
+        if (this.songList.length > this.queuePos){
+            var currentTrack = `\nTrack ${this.queuePos + 1}: ${this.songList[this.queuePos].title} [${formatDuration(this.songList[i].duration)}], requested by ${this.songList[this.queuePos].requestedBy}.`;
+        }
+
+        var nextTracks = ``;
+
         for (i++; i < this.songList.length; i++)
         {
-            queueMessage += `\nTrack ${i + 1}: ${this.songList[i].title} [${formatDuration(this.songList[i].duration)}], requested by ${this.songList[i].requestedBy}.`;
+            nextTracks += `\nTrack ${i + 1}: ${this.songList[i].title} [${formatDuration(this.songList[i].duration)}], requested by ${this.songList[i].requestedBy}.`;
         }
-
-        if (queueMessage.length < 2000) this.textChannel.send(queueMessage);
+        /*
+        if (queueMessage.length < 2000) message.channel.send(queueMessage);
         else
         {
             var messageArray = [];
@@ -230,6 +229,24 @@ class queue
                 this.textChannel.send(messageArray[i]);
             }
         }
+        */
+
+        const queueEmbed = new Discord.MessageEmbed()
+                                      .setColor(`#0000ff`)
+                                      .setTitle(`Queue`)
+                                      .setAuthor('Bomborastclaat', `https://i.pinimg.com/originals/d1/91/86/d191860d0ab59a74fb57de99b5fb2d80.jpg`)
+
+        if (pastTracks !== ``){
+            queueEmbed.addField(`Past songs:`, pastTracks)
+        }
+        if (currentTrack !== ``){
+            queueEmbed.addField(`Current song:`, currentTrack)
+        }
+        if (nextTracks !== ``){
+            queueEmbed.addField(`Upcoming songs:`, nextTracks)
+        }
+
+        message.channel.send(queueEmbed);
     }
 
     skip(message)

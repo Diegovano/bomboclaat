@@ -7,6 +7,6 @@ module.exports =
     description: `Print a list of the songs added to the queue since the bot joined the voice channel.`,
     execute(message, args)
     {
-        am.getQueue(message).printQueue(message);        
+        am.getQueue(message).printQueue(message);
     }
 };
