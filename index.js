@@ -55,7 +55,7 @@ client.on("message", message =>
                     } 
                     catch (error) 
                     {
-                        l.logError(`WARNING: Unable to delete message! Has it already been deleted?`);
+                        l.logError(Error(`WARNING: Unable to delete message! Has it already been deleted?`));
                     }
                 }, 10000);
             });
@@ -102,7 +102,7 @@ client.on("message", message =>
     } 
     catch (error) // If any exceptions are thrown during the execution of a command, stop running the command and run the following
     {
-        l.logError(`SEVERE: Execution of "${commandName}" stopped! ${error.message}`); // For example when running a guild-related query in a DM environment without setting guildOnly to true.
+        l.logError(Error(`SEVERE: Execution of "${commandName}" stopped! ${error.message}`)); // For example when running a guild-related query in a DM environment without setting guildOnly to true.
         message.reply(`there was an error trying to execute that command!`);
     }
 });

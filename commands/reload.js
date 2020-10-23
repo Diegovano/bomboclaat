@@ -25,7 +25,7 @@ module.exports =
         } 
         catch (error) 
         {
-            l.logError(`SEVERE: "${commandName}" could not be reloaded! ${command.name}: ${error.message}`);
+            l.logError(Error(`SEVERE: "${commandName}" could not be reloaded! ${command.name}: ${error.message}`));
             message.channel.send(`There was an error while reloading a command `);
         }
     },

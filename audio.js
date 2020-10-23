@@ -50,7 +50,7 @@ function deleteQueue(message)
     // {
     //     return delete queueMap[message.guildID];
     // }
-    else l.logError(`WARNING: Attempting to delete non-existant queue!`);
+    else l.logError(Error(`WARNING: Attempting to delete non-existant queue!`));
 }
 
 function subArrayCumulativeLength(array)
@@ -95,7 +95,7 @@ class song
                     // console.log(this.duration);
                 }, reason => 
                 {
-                    l.logError(`WARNING: Unable to get duration! ${reason}`);
+                    l.logError(Error(`WARNING: Unable to get duration! ${reason}`));
                 });
         }
         this.duration = duration;
@@ -129,12 +129,12 @@ class queue
         }
         catch (err)
         {
-            return l.logError(`WARNING: Unable to join voice channel! ${err.reason}`);
+            return l.logError(Error(`WARNING: Unable to join voice channel! ${err.reason}`));
         }
         
         this.playing = true;
         let begin = seconds !== 0 ? `${seconds}s` : `${this.songList[this.queuePos].startOffset}s`;
-        if (this.queuePos > this.songList.length - 1) return l.logError(`WARNING: queuePos out of range`);
+        if (this.queuePos > this.songList.length - 1) return l.logError(Error(`WARNING: queuePos out of range`));
         this.dispatcher = this.connection.play(ytdl(this.songList[this.queuePos].sourceLink,
                 {
                     quality: `highestaudio`,
@@ -156,7 +156,7 @@ class queue
                 }
                 this.play();
             })
-            .on(`error`, error => l.logError(`WARNING: Unable to play song! ${error}`));
+            .on(`error`, error => l.logError(Error(`WARNING: Unable to play song! ${error}`)));
         
         this.dispatcher.setVolume(this.volume);
         if (!isSeek) this.textChannel.send(`Now playing ${this.songList[this.queuePos].title}, requested by ${this.songList[this.queuePos].requestedBy}`);
@@ -187,7 +187,8 @@ class queue
             pastTracks += `\nTrack ${i + 1}: ${this.songList[i].title} [${formatDuration(this.songList[i].duration)}], requested by ${this.songList[i].requestedBy}.`;
         }
 
-        if (this.songList.length > this.queuePos){
+        if (this.songList.length > this.queuePos)
+        {
             var currentTrack = `\nTrack ${this.queuePos + 1}: ${this.songList[this.queuePos].title} [${formatDuration(this.songList[i].duration)}], requested by ${this.songList[this.queuePos].requestedBy}.`;
         }
 
@@ -216,7 +217,7 @@ class queue
                 {
                     while (queueMessage[(i2 + 1) * 2000 - i3] !== `\n`) 
                     {
-                        if (i3 > 200) return l.logError(`WARNING: Unable to cut queue message on newline!`);
+                        if (i3 > 200) return l.logError(Error(`WARNING: Unable to cut queue message on newline!`));
                         i3++;
                     }
 
@@ -234,16 +235,19 @@ class queue
         const queueEmbed = new Discord.MessageEmbed()
                                       .setColor(`#0000ff`)
                                       .setTitle(`Queue`)
-                                      .setAuthor('Bomborastclaat', `https://i.pinimg.com/originals/d1/91/86/d191860d0ab59a74fb57de99b5fb2d80.jpg`)
+                                      .setAuthor('Bomborastclaat', message.client.user.displayAvatarURL());
 
-        if (pastTracks !== ``){
-            queueEmbed.addField(`Past songs:`, pastTracks)
+        if (pastTracks !== ``)
+        {
+            queueEmbed.addField(`Past songs:`, pastTracks);
         }
-        if (currentTrack !== ``){
-            queueEmbed.addField(`Current song:`, currentTrack)
+        if (currentTrack !== ``)
+        {
+            queueEmbed.addField(`Current song:`, currentTrack);
         }
-        if (nextTracks !== ``){
-            queueEmbed.addField(`Upcoming songs:`, nextTracks)
+        if (nextTracks !== ``)
+        {
+            queueEmbed.addField(`Upcoming songs:`, nextTracks);
         }
 
         message.channel.send(queueEmbed);

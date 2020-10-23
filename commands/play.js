@@ -31,7 +31,7 @@ function ytSearch(searchTerm, message, callback)
             userSelect(resArr, message, callback);
         }, reason =>
         {
-            l.logError(`Unable to search using googleApis! ${reason}`);
+            l.logError(Error(`Unable to search using googleApis! ${reason}`));
         });
 }
 
@@ -41,7 +41,7 @@ function userSelect(results, message, callback)
 
     if (results.length > reactionList.length)
     {
-        l.logError(`WARNING: More results than reactions!`);
+        l.logError(Error(`WARNING: More results than reactions!`));
         results.length = reactionList.length;
     }
     
@@ -63,7 +63,7 @@ function userSelect(results, message, callback)
                 {
                     msg.react(reactionList[i]).catch( reason =>
                         {
-                            l.logError(`WARNING: Unable to add reaction to embed! Has message been deleted? ${reason}`);
+                            l.logError(Error(`WARNING: Unable to add reaction to embed! Has message been deleted? ${reason}`));
                         });
                 }
                 // most likely error is that embed has already been deleted before all reactions are added. No action necessary.
@@ -236,7 +236,7 @@ module.exports =
                 }
                 catch (error)
                 {
-                    return l.logError(`WARNING: Unable to filter videoID from URL! Probably something wrong with my regex...`);
+                    return l.logError(Error(`WARNING: Unable to filter videoID from URL! Probably something wrong with my regex...`));
                 }
 
                 let timestamp = 0;
@@ -309,7 +309,7 @@ module.exports =
                         currentQueue.add(song, message);
                     }, reason =>
                     {
-                        l.logError(`WARNING: Unable to get video information from link! ${reason}`);
+                        l.logError(Error(`WARNING: Unable to get video information from link! ${reason}`));
                     });
             }
             

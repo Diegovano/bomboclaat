@@ -5,15 +5,17 @@ module.exports = {
     name : `nowplaying`,
     description : `shows the banger currently playing`,
     aliases : [`np`, `current`, `playing`],
-    execute(message, args){
+    execute(message, args)
+    {
         var currentQueue = am.getQueue(message);
 
-        try {
+        try 
+        {
             const npEmbed = new Discord.MessageEmbed()
                                  .setColor(`#ff0000`)
                                  .setTitle(`Now Playing`)
                                  .setURL(currentQueue.getSong().sourceLink)
-                                 .setAuthor('Bomborastclaat', `https://i.pinimg.com/originals/d1/91/86/d191860d0ab59a74fb57de99b5fb2d80.jpg`)
+                                 .setAuthor('Bomborastclaat', message.client.user.displayAvatarURL())
                                  .addFields(
                                      {name : `Song title`, value : currentQueue.getSong().title},
                                      {name : `Author`, value : currentQueue.getSong().author},
@@ -21,10 +23,12 @@ module.exports = {
                                      {name : `Video link`, value : currentQueue.getSong().sourceLink}
                                  )
                                  .setImage(currentQueue.getSong().icon)
-                                 .setTimestamp()
-            message.channel.send(npEmbed)
-        } catch (err) {
+                                 .setTimestamp();
+            message.channel.send(npEmbed);
+        } 
+        catch (err) 
+        {
             message.channel.send(`Nada is playing my brudda`);
         }
     }
-}
+};
