@@ -182,7 +182,7 @@ class queue
         if (this.songList.length === 0) return this.textChannel.send(`Queue is empty!`);
         
         if (this.queuePos !== 0) queueMessage += `\nPast Track${this.queuePos > 1 ? 's' : ''}:`;
-        for (var i = 0; i < this.queuePos; i++) // Print past tracks 
+        for (var i = 0; i < this.queuePos; i++) // Print past tracks
         {
             queueMessage += `\nTrack ${i + 1}: ${this.songList[i].title} [${formatDuration(this.songList[i].duration)}], requested by ${this.songList[i].requestedBy}.`;
         }
