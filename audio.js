@@ -4,6 +4,7 @@ const l = require(`./log.js`);
 const ytdl = require(`ytdl-core`);
 const moment = require(`moment`);
 var youtube = google.youtube(`v3`);
+const Discord = require(`discord.js`);
 
 let queueMap = new Map();
 
@@ -49,7 +50,7 @@ function deleteQueue(message)
     // {
     //     return delete queueMap[message.guildID];
     // }
-    else l.logError(`WARNING: Attempting to delete non-existant queue!`);
+    else l.logError(Error(`WARNING: Attempting to delete non-existant queue!`));
 }
 
 function subArrayCumulativeLength(array)
@@ -78,7 +79,7 @@ class song
         this.description = replaceUnicode(description);
         this.icon = icon;
         this.requestedBy = requestedBy;
-        this.startOffset = startOffset;
+        this.startOffset = startOffset ? startOffset : 0;
         if (!duration)
         {
             var opts =
@@ -94,7 +95,7 @@ class song
                     // console.log(this.duration);
                 }, reason => 
                 {
-                    l.logError(`WARNING: Unable to get duration! ${reason}`);
+                    l.logError(Error(`WARNING: Unable to get duration! ${reason}`));
                 });
         }
         this.duration = duration;
@@ -128,12 +129,12 @@ class queue
         }
         catch (err)
         {
-            return l.logError(`WARNING: Unable to join voice channel! ${err.reason}`);
+            return l.logError(Error(`WARNING: Unable to join voice channel! ${err.reason}`));
         }
         
         this.playing = true;
         let begin = seconds !== 0 ? `${seconds}s` : `${this.songList[this.queuePos].startOffset}s`;
-        if (this.queuePos > this.songList.length - 1) return l.logError(`WARNING: queuePos out of range`);
+        if (this.queuePos > this.songList.length - 1) return l.logError(Error(`WARNING: queuePos out of range`));
         this.dispatcher = this.connection.play(ytdl(this.songList[this.queuePos].sourceLink,
                 {
                     quality: `highestaudio`,
@@ -155,7 +156,7 @@ class queue
                 }
                 this.play();
             })
-            .on(`error`, error => l.logError(`WARNING: Unable to play song! ${error}`));
+            .on(`error`, error => l.logError(Error(`WARNING: Unable to play song! ${error}`)));
         
         this.dispatcher.setVolume(this.volume);
         if (!isSeek) this.textChannel.send(`Now playing ${this.songList[this.queuePos].title}, requested by ${this.songList[this.queuePos].requestedBy}`);
@@ -174,32 +175,32 @@ class queue
 
     printQueue(message)
     {
-        if (message.channel.id !== this.textChannel.id) 
+        if (message.channel.id !== this.textChannel.id)
             return message.channel.send(`Bot is bound to ${this.textChannel.name}, please use this channel to see the queue!`);
 
-        var queueMessage = `Queue for ${message.guild.name}`;
-
         if (this.songList.length === 0) return this.textChannel.send(`Queue is empty!`);
-        
-        if (this.queuePos !== 0) queueMessage += `\nPast Track${this.queuePos > 1 ? 's' : ''}:`;
+
+        var pastTracks = ``;
+
         for (var i = 0; i < this.queuePos; i++) // Print past tracks
         {
-            queueMessage += `\nTrack ${i + 1}: ${this.songList[i].title} [${formatDuration(this.songList[i].duration)}], requested by ${this.songList[i].requestedBy}.`;
+            pastTracks += `\nTrack ${i + 1}: ${this.songList[i].title} [${formatDuration(this.songList[i].duration)}], requested by ${this.songList[i].requestedBy}.`;
         }
-        
+
         if (this.songList.length > this.queuePos)
         {
-            queueMessage += `\nCurrent Track:`;
-            queueMessage += `\nTrack ${this.queuePos + 1}: ${this.songList[this.queuePos].title} [${formatDuration(this.songList[i].duration)}], requested by ${this.songList[this.queuePos].requestedBy}.`;
+            var currentTrack = `\nTrack ${this.queuePos + 1}: ${this.songList[this.queuePos].title} [${formatDuration(this.songList[i].duration)}], requested by ${this.songList[this.queuePos].requestedBy}.`;
         }
 
-        if (this.songList.length - 1 > this.queuePos) queueMessage += `\nUpcoming Track${this.queuePos < this.songList.length - 2  ? 's' : ''}:`;
+
+        var nextTracks = ``;
+
         for (i++; i < this.songList.length; i++)
         {
-            queueMessage += `\nTrack ${i + 1}: ${this.songList[i].title} [${formatDuration(this.songList[i].duration)}], requested by ${this.songList[i].requestedBy}.`;
+            nextTracks += `\nTrack ${i + 1}: ${this.songList[i].title} [${formatDuration(this.songList[i].duration)}], requested by ${this.songList[i].requestedBy}.`;
         }
-
-        if (queueMessage.length < 2000) this.textChannel.send(queueMessage);
+        /*
+        if (queueMessage.length < 2000) message.channel.send(queueMessage);
         else
         {
             var messageArray = [];
@@ -217,7 +218,7 @@ class queue
                 {
                     while (queueMessage[(i2 + 1) * 2000 - i3] !== `\n`) 
                     {
-                        if (i3 > 200) return l.logError(`WARNING: Unable to cut queue message on newline!`);
+                        if (i3 > 200) return l.logError(Error(`WARNING: Unable to cut queue message on newline!`));
                         i3++;
                     }
 
@@ -230,6 +231,27 @@ class queue
                 this.textChannel.send(messageArray[i]);
             }
         }
+        */
+
+        const queueEmbed = new Discord.MessageEmbed()
+                                      .setColor(`#0000ff`)
+                                      .setTitle(`Queue`)
+                                      .setAuthor('Bomborastclaat', message.client.user.displayAvatarURL());
+
+        if (pastTracks !== ``)
+        {
+            queueEmbed.addField(`Past Track${this.queuePos > 1 ? 's' : ''}:`, pastTracks);
+        }
+        if (currentTrack !== ``)
+        {
+            queueEmbed.addField(`Current Track:`, currentTrack);
+        }
+        if (nextTracks !== ``)
+        {
+            queueEmbed.addField(`Upcoming Track${this.queuePos < this.songList.length - 2  ? 's' : ''}:`, nextTracks);
+        }
+
+        message.channel.send(queueEmbed);
     }
 
     skip(message)

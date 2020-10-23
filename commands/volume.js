@@ -15,7 +15,7 @@ module.exports = {
         }
         catch (error)
         {
-            l.logError(`What u trying to change the volume of idiot ${error}`);
+            l.logError(Error(`What u trying to change the volume of idiot ${error}`));
         }
 
         return;

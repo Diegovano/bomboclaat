@@ -16,7 +16,7 @@ module.exports =
         }
         catch (error) 
         {
-            l.logError(`WARNING: ${error}`);
+            l.logError(Error(`WARNING: ${error}`));
         }
     }
 };
