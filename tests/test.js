@@ -1,52 +1,35 @@
+const { exit } = require("process");
 const l = require(`../log.js`);
 const fs = require(`fs`);
-const Discord = require(`discord.js`);
-const { exit } = require("process");
+const path = require('path');
+const os = require('os');
+const i = require("../index.js");
 
-function checkNodeVersion()
-{
-    if (parseInt(process.version[1] + process.version[2]) < 12) throw `Use node version 12 or greater!`;
-    l.log(`You're running node.js ${process.version}`);
+function getLineBreakChar(string) {
+    const indexOfLF = string.indexOf('\n', 1);  // No need to check first-character
+
+    if (indexOfLF === -1) {
+        if (string.indexOf('\r') !== -1) return '\r';
+
+        return '\n';
+    }
+
+    if (string[indexOfLF - 1] === '\r') return '\r\n';
+
+    return '\n';
 }
 
-checkNodeVersion();
+const str_tests = fs.readFileSync(path.join('tests','test-commands.txt'), `utf8`);   // Write all commands in here
 
-const client = new Discord.Client();
+const tests = str_tests.split(getLineBreakChar(str_tests));     // runs in whatever line ending you want
 
-const prefix = "|";
+const str_results = fs.readFileSync(path.join(`tests`,`expected-results.txt`), `utf8`);  // Write all expected results heres
+
+results = str_results.split(getLineBreakChar(str_results));
 
 const channelName = "769321347838771231";
 
-if (typeof process.env.TOKEN === "undefined")   // Check if running github actions or just locally
-{
-
-    const tokens = fs.readFileSync(`.token`, `utf8`, (err, data) => 
-    {
-        if (err) throw `FATAL: Cannot read token`;
-    }).split(`\n`);
-
-    var token = tokens[0];
-}
-else
-{
-    token = process.env.TOKEN
-}
-
-client.commands = new Discord.Collection(); // Holds all commands
-
-const tests = fs.readFileSync(`tests/test-commands.txt`, `utf8`).split(`\n`);   // Write all commands in here
-
-const results = fs.readFileSync(`tests/expected-results.txt`, `utf8`).split(`\n`);  // Write all expected results heres
-
-// Add commands to collection
-const commandFiles = fs.readdirSync(`../commands`).filter(file => file.endsWith(`.js`));
-for (const file of commandFiles)
-{
-    const command = require(`../commands/${file}`);
-    client.commands.set(command.name, command);
-}
-
-client.once("ready", () => 
+i.client.once("ready", () => 
 {
     l.log(`Ready!`)
     const channel = client.channels.cache.get(channelName)
@@ -58,7 +41,7 @@ client.once("ready", () =>
 );
 
 // basic command handler
-client.on("message", message => 
+i.client.on("message", message => 
 {    
     if (!message.author.bot || !message.channel.id === channelName) return;
 
@@ -70,13 +53,13 @@ client.on("message", message =>
         }
         else 
         {
-            throw Error(`Unexpected response from test, received: ${message.content}, but could only be: ${results}`)
+            throw `Unexpected response from test, received: ${message.content}, but could only be: ${results}`
         }
     
         if (results.length === 0)
         {
             l.log("Test completed!");
-            process.exit()
+            exit()
         }
     }
     else
@@ -87,8 +70,8 @@ client.on("message", message =>
 
         let command;
             
-        command = client.commands.get(commandName)
-            || client.commands.find(cmd => cmd.aliases && cmd.aliases.includes(commandName));
+        command = i.client.commands.get(commandName)
+            || i.client.commands.find(cmd => cmd.aliases && cmd.aliases.includes(commandName));
         if (!command) throw `error`;
 
         command.execute(message, args);
@@ -97,5 +80,4 @@ client.on("message", message =>
 
 });
 
-client.login(token);
-
+i.client.login(i.token);
