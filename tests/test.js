@@ -1,4 +1,4 @@
-const l = require(`./log.js`);
+const l = require(`../log.js`);
 const fs = require(`fs`);
 const Discord = require(`discord.js`);
 const { exit } = require("process");
@@ -9,7 +9,6 @@ function checkNodeVersion()
     l.log(`You're running node.js ${process.version}`);
 }
 
-
 checkNodeVersion();
 
 const client = new Discord.Client();
@@ -18,13 +17,12 @@ const prefix = "|";
 
 const channelName = "769321347838771231";
 
-if (typeof process.env.TOKEN === "undefined")
+if (typeof process.env.TOKEN === "undefined")   // Check if running github actions or just locally
 {
 
     const tokens = fs.readFileSync(`.token`, `utf8`, (err, data) => 
     {
         if (err) throw `FATAL: Cannot read token`;
-        // l.log(data);
     }).split(`\n`);
 
     var token = tokens[0];
@@ -36,13 +34,15 @@ else
 
 client.commands = new Discord.Collection(); // Holds all commands
 
-const tests = fs.readFileSync(`test-commands.txt`, `utf8`).split(`\n`);
+const tests = fs.readFileSync(`tests/test-commands.txt`, `utf8`).split(`\n`);   // Write all commands in here
+
+const results = fs.readFileSync(`tests/expected-results.txt`, `utf8`).split(`\n`);  // Write all expected results heres
 
 // Add commands to collection
 const commandFiles = fs.readdirSync(`./commands`).filter(file => file.endsWith(`.js`));
 for (const file of commandFiles)
 {
-    const command = require(`./commands/${file}`);
+    const command = require(`../commands/${file}`);
     client.commands.set(command.name, command);
 }
 
@@ -59,35 +59,40 @@ client.once("ready", () =>
 
 // basic command handler
 client.on("message", message => 
-{
-    if (!message.content.startsWith(prefix) || !message.author.bot || !message.channel.id === channelName) return;
+{    
+    if (!message.author.bot || !message.channel.id === channelName) return;
 
-    //l.log(message.guild.id);
-
-
-    const args = message.content.slice(prefix.length).trim().split(/ +/);
-    const commandName = args.shift().toLowerCase();
-
-     let command;
-        
-    command = client.commands.get(commandName)
-        || client.commands.find(cmd => cmd.aliases && cmd.aliases.includes(commandName));
-    if (!command) throw `error`;
-
-    command.execute(message, args);
-
-    const index = tests.indexOf(message.content);
-    if (index > -1) {
-        tests.splice(index, 1);
-    }
-
-    if (tests.length === 0)
+    if (!message.content.startsWith(prefix))
     {
-        setTimeout(function()
+        const index = results.indexOf(message.content);
+        if (index > -1) {
+            results.splice(index, 1);
+        }
+        else 
+        {
+            throw "Unexpected response from test."
+        }
+    
+        if (results.length === 0)
         {
             l.log("Test completed!");
             process.exit()
-        },10000)
+        }
+    }
+    else
+    {
+
+        const args = message.content.slice(prefix.length).trim().split(/ +/);
+        const commandName = args.shift().toLowerCase();
+
+        let command;
+            
+        command = client.commands.get(commandName)
+            || client.commands.find(cmd => cmd.aliases && cmd.aliases.includes(commandName));
+        if (!command) throw `error`;
+
+        command.execute(message, args);
+
     }
 
 });

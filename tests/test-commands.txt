@@ -1,0 +1,8 @@
+|version
+|help
+|bg
+|join
+|accent french
+|reload version
+|leave
+|ping

@@ -1,0 +1,8 @@
+Bomboclaat version 2.0.0
+
+Decidément.
+<@!697504121795641455>, You aren't in a Voice Channel! Bot cannot connect!
+<@!697504121795641455>, You need to join a voice channel first!
+<@!697504121795641455>, Bot not in a voice channel, why are you trying to make me leave a voice channel?
+Command "version" was successfully reloaded!
+Pong!
