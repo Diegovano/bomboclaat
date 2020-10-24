@@ -25,6 +25,7 @@ async function logError(error)
         if (app_err)
         {
             if (app_err) log(`Cannot create file in ./logs directory. Attempting to create!`);
+            
             fs.mkdir(`./logs`, (dir_err) =>
             {
                 if (dir_err) 
@@ -36,7 +37,7 @@ async function logError(error)
                 log(`./logs directory successfully created!`);
                 fs.appendFile(`./logs/${date_ob.getFullYear()}-${date_ob.getDate()}-${date_ob.getMonth() + 1}.log.txt`, `${pad(date_ob.getHours())}:${pad(date_ob.getMinutes())}:${pad(date_ob.getSeconds())}\n${error.stack}\n\n`, function(app_err)
                 {
-                    if (app_err) throw `FATAL: CANNOT LOG ERRORS`;
+                    if (app_err) throw Error(`FATAL: CANNOT LOG ERRORS`);
                 });
             });
         }

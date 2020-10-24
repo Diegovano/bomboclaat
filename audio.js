@@ -129,7 +129,7 @@ class queue
         }
         catch (err)
         {
-            return l.logError(Error(`WARNING: Unable to join voice channel! ${err.reason}`));
+            return l.logError(Error(`WARNING: Unable to join voice channel! ${err.message}`));
         }
         
         this.playing = true;

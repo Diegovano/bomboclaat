@@ -4,7 +4,7 @@ const Discord = require(`discord.js`);
 
 function checkNodeVersion()
 {
-    if (parseInt(process.version[1] + process.version[2]) < 12) throw `Use node version 12 or greater!`;
+    if (parseInt(process.version[1] + process.version[2]) < 12) throw Error(`Use Node version 12 or greater!`);
     l.log(`You're running node.js ${process.version}`);
 }
 

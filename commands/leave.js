@@ -12,7 +12,7 @@ module.exports =
         try 
         {
             message.member.voice.channel.leave();
-            am.deleteQueue(message);
+            // am.deleteQueue(message);
         }
         catch (error) 
         {
