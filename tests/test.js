@@ -39,7 +39,7 @@ const tests = fs.readFileSync(`tests/test-commands.txt`, `utf8`).split(`\n`);   
 const results = fs.readFileSync(`tests/expected-results.txt`, `utf8`).split(`\n`);  // Write all expected results heres
 
 // Add commands to collection
-const commandFiles = fs.readdirSync(`./commands`).filter(file => file.endsWith(`.js`));
+const commandFiles = fs.readdirSync(`../commands`).filter(file => file.endsWith(`.js`));
 for (const file of commandFiles)
 {
     const command = require(`../commands/${file}`);
@@ -70,7 +70,7 @@ client.on("message", message =>
         }
         else 
         {
-            throw "Unexpected response from test."
+            throw Error(`Unexpected response from test, received: ${message.content}, but could only be: ${results}`)
         }
     
         if (results.length === 0)
