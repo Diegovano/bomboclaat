@@ -2,7 +2,6 @@ const fs = require(`fs`);
 const { google } = require(`googleapis`);
 const l = require(`./log.js`);
 const ytdl = require(`ytdl-core`);
-const moment = require(`moment`);
 var youtube = google.youtube(`v3`);
 const Discord = require(`discord.js`);
 
@@ -15,18 +14,77 @@ function pad(num)
     return s;
 }
 
-function formatDuration(momentDuration)
+function ConvertSecToFormat(duration)
 {
-    if (!momentDuration.isValid()) return `INVALID DURATION`;
-
-    const seconds = momentDuration.seconds();
-    const minutes = momentDuration.minutes();
-    const hours = Math.floor(momentDuration.asHours());
+    const seconds = duration % 60;
+    const minutes = Math.floor(duration/60) % 60;
+    const hours = Math.floor(duration/3600);
 
     if (hours > 0) return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
     if (minutes > 0) return `${pad(minutes)}:${pad(seconds)}`;
     if (seconds > 0) return `00:${pad(seconds)}`;
     return `probably a livestream!`;
+}
+
+function ConvertIsoToSec(t)
+{ 
+    //dividing period from time
+    var x = t.split('T'),
+        time = {},
+        period = {},
+        //just shortcuts
+        s = 'string',
+        v = 'variables',
+        l = 'letters',
+        // store the information about ISO8601 duration format and the divided strings
+        d = {
+            period: {
+                string: x[0].substring(1,x[0].length),
+                len: 4,
+                // years, months, weeks, days
+                letters: ['Y', 'M', 'W', 'D'],
+                variables: {}
+            },
+            time: {
+                string: x[1],
+                len: 3,
+                // hours, minutes, seconds
+                letters: ['H', 'M', 'S'],
+                variables: {}
+            }
+        };
+    //in case the duration is a multiple of one day
+    if (!d.time.string) 
+    {
+        d.time.string = '';
+    }
+
+    for (var i in d) 
+    {
+        var len = d[i].len;
+        for (var j = 0; j < len; j++) 
+    {
+            d[i][s] = d[i][s].split(d[i][l][j]);
+            if (d[i][s].length>1) 
+    {      
+                d[i][v][d[i][l][j]] = parseInt(d[i][s][0], 10);
+                d[i][s] = d[i][s][1];
+            }
+    else 
+    {
+                d[i][v][d[i][l][j]] = 0;
+                d[i][s] = d[i][s][0];
+            }
+        }
+    } 
+    period = d.period.variables;
+    time = d.time.variables;
+    time.H +=   24 * period.D + 
+                            24 * 7 * period.W +
+                            24 * 7 * 4 * period.M + 
+                            24 * 7 * 4 * 12 * period.Y;
+
+    return(time.H * 3600 + time.M * 60 + time.S);
 }
 
 function replaceUnicode(origStr)
@@ -64,9 +122,6 @@ function subArrayCumulativeLength(array)
     return chars;
 }
 
-// function stupidTimeToSeconds(stupidTime) {
-
-// }
 
 class song
 {
@@ -90,7 +145,8 @@ class song
                 };
             youtube.videos.list(opts).then(res => 
                 {
-                    this.duration = moment.duration(res.data.items[0].contentDetails.duration, moment.ISO_8601);
+                    //this.duration = convertDuration(res.data.items[0].contentDetails.duration);
+                    this.duration = ConvertIsoToSec(res.data.items[0].contentDetails.duration);
                     // this.duration = res.data.items[0].contentDetails.duration;
                     // console.log(this.duration);
                 }, reason => 
@@ -98,7 +154,10 @@ class song
                     l.logError(Error(`WARNING: Unable to get duration! ${reason}`));
                 });
         }
-        this.duration = duration;
+        else
+        {
+            this.duration = ConvertIsoToSec(duration);
+        }
     }
 }
 
@@ -114,7 +173,6 @@ class queue
         this.connection;
         this.songList = [];
         this.queuePos = 0;
-        this.volume = 5;
         this.playing = false;
         this.paused = false;
         this.dispatcher = false;
@@ -184,12 +242,12 @@ class queue
 
         for (var i = 0; i < this.queuePos; i++) // Print past tracks
         {
-            pastTracks += `\nTrack ${i + 1}: ${this.songList[i].title} [${formatDuration(this.songList[i].duration)}], requested by ${this.songList[i].requestedBy}.`;
+            pastTracks += `\nTrack ${i + 1}: ${this.songList[i].title} [${ConvertSecToFormat(this.songList[i].duration)}], requested by ${this.songList[i].requestedBy}.`;
         }
 
         if (this.songList.length > this.queuePos)
         {
-            var currentTrack = `\nTrack ${this.queuePos + 1}: ${this.songList[this.queuePos].title} [${formatDuration(this.songList[i].duration)}], requested by ${this.songList[this.queuePos].requestedBy}.`;
+            var currentTrack = `\nTrack ${this.queuePos + 1}: ${this.songList[this.queuePos].title} [${ConvertSecToFormat(this.songList[i].duration)}], requested by ${this.songList[this.queuePos].requestedBy}.`;
         }
 
 
@@ -197,7 +255,7 @@ class queue
 
         for (i++; i < this.songList.length; i++)
         {
-            nextTracks += `\nTrack ${i + 1}: ${this.songList[i].title} [${formatDuration(this.songList[i].duration)}], requested by ${this.songList[i].requestedBy}.`;
+            nextTracks += `\nTrack ${i + 1}: ${this.songList[i].title} [${ConvertSecToFormat(this.songList[i].duration)}], requested by ${this.songList[i].requestedBy}.`;
         }
         /*
         if (queueMessage.length < 2000) message.channel.send(queueMessage);
@@ -319,7 +377,7 @@ class queue
         // }
         // else
         {
-            if (seconds < this.songList[this.queuePos].duration.asSeconds())
+            if (seconds < this.songList[this.queuePos].duration)
             {
                 this.play(seconds, true);
             }

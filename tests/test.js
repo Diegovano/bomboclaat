@@ -5,10 +5,12 @@ const path = require('path');
 const os = require('os');
 const i = require("../index.js");
 
-function getLineBreakChar(string) {
+function getLineBreakChar(string) 
+{
     const indexOfLF = string.indexOf('\n', 1);  // No need to check first-character
 
-    if (indexOfLF === -1) {
+    if (indexOfLF === -1) 
+{
         if (string.indexOf('\r') !== -1) return '\r';
 
         return '\n';
@@ -25,17 +27,17 @@ const tests = str_tests.split(getLineBreakChar(str_tests));     // runs in whate
 
 const str_results = fs.readFileSync(path.join(`tests`,`expected-results.txt`), `utf8`);  // Write all expected results heres
 
-results = str_results.split(getLineBreakChar(str_results));
+var results = str_results.split(getLineBreakChar(str_results));
 
 const channelName = "769321347838771231";
 
 i.client.once("ready", () => 
 {
-    l.log(`Ready!`)
-    const channel = client.channels.cache.get(channelName)
+    l.log(`Ready!`);
+    const channel = i.client.channels.cache.get(channelName);
     for (const testcommand of tests)
     {
-        channel.send(testcommand)
+        channel.send(testcommand);
     }
 }
 );
@@ -45,27 +47,28 @@ i.client.on("message", message =>
 {    
     if (!message.author.bot || !message.channel.id === channelName) return;
 
-    if (!message.content.startsWith(prefix))
+    if (!message.content.startsWith(i.prefix))
     {
         const index = results.indexOf(message.content);
-        if (index > -1) {
+        if (index > -1) 
+{
             results.splice(index, 1);
         }
         else 
         {
-            throw `Unexpected response from test, received: ${message.content}, but could only be: ${results}`
+            throw `Unexpected response from test, received: ${message.content}, but could only be: ${results}`;
         }
     
         if (results.length === 0)
         {
             l.log("Test completed!");
-            exit()
+            exit();
         }
     }
     else
     {
 
-        const args = message.content.slice(prefix.length).trim().split(/ +/);
+        const args = message.content.slice(i.prefix.length).trim().split(/ +/);
         const commandName = args.shift().toLowerCase();
 
         let command;

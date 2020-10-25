@@ -4,7 +4,7 @@ const { google } = require(`googleapis`);
 const Discord = require(`discord.js`);
 const l = require(`../log.js`);
 const youtube = google.youtube(`v3`);
-const moment = require(`moment`);
+
 
 function ytSearch(searchTerm, message, callback)
 {
@@ -12,7 +12,7 @@ function ytSearch(searchTerm, message, callback)
         {
             q: searchTerm,
             part: `snippet`,
-            maxResults: 5,
+            maxResults: Math.min(5,10),
             type: `video`,
             key: fs.readFileSync(`.yttoken`, `utf8`, (err, data) => { if (err) throw `SEVERE: Cannot read YouTube key!`; } )
         };
@@ -25,7 +25,7 @@ function ytSearch(searchTerm, message, callback)
             {
                 resArr.push(new am.song(res.data.items[i].id.videoId, res.data.items[i].snippet.channelTitle,
                                         res.data.items[i].snippet.title, res.data.items[i].snippet.description,
-                                        res.data.items[i].snippet.thumbnails.high.url, message.member.nickname));
+                                        res.data.items[i].snippet.thumbnails.high.url, message.member.displayName));
             }
 
             userSelect(resArr, message, callback);
@@ -305,7 +305,7 @@ module.exports =
                         var song = new am.song(res.data.items[0].id, res.data.items[0].snippet.channelTitle,
                                                res.data.items[0].snippet.localized.title, res.data.items[0].snippet.localized.description,
                                                res.data.items[0].snippet.thumbnails.high.url, message.member.nickname,
-                                               timestamp, moment.duration(res.data.items[0].contentDetails.duration, moment.ISO_8601));
+                                               timestamp, res.data.items[0].contentDetails.duration);
                         currentQueue.add(song, message);
                     }, reason =>
                     {

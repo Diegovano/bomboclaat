@@ -1,6 +1,4 @@
-const { Guild, GuildChannel } = require("discord.js");
 const am = require(`../audio.js`);
-const l = require(`../log.js`);
 
 module.exports = 
 {
@@ -15,18 +13,20 @@ module.exports =
         // If the bot isn't in a voiceChannel, don't execute any other code
         if(!clientVoiceConnection)
         {
-            return message.reply("Bot not in a voice channel, why are you trying to make me leave a voice channel?")
+            return message.reply("Bot not in a voice channel, why are you trying to make me leave a voice channel?");
         }
 
         let userVoiceChannel = message.member.voice.channel;
 
-        if (!userVoiceChannel) {
-            return message.reply("You are not in a voice channel, Bot cannot leave!")
+        if (!userVoiceChannel) 
+{
+            return message.reply("You are not in a voice channel, Bot cannot leave!");
         }
 
         // Compare the voiceChannels
         if (userVoiceChannel === clientVoiceConnection.channel) 
         {
+            am.deleteQueue();
             userVoiceChannel.leave();
             return message.channel.send('Bye! Bye!');
         } 

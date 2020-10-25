@@ -2,47 +2,39 @@ const l = require(`./log.js`);
 const fs = require(`fs`);
 const Discord = require(`discord.js`);
 const path = require('path');
-var os = require(`os`)
 
-function checkNodeVersion()
+// Check node version
+if (parseInt(process.version[1] + process.version[2]) < 12) throw Error(`Use Node version 12 or greater!`);
+l.log(`You're running node.js ${process.version}`);
+
+
+// Set up client
+const client = new Discord.Client();
+var token;
+if (!process.env.TOKEN)   // Check if running github actions or just locally
 {
-    if (parseInt(process.version[1] + process.version[2]) < 12) throw Error(`Use Node version 12 or greater!`);
-    l.log(`You're running node.js ${process.version}`);
+
+    token = fs.readFileSync(`.token`, `utf8`, (err, data) => 
+    {
+        if (err) throw `FATAL: Cannot read token`;
+    });
+}
+else
+{
+    token = process.env.TOKEN;
 }
 
-function setUpClient()
+const prefix = "|";
+
+client.commands = new Discord.Collection(); // Holds all commands
+
+// Add commands to collection
+const commandFiles = fs.readdirSync(`commands`).filter(file => path.extname(file) === `.js`);
+for (const file of commandFiles)
 {
-    client = new Discord.Client();
-    if (typeof process.env.TOKEN === "undefined")   // Check if running github actions or just locally
-    {
-
-        const tokens = fs.readFileSync(`.token`, `utf8`, (err, data) => 
-        {
-            if (err) throw `FATAL: Cannot read token`;
-        }).split(`\n`);
-
-        token = tokens[0];
-    }
-    else
-    {
-        token = process.env.TOKEN
-    }
-
-    prefix = "|";
-
-    client.commands = new Discord.Collection(); // Holds all commands
-
-    // Add commands to collection
-    const commandFiles = fs.readdirSync(`commands`).filter(file => path.extname(file) === `.js`);
-    for (const file of commandFiles)
-    {
-        const command = require(`./${path.join(`commands`,file)}`);
-        client.commands.set(command.name, command);
-    }
+    const command = require(`./${path.join(`commands`,file)}`);
+    client.commands.set(command.name, command);
 }
-
-checkNodeVersion();
-setUpClient()
 
 if (require.main === module)
 {
@@ -123,6 +115,6 @@ if (require.main === module)
     client.login(token);
 }
 
-exports.client = client
-exports.prefix = prefix
-exports.token = token
+exports.client = client;
+exports.prefix = prefix;
+exports.token = token;
