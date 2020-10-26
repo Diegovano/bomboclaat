@@ -27,64 +27,28 @@ function ConvertSecToFormat(duration)
 }
 
 function ConvertIsoToSec(t)
-{ 
-    //dividing period from time
-    var x = t.split('T'),
-        time = {},
-        period = {},
-        //just shortcuts
-        s = 'string',
-        v = 'variables',
-        l = 'letters',
-        // store the information about ISO8601 duration format and the divided strings
-        d = {
-            period: {
-                string: x[0].substring(1,x[0].length),
-                len: 4,
-                // years, months, weeks, days
-                letters: ['Y', 'M', 'W', 'D'],
-                variables: {}
-            },
-            time: {
-                string: x[1],
-                len: 3,
-                // hours, minutes, seconds
-                letters: ['H', 'M', 'S'],
-                variables: {}
-            }
-        };
-    //in case the duration is a multiple of one day
-    if (!d.time.string) 
+{
+    const std_symbols = ['D', 'H', 'M', 'S'];
+    let std_out = [0, 0, 0, 0];
+
+    t = t.replace(/[PT]/g,'');
+    console.log(t);
+
+    for (let i = 0; i < std_symbols.length; i++)
     {
-        d.time.string = '';
+      const current_symbol = std_symbols[i];
+
+      if (t.includes(current_symbol)){
+
+        let split_t = t.split(current_symbol);
+        std_out[i] = parseInt(split_t[0]);
+        t = t.replace(split_t[0]+current_symbol,'');
+      }
     }
 
-    for (var i in d) 
-    {
-        var len = d[i].len;
-        for (var j = 0; j < len; j++) 
-    {
-            d[i][s] = d[i][s].split(d[i][l][j]);
-            if (d[i][s].length>1) 
-    {      
-                d[i][v][d[i][l][j]] = parseInt(d[i][s][0], 10);
-                d[i][s] = d[i][s][1];
-            }
-    else 
-    {
-                d[i][v][d[i][l][j]] = 0;
-                d[i][s] = d[i][s][0];
-            }
-        }
-    } 
-    period = d.period.variables;
-    time = d.time.variables;
-    time.H +=   24 * period.D + 
-                            24 * 7 * period.W +
-                            24 * 7 * 4 * period.M + 
-                            24 * 7 * 4 * 12 * period.Y;
-
-    return(time.H * 3600 + time.M * 60 + time.S);
+    let tot_secs = 24*60*60*std_out[0] + 60*60*std_out[1] + 60*std_out[2] + std_out[3];
+    
+    return tot_secs
 }
 
 function replaceUnicode(origStr)
@@ -100,7 +64,7 @@ function getQueue(message)
 
 function deleteQueue(message)
 {
-    if (queueMap[message.guild.id]) 
+    if (queueMap[message.guild.id])
     {
         return delete queueMap[message.guild.id];
     }
@@ -143,13 +107,13 @@ class song
                     id: videoID,
                     key: fs.readFileSync(`.yttoken`, `utf8`, (err, data) => { if (err) throw `SEVERE: Cannot read YouTube key!`; } )
                 };
-            youtube.videos.list(opts).then(res => 
+            youtube.videos.list(opts).then(res =>
                 {
                     //this.duration = convertDuration(res.data.items[0].contentDetails.duration);
                     this.duration = ConvertIsoToSec(res.data.items[0].contentDetails.duration);
                     // this.duration = res.data.items[0].contentDetails.duration;
                     // console.log(this.duration);
-                }, reason => 
+                }, reason =>
                 {
                     l.logError(Error(`WARNING: Unable to get duration! ${reason}`));
                 });
@@ -189,7 +153,7 @@ class queue
         {
             return l.logError(Error(`WARNING: Unable to join voice channel! ${err.message}`));
         }
-        
+
         this.playing = true;
         let begin = seconds !== 0 ? `${seconds}s` : `${this.songList[this.queuePos].startOffset}s`;
         if (this.queuePos > this.songList.length - 1) return l.logError(Error(`WARNING: queuePos out of range`));
@@ -205,7 +169,7 @@ class queue
             .on(`finish`, () =>
             {
                 this.queuePos++;
-                if (this.queuePos >= this.songList.length) 
+                if (this.queuePos >= this.songList.length)
                 {
                     this.playing = false;
                     this.dispatcher.destroy();
@@ -215,14 +179,14 @@ class queue
                 this.play();
             })
             .on(`error`, error => l.logError(Error(`WARNING: Unable to play song! ${error}`)));
-        
+
         this.dispatcher.setVolume(this.volume);
         if (!isSeek) this.textChannel.send(`Now playing ${this.songList[this.queuePos].title}, requested by ${this.songList[this.queuePos].requestedBy}`);
     }
-    
+
     add(song, message)
     {
-        if (message.channel.id !== this.textChannel.id) 
+        if (message.channel.id !== this.textChannel.id)
             return message.channel.send(`Bot is bound to ${this.textChannel.name}, please use this channel to queue!`);
 
         this.voiceChannel = message.member.voice.channel;
@@ -262,7 +226,7 @@ class queue
         else
         {
             var messageArray = [];
-            
+
             for (let i2 = 0; subArrayCumulativeLength(messageArray) < queueMessage.length; i2++)
             {
                 let i3 = 0;
@@ -272,9 +236,9 @@ class queue
                     messageArray.push(queueMessage.substring(subArrayCumulativeLength(messageArray)));
                 }
 
-                else 
+                else
                 {
-                    while (queueMessage[(i2 + 1) * 2000 - i3] !== `\n`) 
+                    while (queueMessage[(i2 + 1) * 2000 - i3] !== `\n`)
                     {
                         if (i3 > 200) return l.logError(Error(`WARNING: Unable to cut queue message on newline!`));
                         i3++;
@@ -314,11 +278,11 @@ class queue
 
     skip(message)
     {
-        if (message.channel.id !== this.textChannel.id) 
+        if (message.channel.id !== this.textChannel.id)
             return message.channel.send(`Bot is bound to ${this.textChannel.name}, please use this channel to skip!`);
 
         if (this.songList.length === 0) return this.textChannel.send(`No track to skip!`);
-        if (this.queuePos >= this.songList.length - 1) // -1 becuase the last track is being played 
+        if (this.queuePos >= this.songList.length - 1) // -1 becuase the last track is being played
         {
             this.textChannel.send(`Skipping final track: ${this.songList[this.queuePos].title} and disconnecting.`);
             this.queuePos++;
@@ -369,7 +333,7 @@ class queue
     {
         if (!this.playing) throw `Nothing playing!`;
         if (this.paused) throw `Player is paused!`;
-        
+
         // if (relative)
         // {
         //     let newLocation = this.dispatcher.streamTime / 1000 + seconds;
@@ -381,7 +345,7 @@ class queue
             {
                 this.play(seconds, true);
             }
-            else 
+            else
             {
                 this.textChannel.send(`Can't seek this far its too long bitch`);
             }

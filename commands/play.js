@@ -44,22 +44,22 @@ function userSelect(results, message, callback)
         l.logError(Error(`WARNING: More results than reactions!`));
         results.length = reactionList.length;
     }
-    
+
     const songSelection = new Discord.MessageEmbed()
                                      .setTitle(`Please make a selection: `)
                                      .setColor(`#ff0000`);
-    
+
     for (var i = 0; i < results.length; i++) songSelection.addField(`${i + 1} - ${results[i].title},
         Channel: ${results[i].author}`, `https://www.youtube.com/watch?v=${results[i].videoID}`);
 
-    
+
     message.channel.send(songSelection).then( msg =>
         {
             var embedDeleted;
 
             for (let i = 0; i < results.length && i < reactionList.length; i++)
             {
-                if (!embedDeleted) 
+                if (!embedDeleted)
                 {
                     msg.react(reactionList[i]).catch( reason =>
                         {
@@ -68,13 +68,13 @@ function userSelect(results, message, callback)
                 }
                 // most likely error is that embed has already been deleted before all reactions are added. No action necessary.
             }
-            
+
             // smart way but not working...
             // var filters = [];
             var collectors = [];
             var reactionTime = 30 * 1000;
             const options = { max: 1, time: reactionTime};
-            
+
             // for (let i = 0; i < results.length && i < reactionList.length; i++)
             // {
             //     let filter = async function(reaction, user)
@@ -86,7 +86,7 @@ function userSelect(results, message, callback)
             //     // collectors.push(msg.createReactionCollector( filters[i], options));
             //     // collectors[i].on(`collect`, () => { callback(results[i]) });
             //     // message.channel.send(`collector ${i} initialised!`);
-            //     // collectors[i].on(`collect`, () => 
+            //     // collectors[i].on(`collect`, () =>
             //     //     {
             //     //         callback(results[i]);
             //     //     });
@@ -113,7 +113,7 @@ function userSelect(results, message, callback)
             // semi-dumb method
 
             var waitTime = 5000;
-
+            
             var filters =
                 [
                     (reaction, user) => reaction.emoji.name === reactionList[0] && user.id === message.author.id,
@@ -312,8 +312,8 @@ module.exports =
                         l.logError(Error(`WARNING: Unable to get video information from link! ${reason}`));
                     });
             }
-            
-            ytSearch(args.join(` `), message, song => 
+
+            ytSearch(args.join(` `), message, song =>
                 {
                     currentQueue.add(song, message);
                 });
