@@ -226,7 +226,7 @@ module.exports =
                 return;
             }
 
-            if (args[0].includes(`http`))
+            if (args[0].includes(`https://www.youtube.com/watch`))
             {
                 let videoID;
                 try
@@ -240,7 +240,7 @@ module.exports =
                 }
 
                 let timestamp = 0;
-                if (args[0].includes(`t=`))
+                if (args[0].match(/[?|&]t=/))
                 {
                     timestamp = args[0].match(/((?<=t=).*(?=(&|$)))/i)[1];
 
@@ -310,6 +310,43 @@ module.exports =
                     }, reason =>
                     {
                         l.logError(Error(`WARNING: Unable to get video information from link! ${reason}`));
+                    });
+            }
+
+            if (args[0].includes(`https://www.youtube.com/playlist`)) {
+
+                let playlistId;
+
+                try
+                {
+                    let PIdRegex = /(?<=[&?]list=).*?(?=(&|$))/i;
+                    playlistId = args[0].match(PIdRegex)[0];
+                }
+
+                catch (error)
+                {
+                    return l.logError(Error(`WARNING: Unable to filter playlistID from URL! Probably something wrong with my regex...`));
+                }
+
+                var opts =
+                    {
+                        part: [`snippet`], // IMPORTANT: CONTENT DETAILS PART REQUIRED!
+                        playlistId: playlistId,
+                        maxResults: 50,
+                        key: fs.readFileSync(`.yttoken`, `utf8`, (err, data) => { if (err) throw `SEVERE: Cannot read YouTube key!`; } )
+                    };
+
+                return youtube.playlistItems.list(opts).then( async res =>
+                    {
+                        for (let i = 0; i < res.data.items.length; i++) {
+                            let song = new am.song(res.data.items[i].snippet.resourceId.videoId, res.data.items[i].snippet.channelTitle,
+                                                   res.data.items[i].snippet.title, res.data.items[i].snippet.description,
+                                                   res.data.items[i].snippet.thumbnails.high.url, message.member.nickname, 0, undefined, true);
+                            await currentQueue.add(song, message, true);
+                        }
+                    }, reason =>
+                    {
+                        l.logError(Error(`WARNING: Unable to get playlist information from link! ${reason}`));
                     });
             }
 

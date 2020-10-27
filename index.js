@@ -106,7 +106,8 @@ if (require.main === module)
         } 
         catch (error) // If any exceptions are thrown during the execution of a command, stop running the command and run the following
         {
-            l.logError(Error(`SEVERE: Execution of "${commandName}" stopped! ${error.message}`)); // For example when running a guild-related query in a DM environment without setting guildOnly to true.
+            error.message = `SEVERE: Execution of "${commandName}" stopped! ${error.message}`
+            l.logError(error); // For example when running a guild-related query in a DM environment without setting guildOnly to true.
             message.reply(`there was an error trying to execute that command!`);
         }
     });
