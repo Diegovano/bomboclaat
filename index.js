@@ -24,7 +24,7 @@ else
     token = process.env.TOKEN;
 }
 
-const prefix = "^";
+const prefix = "|";
 
 client.commands = new Discord.Collection(); // Holds all commands
 

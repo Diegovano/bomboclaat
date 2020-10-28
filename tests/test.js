@@ -37,7 +37,7 @@ i.client.once("ready", () =>
     const channel = i.client.channels.cache.get(channelName);
     for (const testcommand of tests)
     {
-        channel.send(testcommand);
+        channel.send(i.prefix+testcommand);
     }
 }
 );
