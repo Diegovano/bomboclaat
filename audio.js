@@ -28,27 +28,12 @@ function ConvertSecToFormat(duration)
 
 function ConvertIsoToSec(t)
 {
-    const std_symbols = ['D', 'H', 'M', 'S'];
-    let std_out = [0, 0, 0, 0];
-
-    t = t.replace(/[PT]/g,'');
-
-    for (let i = 0; i < std_symbols.length; i++)
-    {
-      const current_symbol = std_symbols[i];
-
-      if (t.includes(current_symbol)){
-
-        let split_t = t.split(current_symbol);
-        std_out[i] = parseInt(split_t[0]);
-        t = t.replace(split_t[0]+current_symbol,'');
-      }
-    }
-
-    let tot_secs = 24*60*60*std_out[0] + 60*60*std_out[1] + 60*std_out[2] + std_out[3];
-    
-    return tot_secs
+    const regex = /P((([0-9]*\.?[0-9]*)Y)?(([0-9]*\.?[0-9]*)M)?(([0-9]*\.?[0-9]*)W)?(([0-9]*\.?[0-9]*)D)?)?(T(([0-9]*\.?[0-9]*)H)?(([0-9]*\.?[0-9]*)M)?(([0-9]*\.?[0-9]*)S)?)?/;    // Thanks regex101.com
+    const matches = t.match(regex);
+    const sum = parseInt(matches[16] || 0) + parseInt((matches[14] * 60) || 0) + parseInt((matches[12] * 3600) || 0) + parseInt((matches[10] * 86400) || 0);    // || to remove undefined
+    return sum;    // Doing up to a day
 }
+
 
 function replaceUnicode(origStr)
 {
@@ -182,7 +167,6 @@ class queue
         this.dispatcher.setVolume(this.volume);
         if (!isSeek) this.textChannel.send(`Now playing ***${this.songList[this.queuePos].title}***, requested by **${this.songList[this.queuePos].requestedBy}**`);
     }
-
     add(song, message, playlist)
     {
         if (message.channel.id !== this.textChannel.id)
