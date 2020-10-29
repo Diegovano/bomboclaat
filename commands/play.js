@@ -22,7 +22,6 @@ function ytSearch(searchTerm, message, callback)
     {
         ytkey = process.env.YTTOKEN;
     }
-
     const opts =
         {
             q: searchTerm,
@@ -345,7 +344,7 @@ module.exports =
                 {
                     ytkey = process.env.YTTOKEN;
                 }
-
+                
                 const opts =
                     {
                         part: `snippet`, // IMPORTANT: CONTENT DETAILS PART REQUIRED!

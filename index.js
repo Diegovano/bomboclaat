@@ -15,13 +15,20 @@ function checkNodeVersion()
 checkNodeVersion();
 
 const client = new Discord.Client();
-const tokens = fs.readFileSync(`.token`, `utf8`, (err, data) => 
+if (process.env.TOKEN)
 {
-    if (err) throw `FATAL: Cannot read token`;
-    // l.log(data);
-}).split(`\n`);
+    var tokens = process.env.TOKEN;
+}
+else
+{
+    var tokens = fs.readFileSync(`.token`, `utf8`, (err, data) => 
+    {
+        if (err) throw `FATAL: Cannot read token`;
+        // l.log(data);
+    }).split(`\n`)[0];
+}
 
-const token = tokens[0];
+const token = tokens;
 
 const prefix = "|";
 
@@ -59,7 +66,6 @@ client.on("message", message =>
             exit();
         }
     }
-
     else
     {
         if (message.guild.id !== '684842282926473287' || message.author.bot) return;
