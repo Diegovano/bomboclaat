@@ -1,3 +1,5 @@
+'use strict';
+
 const am = require(`../audio.js`);
 const l = require(`../log.js`);
 
@@ -7,7 +9,7 @@ module.exports = {
     description : 'earrape',
     execute(message, args)
     {
-        var currentQueue = am.getQueue(message);
+        const currentQueue = am.getQueue(message);
 
         try
         {

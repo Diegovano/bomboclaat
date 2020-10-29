@@ -1,3 +1,5 @@
+'use strict';
+
 const am = require(`../audio.js`);
 
 module.exports =
@@ -8,7 +10,7 @@ module.exports =
     guildOnly: true,
     async execute(message, args)
     {
-        var currentQueue = am.getQueue(message);
+        const currentQueue = am.getQueue(message);
 
         if (args[0].includes(`+`) || args[0].includes(`f`)) return currentQueue.seek(args[0].replace(/[+f]/g, ``), true);
         if (args[0].includes(`-`) || args[0].includes(`b`)) return currentQueue.seek(-args[0].replace(/[-b]/g, ``), true);

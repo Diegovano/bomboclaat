@@ -1,3 +1,5 @@
+'use strict';
+
 const am = require(`../audio.js`);
 
 module.exports =
@@ -8,7 +10,7 @@ module.exports =
     guildOnly: true,
     execute(message, args)
     {
-        var currentQueue = am.getQueue(message);
+        const currentQueue = am.getQueue(message);
 
         currentQueue.skip(message);
     }

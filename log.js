@@ -1,26 +1,28 @@
+'use strict';
+
 const fs = require(`fs`);
 
 function pad(num)
 {
-    var s = num + ``;
+    let s = num + ``;
     while (s.length < 2) s = `0` + s;
     return s;
 }
 
 async function log(text)
 {
-    let date_ob = new Date();
+    const date_ob = new Date();
 
     console.log(`[${pad(date_ob.getHours())}:${pad(date_ob.getMinutes())}:${pad(date_ob.getSeconds())}] INFO: ${text}`);
 }
 
 async function logError(error)
 {
-    var date_ob = new Date();
+    const date_ob = new Date();
 
     console.error(`[${pad(date_ob.getHours())}:${pad(date_ob.getMinutes())}:${pad(date_ob.getSeconds())}] ${error.message}`); 
 
-    fs.appendFile(`./logs/${date_ob.getFullYear()}-${date_ob.getDate()}-${date_ob.getMonth() + 1}.log.txt`, `\n\n${pad(date_ob.getHours())}:${pad(date_ob.getMinutes())}:${pad(date_ob.getSeconds())}\n${error.stack}`, function(app_err)
+    fs.appendFile(`./logs/${date_ob.getFullYear()}-${date_ob.getDate()}-${date_ob.getMonth() + 1}.log`, `${pad(date_ob.getHours())}:${pad(date_ob.getMinutes())}:${pad(date_ob.getSeconds())}\n${error.stack}\n\n`, function(app_err)
     {
         if (app_err)
         {

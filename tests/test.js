@@ -39,9 +39,9 @@ let client = new Discord.Client();
 
 const str_tests = fs.readFileSync(path.join('tests','test-commands.txt'), `utf8`);   // Write all commands in here
 
-tests = str_tests.split(getLineBreakChar(str_tests));     // runs in whatever line ending you want
+let tests = str_tests.split(getLineBreakChar(str_tests));     // runs in whatever line ending you want
 
-count = 0;
+let count = 0;
 
 const channelName = "770990593181483040";
 

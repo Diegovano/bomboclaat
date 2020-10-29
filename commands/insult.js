@@ -1,3 +1,5 @@
+'use strict';
+
 const fs = require(`fs`);
 const l = require(`../log.js`);
 
@@ -7,9 +9,10 @@ module.exports =
     description: `Provide the user with a searing insult.`,
     execute(message, args)
     {
+        let insults;
         try
         {
-            var insults = fs.readFileSync(`../slurs.txt`, `utf8`, function(err, data) { } );
+            insults = fs.readFileSync(`../slurs.txt`, `utf8`, function(err, data) { } );
         }
         catch
         {

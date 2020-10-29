@@ -1,3 +1,5 @@
+'use strict';
+
 const am = require(`../audio.js`);  // Need to integrate with audio.js
 
 module.exports =
@@ -8,12 +10,12 @@ module.exports =
     usage: `fuck diegos usage`,
     async execute(message, args)
     {
-        var languages = ['french', 'german', 'russian', 'japanese', 'chinese', 'english', 'arabic', 'italian', 'spanish', 'korean', 'portuguese', 'swedish', 'dutch', 'nz', 'aussie', 'quebec', 'indian', 'american', 'welsh'];
-        var currentQueue = am.getQueue(message);
+        const languages = ['french', 'german', 'russian', 'japanese', 'chinese', 'english', 'arabic', 'italian', 'spanish', 'korean', 'portuguese', 'swedish', 'dutch', 'nz', 'aussie', 'quebec', 'indian', 'american', 'welsh'];
+        const currentQueue = am.getQueue(message);
 
-        var lang;
-        var msgs = [];
-        var ms = args.slice(1, args.length).toString().replace(/,/gi, '+');
+        let lang;
+        let msgs = [];
+        let ms = args.slice(1, args.length).toString().replace(/,/gi, '+');
 
         switch(args[0])
         {
@@ -92,7 +94,7 @@ module.exports =
             const connection = await message.member.voice.channel.join();
             for (let i = 0; i < msgs.length; i++)
             {
-                var link = 'https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=' + lang + '&q=' + msgs[i];
+                const link = 'https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=' + lang + '&q=' + msgs[i];
                 const dispatcher = connection.play(link);
                 // check if i need to make some sort of await
                 // gonna push cos i got no battery left

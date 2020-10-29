@@ -1,3 +1,5 @@
+'use strict';
+
 const fs = require(`fs`);
 const am = require(`../audio.js`);
 const { google } = require(`googleapis`);
@@ -20,20 +22,21 @@ function ytSearch(searchTerm, message, callback)
     {
         ytkey = process.env.YTTOKEN;
     }
-    var opts =
+
+    const opts =
         {
             q: searchTerm,
             part: `snippet`,
-            maxResults: Math.min(5,10),
+            maxResults: 5,
             type: `video`,
             key: ytkey
         };
 
     youtube.search.list(opts).then( res =>
         {
-            var resArr = [];
+            let resArr = [];
 
-            for (var i = 0; i < res.data.items.length; i++)
+            for (let i = 0; i < res.data.items.length; i++)
             {
                 resArr.push(new am.song(res.data.items[i].id.videoId, res.data.items[i].snippet.channelTitle,
                                         res.data.items[i].snippet.title, res.data.items[i].snippet.description,
@@ -49,7 +52,7 @@ function ytSearch(searchTerm, message, callback)
 
 function userSelect(results, message, callback)
 {
-    var reactionList = [`1️⃣`,`2️⃣`,`3️⃣`,`4️⃣`,`5️⃣`,`6️⃣`,`7️⃣`,`8️⃣`,`9️⃣`,`🔟`];
+    const reactionList = [`1️⃣`,`2️⃣`,`3️⃣`,`4️⃣`,`5️⃣`,`6️⃣`,`7️⃣`,`8️⃣`,`9️⃣`,`🔟`];
 
     if (results.length > reactionList.length)
     {
@@ -61,13 +64,13 @@ function userSelect(results, message, callback)
                                      .setTitle(`Please make a selection: `)
                                      .setColor(`#ff0000`);
 
-    for (var i = 0; i < results.length; i++) songSelection.addField(`${i + 1} - ${results[i].title},
+    for (let i = 0; i < results.length; i++) songSelection.addField(`${i + 1} - ${results[i].title},
         Channel: ${results[i].author}`, `https://www.youtube.com/watch?v=${results[i].videoID}`);
 
 
     message.channel.send(songSelection).then( msg =>
         {
-            var embedDeleted;
+            let embedDeleted;
 
             for (let i = 0; i < results.length && i < reactionList.length; i++)
             {
@@ -82,9 +85,9 @@ function userSelect(results, message, callback)
             }
 
             // smart way but not working...
-            // var filters = [];
-            var collectors = [];
-            var reactionTime = 30 * 1000;
+            // let filters = [];
+            let collectors = [];
+            const reactionTime = 30 * 1000;
             const options = { max: 1, time: reactionTime};
 
             // for (let i = 0; i < results.length && i < reactionList.length; i++)
@@ -124,9 +127,9 @@ function userSelect(results, message, callback)
             // let filters = makeFilters();
             // semi-dumb method
 
-            var waitTime = 5000;
+            const waitTime = 5000;
             
-            var filters =
+            const filters =
                 [
                     (reaction, user) => reaction.emoji.name === reactionList[0] && user.id === message.author.id,
                     (reaction, user) => reaction.emoji.name === reactionList[1] && user.id === message.author.id,
@@ -140,7 +143,7 @@ function userSelect(results, message, callback)
                     (reaction, user) => reaction.emoji.name === reactionList[9] && user.id === message.author.id
                 ];
 
-            var collector0 = msg.createReactionCollector( filters[0], options );
+            const collector0 = msg.createReactionCollector( filters[0], options );
             collector0.on('collect', () =>
                 {
                     callback(results[0]);
@@ -151,7 +154,7 @@ function userSelect(results, message, callback)
                         }, waitTime);
                 });
 
-            var collector1 = msg.createReactionCollector( filters[1], options );
+            const collector1 = msg.createReactionCollector( filters[1], options );
             collector1.on('collect', () =>
                 {
                     callback(results[1]);
@@ -162,7 +165,7 @@ function userSelect(results, message, callback)
                         }, waitTime);
                 });
 
-            var collector2 = msg.createReactionCollector( filters[2], options );
+            const collector2 = msg.createReactionCollector( filters[2], options );
             collector2.on('collect', () =>
                 {
                     callback(results[2]);
@@ -173,7 +176,7 @@ function userSelect(results, message, callback)
                         }, waitTime);
                 });
 
-            var collector3 = msg.createReactionCollector( filters[3], options );
+            const collector3 = msg.createReactionCollector( filters[3], options );
             collector3.on('collect', () =>
                 {
                     callback(results[3]);
@@ -184,7 +187,7 @@ function userSelect(results, message, callback)
                         }, waitTime);
                 });
 
-            var collector4 = msg.createReactionCollector( filters[4], options );
+            const collector4 = msg.createReactionCollector( filters[4], options );
             collector4.on('collect', () =>
                 {
                     callback(results[4]);
@@ -217,7 +220,7 @@ module.exports =
                 !(message.member.voice.channel.permissionsFor(message.client.user).has(`SPEAK`)))
                 return message.channel.send(`I need permissions to join and speak in your voice channel!`);
 
-            var currentQueue = am.getQueue(message);
+            const currentQueue = am.getQueue(message);
 
             if (!args[0])
             {
@@ -232,29 +235,14 @@ module.exports =
                 return;
             }
 
-            if (/[1-5]w/.test(args[0]))
+            if (args[0].match(/(?:.*?)(?:^|\/|v=)([a-z0-9_-]{11})(?:.*)/i))
             {
-                // play third option, then return
-                return;
-            }
-
-            if (args[0].includes(`https://www.youtube.com/watch`))
-            {
-                let videoID;
-                try
-                {
-                    let VIdRegex = /(.*?)(^|\/|v=)([a-z0-9_-]{11})(.*)?/i;
-                    videoID = args[0].match(VIdRegex)[3]; // https://regexr.com/3nsop
-                }
-                catch (error)
-                {
-                    return l.logError(Error(`WARNING: Unable to filter videoID from URL! Probably something wrong with my regex...`));
-                }
+                const videoID = args[0].match(/(?:.*?)(?:^|\/|v=)([a-z0-9_-]{11})(?:.*)/i)[1];
 
                 let timestamp = 0;
-                if (args[0].match(/[?|&]t=/))
+                if (args[0].match(/[?&]t=/i))
                 {
-                    timestamp = args[0].match(/((?<=t=).*(?=(&|$)))/i)[1];
+                    timestamp = args[0].match(/(?:[?&]t=)(.*?)(?:&|$)/i)[1];
 
                     let seconds = 0;
                     if (timestamp.includes(`h`))
@@ -320,7 +308,7 @@ module.exports =
                     ytkey = process.env.YTTOKEN;
                 }
 
-                var opts =
+                let opts =
                     {
                         part: [`snippet`,`contentDetails`], // IMPORTANT: CONTENT DETAILS PART REQUIRED!
                         id: videoID,
@@ -329,9 +317,9 @@ module.exports =
 
                 return youtube.videos.list(opts).then( res =>
                     {
-                        var song = new am.song(res.data.items[0].id, res.data.items[0].snippet.channelTitle,
+                        const song = new am.song(res.data.items[0].id, res.data.items[0].snippet.channelTitle,
                                                res.data.items[0].snippet.localized.title, res.data.items[0].snippet.localized.description,
-                                               res.data.items[0].snippet.thumbnails.high.url, message.member.nickname,
+                                               res.data.items[0].snippet.thumbnails.high.url || ``, message.member.displayName,
                                                timestamp, res.data.items[0].contentDetails.duration);
                         currentQueue.add(song, message);
                     }, reason =>
@@ -340,21 +328,10 @@ module.exports =
                     });
             }
 
-            if (args[0].includes(`https://www.youtube.com/playlist`)) {
+            else if (args[0].match(/(?<=[&?]list=)(.*?)(?=(&|$))/i)) 
+            {                
+                let playlistId = args[0].match(/(?<=[&?]list=)(.*?)(?=(&|$))/i)[1];
 
-                let playlistId;
-
-                try
-                {
-                    let PIdRegex = /(?<=[&?]list=).*?(?=(&|$))/i;
-                    playlistId = args[0].match(PIdRegex)[0];
-                }
-
-                catch (error)
-                {
-                    return l.logError(Error(`WARNING: Unable to filter playlistID from URL! Probably something wrong with my regex...`));
-                }
-                
                 let ytkey;
                 if (!process.env.YTTOKEN)   // Check if running github actions or just locally
                 {   
@@ -368,9 +345,10 @@ module.exports =
                 {
                     ytkey = process.env.YTTOKEN;
                 }
-                var opts =
+
+                const opts =
                     {
-                        part: [`snippet`], // IMPORTANT: CONTENT DETAILS PART REQUIRED!
+                        part: `snippet`, // IMPORTANT: CONTENT DETAILS PART REQUIRED!
                         playlistId: playlistId,
                         maxResults: 50,
                         key: ytkey
@@ -378,10 +356,11 @@ module.exports =
 
                 return youtube.playlistItems.list(opts).then( async res =>
                     {
-                        for (let i = 0; i < res.data.items.length; i++) {
+                        for (let i = 0; i < res.data.items.length; i++) 
+                        {
                             let song = new am.song(res.data.items[i].snippet.resourceId.videoId, res.data.items[i].snippet.channelTitle,
                                                    res.data.items[i].snippet.title, res.data.items[i].snippet.description,
-                                                   res.data.items[i].snippet.thumbnails.high.url, message.member.nickname, 0, undefined, true);
+                                                   res.data.items[i].snippet.thumbnails.high.url || ``, message.member.displayName, 0);
                             await currentQueue.add(song, message, true);
                         }
                     }, reason =>

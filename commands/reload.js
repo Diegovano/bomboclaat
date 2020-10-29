@@ -1,3 +1,5 @@
+'use strict';
+
 const l = require(`../log.js`);
 
 module.exports =
@@ -25,7 +27,8 @@ module.exports =
         } 
         catch (error) 
         {
-            l.logError(Error(`SEVERE: "${commandName}" could not be reloaded! ${command.name}: ${error.message}`));
+            error.message = `SEVERE: "${commandName}" could not be reloaded! ${command.name}: ${error.message}`;
+            l.logError(error);
             message.channel.send(`There was an error while reloading a command `);
         }
     },

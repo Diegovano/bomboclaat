@@ -1,3 +1,5 @@
+'use strict';
+
 const am = require(`../audio.js`);
 const Discord = require(`discord.js`);
 
@@ -7,7 +9,7 @@ module.exports = {
     aliases : [`np`, `current`, `playing`],
     execute(message, args)
     {
-        var currentQueue = am.getQueue(message);
+        const currentQueue = am.getQueue(message);
 
         try 
         {

@@ -1,15 +1,18 @@
+'use strict';
+
 const fs = require(`fs`);
 const { google } = require(`googleapis`);
 const l = require(`./log.js`);
 const ytdl = require(`ytdl-core`);
-var youtube = google.youtube(`v3`);
+const youtube = google.youtube(`v3`);
 const Discord = require(`discord.js`);
+
 
 let queueMap = new Map();
 
 function pad(num)
 {
-    var s = num + ``;
+    let s = num + ``;
     while (s.length < 2) s = `0` + s;
     return s;
 }
@@ -23,7 +26,7 @@ function ConvertSecToFormat(duration)
     if (hours > 0) return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
     if (minutes > 0) return `${pad(minutes)}:${pad(seconds)}`;
     if (seconds > 0) return `00:${pad(seconds)}`;
-    return `probably a livestream!`;
+    return `LIVE!`;
 }
 
 function ConvertIsoToSec(t)
@@ -46,28 +49,35 @@ function getQueue(message)
     return new queue(message);
 }
 
-function deleteQueue(message)
+function deleteQueue(message, suppressWarning = false)
 {
     if (queueMap[message.guild.id])
     {
         return delete queueMap[message.guild.id];
     }
-    // else if (typeof(message) === typeof(queue) && queueMap[message.guildID])
-    // {
-    //     return delete queueMap[message.guildID];
-    // }
-    else l.logError(Error(`WARNING: Attempting to delete non-existant queue!`));
+    else if (!suppressWarning) message.channel.send(`No queue exists!`);
 }
 
-function subArrayCumulativeLength(array)
+function embedOutLimits(embed)
 {
-    var chars = 0;
-    for (var i = 0; i < array.length; i++)
-    {
-        chars += array[i].length;
-    }
+    let reason = ``;
 
-    return chars;
+    // if (!embed) return `Embed empty!`;
+
+    if (embed.description > 2048) reason += `Embed descriptions are limited to 2048 characters. `; // reason ends with . + space to ensure correct presentation of multiple fails.
+    if (embed.fields && embed.fields.length > 25) reason += `Embeds can have up to 25 fields. `;
+    
+    for (let i = 0; embed.fields && i < embed.fields.length; i++)
+    {
+        if (embed.fields[i].name.length > 256) reason += `A field's name is limited t o 256 characters. `;
+        if (embed.fields[i].value.length > 1024) reason += `A field's value is limited to 1024 characters. `;
+    }
+    
+    if (embed.footer && embed.footer.text.length > 2048) reason += `The footer text is limited to 2048 characters. `;
+    if (embed.author && embed.author.name.length > 256) reason += `The author name is limited to 256 characters. `;
+    if (embed.author && embed.length + embed.author.name.length > 6000) reason += `The sum of all characters in an embed structure must not exceed 6000 characters. `;
+
+    return reason === `` ? null : reason;
 }
 
 
@@ -98,7 +108,7 @@ class song
             {
                 ytkey = process.env.YTTOKEN;
             }
-            var opts =
+            const opts =
                 {
                     part: `contentDetails`,
                     id: videoID,
@@ -106,10 +116,7 @@ class song
                 };
             youtube.videos.list(opts).then(res =>
                 {
-                    //this.duration = convertDuration(res.data.items[0].contentDetails.duration);
                     this.duration = ConvertIsoToSec(res.data.items[0].contentDetails.duration);
-                    // this.duration = res.data.items[0].contentDetails.duration;
-                    // console.log(this.duration);
                 }, reason =>
                 {
                     l.logError(Error(`WARNING: Unable to get duration! ${reason}`));
@@ -180,100 +187,168 @@ class queue
         this.dispatcher.setVolume(this.volume);
         if (!isSeek) this.textChannel.send(`Now playing ***${this.songList[this.queuePos].title}***, requested by **${this.songList[this.queuePos].requestedBy}**`);
     }
-    add(song, message, playlist)
+
+    async add(song, message, playlist)
     {
         if (message.channel.id !== this.textChannel.id)
             return message.channel.send(`Bot is bound to ${this.textChannel.name}, please use this channel to queue!`);
 
         this.voiceChannel = message.member.voice.channel;
         this.songList.push(song);
-        if (!this.playing) this.play();
+        if (!this.playing) await this.play();
         else if (!playlist) this.textChannel.send(`${song.title} has been added to the queue by ${message.member.nickname}`);
     }
 
-    printQueue(message)
+    async printQueue(message)
     {
         if (message.channel.id !== this.textChannel.id)
             return message.channel.send(`Bot is bound to ${this.textChannel.name}, please use this channel to see the queue!`);
 
         if (this.songList.length === 0) return this.textChannel.send(`Queue is empty!`);
 
-        var pastTracks = ``;
+        let pastTracks = [``];
 
-        for (var i = 0; i < this.queuePos; i++) // Print past tracks
+        for (let i = 0, i2 = 0; i < this.queuePos; i++)
         {
-            pastTracks += `\nTrack ${i + 1}: ${this.songList[i].title} [${ConvertSecToFormat(this.songList[i].duration)}], requested by ${this.songList[i].requestedBy}.`;
+            const trackAppend = `\nTrack ${i + 1}: [${this.songList[i].title}](${this.songList[i].sourceLink}) [${ConvertSecToFormat(this.songList[i].duration)}], requested by ${this.songList[i].requestedBy}.`;
+            if (pastTracks[i2].length + trackAppend.length < 1024) pastTracks[i2] += trackAppend;
+            else
+            {
+                i2++;
+                pastTracks.push(trackAppend);
+            }
         }
+
+        let currentTrack = [``];
 
         if (this.songList.length > this.queuePos)
         {
-            var currentTrack = `\nTrack ${this.queuePos + 1}: ${this.songList[this.queuePos].title} [${ConvertSecToFormat(this.songList[i].duration)}], requested by ${this.songList[this.queuePos].requestedBy}.`;
+            currentTrack[0] = `\nTrack ${this.queuePos + 1}: [${this.songList[this.queuePos].title}](${this.songList[this.queuePos].sourceLink}) [${ConvertSecToFormat(this.songList[this.queuePos].duration)}], requested by ${this.songList[this.queuePos].requestedBy}.`;
         }
 
+        let nextTracks = [``];
 
-        var nextTracks = ``;
-
-        for (i++; i < this.songList.length; i++)
+        for (let i = this.queuePos + 1, i2 = 0; i < this.songList.length; i++)
         {
-            nextTracks += `\nTrack ${i + 1}: ${this.songList[i].title} [${ConvertSecToFormat(this.songList[i].duration)}], requested by ${this.songList[i].requestedBy}.`;
+            const trackAppend = `\nTrack ${i + 1}: [${this.songList[i].title}](${this.songList[i].sourceLink}) [${ConvertSecToFormat(this.songList[i].duration)}], requested by ${this.songList[i].requestedBy}.`;
+            if (nextTracks[i2].length + trackAppend.length < 1024) nextTracks[i2] += trackAppend;
+            else
+            {
+                i2++;
+                nextTracks.push(trackAppend);
+            }
         }
-        /*
-          if (queueMessage.length < 2000) message.channel.send(queueMessage);
-          else
-          {
-          var messageArray = [];
 
-          for (let i2 = 0; subArrayCumulativeLength(messageArray) < queueMessage.length; i2++)
-          {
-          let i3 = 0;
+        let queueEmbeds = [ new Discord.MessageEmbed()
+                                     .setColor(`#0000ff`)
+                                     .setTitle(`Queue`)
+                                     .setAuthor('Bomborastclaat', message.client.user.displayAvatarURL()) ];
 
-          if (queueMessage.length - subArrayCumulativeLength(messageArray) <= 2000)
-          {
-          messageArray.push(queueMessage.substring(subArrayCumulativeLength(messageArray)));
-          }
-
-          else
-          {
-          while (queueMessage[(i2 + 1) * 2000 - i3] !== `\n`)
-          {
-          if (i3 > 200) return l.logError(Error(`WARNING: Unable to cut queue message on newline!`));
-          i3++;
-          }
-
-          messageArray.push(queueMessage.substring(i2 * 2000, (i2 + 1) * 2000 - i3));
-          }
-          }
-
-          for (let i = 0; i < messageArray.length; i++)
-          {
-          this.textChannel.send(messageArray[i]);
-          }
-          }
-        */
-
-
-        const queueEmbed = new Discord.MessageEmbed()
-                                      .setColor(`#0000ff`)
-                                      .setTitle(`Queue`)
-                                      .setAuthor('Bomborastclaat', message.client.user.displayAvatarURL());
-
-        if (pastTracks !== ``)
+        let i2 = 0;
+        if (pastTracks[0] !== ``)
         {
-                queueEmbed.addField(`Past Track${this.queuePos > 1 ? 's' : ''}:`, pastTracks);
+            for (let i = 0; i < pastTracks.length; i++)
+            {
+                const fieldToAdd = { name: i === 0 ? `Past Track${this.queuePos > 1 ? 's' : ''}:` : `continued...`, value: pastTracks[i] };
+                if (queueEmbeds[i2].length + (queueEmbeds.author ? queueEmbeds[i2].author.name.length : 0) + fieldToAdd.name.length + fieldToAdd.value.length < 6000) queueEmbeds[i2].addField(fieldToAdd.name, fieldToAdd.value);
+                else
+                {
+                    queueEmbeds.push( new Discord.MessageEmbed().setColor(`#0000ff`) );
+                    
+                    queueEmbeds[++i2].addField(fieldToAdd.name, fieldToAdd.value);
+                }
+            }
         }
-        if (currentTrack !== ``)
+        if (currentTrack[0] !== ``)
         {
-                queueEmbed.addField(`Current Track:`, currentTrack);
-        }
-        if (nextTracks !== ``)
-        {
-                queueEmbed.addField(`Upcoming Track${this.queuePos < this.songList.length - 2  ? 's' : ''}:`, nextTracks);
-        }
+            const fieldToAdd = { name: `Current Track:`, value: currentTrack[0] };
+            if (queueEmbeds[i2].length + (queueEmbeds.author ? queueEmbeds[i2].author.name.length : 0) + fieldToAdd.name.length + fieldToAdd.value.length < 6000) queueEmbeds[i2].addField(fieldToAdd.name, fieldToAdd.value);
+            else
+            {
+                queueEmbeds.push( new Discord.MessageEmbed().setColor(`#0000ff`) );
 
-        message.channel.send(queueEmbed);
+                queueEmbeds[++i2].addField(fieldToAdd.name, fieldToAdd.value);
+            }
+
+            queueEmbeds[i2].setThumbnail(this.songList[this.queuePos].icon);
+        }
+        if (nextTracks[0] !== ``)
+        {
+            for (let i = 0; i < nextTracks.length; i++)
+            {
+                const fieldToAdd = { name: i === 0 ? `Upcoming Track${this.queuePos < this.songList.length - 2  ? 's' : ''}:` : `continued...`, value: nextTracks[i] };
+                if (queueEmbeds[i2].length + (queueEmbeds.author ? queueEmbeds[i2].author.name.length : 0) + fieldToAdd.name.length + fieldToAdd.value.length < 6000) queueEmbeds[i2].addField(fieldToAdd.name, fieldToAdd.value);
+                else
+                {
+                    queueEmbeds.push( new Discord.MessageEmbed().setColor(`#0000ff`) );
+    
+                    queueEmbeds[++i2].addField(fieldToAdd.name, fieldToAdd.value);
+                }
+            }
+        }
+                         
+        l.log(`Printing ${queueEmbeds.length} Embeds!`);
+        for (let i = 0; i < queueEmbeds.length; i++)
+        {
+            message.channel.send(queueEmbeds[i]);
+        }
+        // for (let i = 0; embedOutLimits(queueEmbeds[i++]);)
+        // {
+        //     if (pastTracks[0] !== ``)
+        //     {
+        //         for (let i2 = 0; i2 < pastTracks.length; i2++)
+        //         {
+        //             queueEmbeds[i].addField(i2 === 0 ? `Past Track${this.queuePos > 1 ? 's' : ''}:` : `continued...`, pastTracks[i2]);
+        //         }
+        //     }
+        //     if (currentTrack[0] !== ``)
+        //     {
+        //             queueEmbeds[i].addField(`Current Track:`, currentTrack[0]);
+        //     }
+        //     if (nextTracks[0] !== ``)
+        //     {
+        //         for (let i2 = 0; i2 < nextTracks.length; i2++)
+        //         {
+        //             queueEmbeds[i].addField(i2 === 0 ? `Upcoming Track${this.queuePos < this.songList.length - 2  ? 's' : ''}:` : `continued...`, nextTracks[i2]);
+        //         }
+        //     }
+        // }
+
+
+        // if (embedOutLimits(queueEmbeds[0]))
+        // {
+        //     l.logError(Error(`WARNING: Unable to send queue embed: ${embedOutLimits(queueEmbeds[0])}`));
+        
+        //     for (let i = 0; embedOutLimits(queueEmbeds[i]); i++)                            
+        //     {
+        //         if (i > 300) return l.logError(Error(`WARNING: Unable to cut embed!`));
+        //         l.log(embedOutLimits(queueEmbeds[i]));
+
+        //         if (embedOutLimits(queueEmbeds[i]).includes(`A field's value is limited to 1024 characters. `))
+        //         {
+        //             for (let i2 = 0; queueEmbeds[i].fields && i2 < queueEmbeds[i].fields.length; i++)
+        //             {
+        //                 if (queueEmbeds[i].fields[i2].value.length > 1024)
+        //                 {
+        //                     let i3 = 0;
+
+        //                     while (queueEmbeds[i].fields[i2].value[queueEmbeds[i].fields[i2].value.length - i3] !== `\n`)
+        //                     {
+        //                         if (i3 > 1000) return l.logError(Error(`WARNING: Unable to cut embed!`));
+        //                         i3++;
+        //                     }
+
+        //                     queueEmbeds[i].fields[i2].value = queueEmbeds[i].fields[i2].value.substr(0, queueEmbeds[i].fields[i2].value.length - i3);
+        //                 }
+        //             }
+        //         }
+        //     }
+        // }
+
+        // else return message.channel.send(queueEmbeds[0]).catch(error => l.logError(Error(`WARNING: Unable to create queue embed! Is it within character limits? ${error.message}`)));
     }
 
-    skip(message)
+    async skip(message)
     {
         if (message.channel.id !== this.textChannel.id)
             return message.channel.send(`Bot is bound to ${this.textChannel.name}, please use this channel to skip!`);
@@ -293,13 +368,13 @@ class queue
         return this.textChannel.send(`Skipping ${this.songList[this.queuePos++].title},`);
     }
 
-    getSong()
+    getSong() // keep sync as function return an object
     {
         if (this.playing) return this.songList[this.queuePos];
         else throw `No track playing!`;
     }
 
-    pause()
+    async pause()
     {
         if (!this.playing) return this.textChannel.send(`Cannot Pause: Nothing playing!`);
         if (this.paused) return this.textChannel.send(`Cannot Pause: Player is already paused!`);
@@ -308,7 +383,7 @@ class queue
         this.dispatcher.pause();
     }
 
-    unpause()
+    async unpause()
     {
         if (!this.playing) return this.textChannel.send(`Cannot Unpause: Noting playing!`);
         if (!this.paused) return this.textChannel.send(`Cannot Unpause: Player is not paused!`);
@@ -318,7 +393,7 @@ class queue
         this.dispatcher.resume();
     }
 
-    setVolume(volumeAmount)
+    async setVolume(volumeAmount)
     {
         if (!this.playing) return this.textChannel.send(`Cannot set Volume: Nothing playing!`);
 
@@ -326,7 +401,7 @@ class queue
         this.dispatcher.setVolume(this.volume);
     }
 
-    seek(seconds, relative = false)
+    async seek(seconds, relative = false)
     {
         if (!this.playing) throw `Nothing playing!`;
         if (this.paused) throw `Player is paused!`;

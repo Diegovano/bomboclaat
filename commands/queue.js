@@ -1,3 +1,5 @@
+'use strict';
+
 const am = require(`../audio.js`);
 
 module.exports =

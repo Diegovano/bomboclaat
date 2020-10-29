@@ -1,3 +1,5 @@
+'use strict';
+
 const Discord = require(`discord.js`);
 
 module.exports =
@@ -8,7 +10,7 @@ module.exports =
     guildOnly: true,
     execute(message, args)
     {
-        var sexuality = `Straight`;
+        let sexuality = `Straight`;
         switch (message.author.username)
         {
             case `Powered By Salt`:

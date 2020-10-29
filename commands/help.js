@@ -1,3 +1,5 @@
+'use strict';
+
 const Discord = require("discord.js");
 const prefix = `|`; // static prefix for now
 

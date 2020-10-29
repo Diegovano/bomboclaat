@@ -1,32 +1,34 @@
+'use strict';
+
 const am = require(`../audio.js`);
 
 module.exports = 
 {
-    name: `leave`,
+    name: `leave`, // If this name is changed, change the function call in the clear.js command file.
     aliases: [`quit`, `l`, `bye`],
     description: `Tells the bot to disconnect from the voice channel.`,
     guildOnly: true,
     execute(message, args)
     {
-        let clientVoiceConnection = message.guild.voice;
+        const clientVoiceConnection = message.guild.voice.connection;
 
         // If the bot isn't in a voiceChannel, don't execute any other code
-        if(!clientVoiceConnection)
+        if (!clientVoiceConnection)
         {
-            return message.reply("Bot not in a voice channel, why are you trying to make me leave a voice channel?");
+            return message.reply("I'm not in a voice channel, why are you trying to make me leave?");
         }
 
-        let userVoiceChannel = message.member.voice.channel;
+        const userVoiceChannel = message.member.voice.channel;
 
         if (!userVoiceChannel) 
 {
-            return message.reply("You are not in a voice channel, Bot cannot leave!");
+            return message.reply("You aren't in a voice channel, please join to tell me to leave!");
         }
 
         // Compare the voiceChannels
         if (userVoiceChannel === clientVoiceConnection.channel) 
         {
-            am.deleteQueue(message,true);
+            am.deleteQueue(message, true);
             userVoiceChannel.leave();
             return message.channel.send('Bye! Bye!');
         } 

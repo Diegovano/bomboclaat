@@ -1,4 +1,6 @@
-const package = require(`../package.json`);
+'use strict';
+
+const packageObject = require(`../package.json`);
 const l = require(`../log.js`);
 
 module.exports = 
@@ -8,7 +10,7 @@ module.exports =
     description: `Display bomoclaat's version.`,
     execute(message, args)
     {
-        l.log(`Bomboclaat version ${package.version}`);
-        message.channel.send(`Bomboclaat version ${package.version}`);
+        l.log(`Bomboclaat version ${packageObject.version}`);
+        message.channel.send(`Bomboclaat version ${packageObject.version}`);
     }
 };

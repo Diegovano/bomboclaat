@@ -1,3 +1,5 @@
+'use strict';
+
 module.exports =
 {
     name: `pp`,
@@ -11,7 +13,7 @@ module.exports =
         }
         
         const penis = [`8`];
-        var iter =0;
+        let iter = 0;
         for (; iter < Math.floor(Math.random() * 50); iter++) penis.push(`=`);
 
         return message.channel.send(`${message.author.username}'s cock size is:\n${penis.toString().replace(/,/gi, "")}D    ${iter} inches!`);
