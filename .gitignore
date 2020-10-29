@@ -5,6 +5,7 @@
 
 # Ignore file with token
 .*token
+.tokent
 
 # Ignore DS_Store
 .DS_Store

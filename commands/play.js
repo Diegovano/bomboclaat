@@ -8,13 +8,25 @@ const youtube = google.youtube(`v3`);
 
 function ytSearch(searchTerm, message, callback)
 {
+    let ytkey;
+    if (!process.env.YTTOKEN)   // Check if running github actions or just locally
+    {
+        ytkey = fs.readFileSync(`.yttoken`, `utf8`, (err, data) => 
+        {
+            if (err) throw `SEVERE: Cannot read YouTube key!`;
+        });
+    }
+    else
+    {
+        ytkey = process.env.YTTOKEN;
+    }
     var opts =
         {
             q: searchTerm,
             part: `snippet`,
             maxResults: Math.min(5,10),
             type: `video`,
-            key: fs.readFileSync(`.yttoken`, `utf8`, (err, data) => { if (err) throw `SEVERE: Cannot read YouTube key!`; } )
+            key: ytkey
         };
 
     youtube.search.list(opts).then( res =>
@@ -292,12 +304,27 @@ module.exports =
 
                     timestamp = seconds;
                 }
+                
+                let ytkey;
+
+                if (!process.env.YTTOKEN)   // Check if running github actions or just locally
+                {
+
+                    ytkey = fs.readFileSync(`.yttoken`, `utf8`, (err, data) => 
+                    {
+                        if (err) throw `SEVERE: Cannot read YouTube key!`;
+                    });
+                }
+                else
+                {
+                    ytkey = process.env.YTTOKEN;
+                }
 
                 var opts =
                     {
                         part: [`snippet`,`contentDetails`], // IMPORTANT: CONTENT DETAILS PART REQUIRED!
                         id: videoID,
-                        key: fs.readFileSync(`.yttoken`, `utf8`, (err, data) => { if (err) throw `SEVERE: Cannot read YouTube key!`; } )
+                        key: ytkey
                     };
 
                 return youtube.videos.list(opts).then( res =>
@@ -327,13 +354,26 @@ module.exports =
                 {
                     return l.logError(Error(`WARNING: Unable to filter playlistID from URL! Probably something wrong with my regex...`));
                 }
+                
+                let ytkey;
+                if (!process.env.YTTOKEN)   // Check if running github actions or just locally
+                {   
 
+                    ytkey = fs.readFileSync(`.yttoken`, `utf8`, (err, data) => 
+                    {
+                    if (err) throw `SEVERE: Cannot read YouTube key!`;
+                    });
+                }
+                else
+                {
+                    ytkey = process.env.YTTOKEN;
+                }
                 var opts =
                     {
                         part: [`snippet`], // IMPORTANT: CONTENT DETAILS PART REQUIRED!
                         playlistId: playlistId,
                         maxResults: 50,
-                        key: fs.readFileSync(`.yttoken`, `utf8`, (err, data) => { if (err) throw `SEVERE: Cannot read YouTube key!`; } )
+                        key: ytkey
                     };
 
                 return youtube.playlistItems.list(opts).then( async res =>

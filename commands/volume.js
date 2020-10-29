@@ -18,6 +18,6 @@ module.exports = {
             l.logError(Error(`What u trying to change the volume of idiot ${error}`));
         }
 
-        return;
+        return message.channel.send(`Changed the volume to ${args[0]}.`);
     }
 };

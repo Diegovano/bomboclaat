@@ -2,7 +2,8 @@ version
 help
 bg
 join
-accent french
-reload version
+play https://www.youtube.com/watch?v=TZNQEYto97c
+volume 10
 leave
 ping
+botquit

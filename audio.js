@@ -85,11 +85,24 @@ class song
         this.startOffset = startOffset ? startOffset : 0;
         if (!duration)
         {
+            let ytkey;
+            if (!process.env.YTTOKEN)   // Check if running github actions or just locally
+            {
+
+                ytkey = fs.readFileSync(`.yttoken`, `utf8`, (err, data) => 
+                {
+                    if (err) throw `SEVERE: Cannot read YouTube key!`;
+                });
+            }
+            else
+            {
+                ytkey = process.env.YTTOKEN;
+            }
             var opts =
                 {
                     part: `contentDetails`,
                     id: videoID,
-                    key: fs.readFileSync(`.yttoken`, `utf8`, (err, data) => { if (err) throw `SEVERE: Cannot read YouTube key!`; } )
+                    key: ytkey
                 };
             youtube.videos.list(opts).then(res =>
                 {

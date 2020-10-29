@@ -26,7 +26,7 @@ module.exports =
         // Compare the voiceChannels
         if (userVoiceChannel === clientVoiceConnection.channel) 
         {
-            am.deleteQueue();
+            am.deleteQueue(message,true);
             userVoiceChannel.leave();
             return message.channel.send('Bye! Bye!');
         } 

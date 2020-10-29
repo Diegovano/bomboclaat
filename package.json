@@ -19,7 +19,7 @@
     "eslint": "^7.12.0"
   },
   "scripts": {
-    "test": "node tests/test.js",
+    "test": "node test.js",
     "run": "node index.js"
   },
   "repository": {

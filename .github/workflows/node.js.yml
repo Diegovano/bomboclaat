@@ -31,3 +31,5 @@ jobs:
       run: npm test
       env:
         TOKEN: ${{ secrets.DISCORD_TOKEN }}
+        YTTOKEN: ${{ secrets.YOUTUBE_API_TOKEN }}
+        TOKENT: ${{ secrets.DISCORD_TESTER_TOKEN }}
