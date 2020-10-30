@@ -3,6 +3,7 @@ help
 bg
 join
 play https://www.youtube.com/watch?v=TZNQEYto97c
+queue
 volume 10
 leave
 ping

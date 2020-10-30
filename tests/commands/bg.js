@@ -6,7 +6,7 @@ module.exports =
     aliases: [`Decidément.`],
     execute(message, prefix)
     {
-        if (count===3)
+        if (tests[count]===`join`)
         {
             message.client.channels.cache.get("770990593181483042").join().then(connection=>
                 {

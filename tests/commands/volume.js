@@ -4,7 +4,7 @@ module.exports =
     aliases: [`Changed the volume to 10.`],
     execute(message, prefix)
     {
-        if (count===6)
+        if (tests[count]===`leave`)
         {
             message.channel.send(prefix + tests[count]);
             count += 1;

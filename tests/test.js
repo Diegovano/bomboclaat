@@ -5,7 +5,6 @@ const path = require('path');
 const Discord = require('discord.js');
 const {prefix} = require('../index.js');
 
-
 let token;
 if (process.env.TOKENT)
 {
@@ -105,7 +104,7 @@ client.on('voiceStateUpdate', (oldMember, newMember) =>
     if(oldUserChannel === null && newUserChannel !== null)    // User Joins a voice channel
     {
   
-        if (count===4)
+        if (tests[count]===`play https://www.youtube.com/watch?v=TZNQEYto97c`)
         {
             newUserChannel.client.channels.cache.get("770990593181483040").send(prefix + tests[count]);
             count += 1;
@@ -116,7 +115,7 @@ client.on('voiceStateUpdate', (oldMember, newMember) =>
     else if(newUserChannel === null)     // User leaves a voice channel
     {
   
-        if (count===7)
+        if (tests[count]===`ping`)
         {
             oldUserChannel.client.channels.cache.get("770990593181483040").send(prefix + tests[count]);
             count+=1;

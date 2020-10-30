@@ -4,7 +4,7 @@ module.exports =
     aliases: [`Pong!`],
     execute(message, prefix)
     {
-        if (count===8)
+        if (tests[count]===`botquit`)
         {
             message.channel.send(prefix + tests[count]);
             count += 1;
