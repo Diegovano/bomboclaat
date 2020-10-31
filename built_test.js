@@ -46,7 +46,10 @@ client.once("ready", () =>
 {
     l.log(`Ready!`);
 
-    // DO_NOT_REMOVE:ADD TEST_FUNC1
+    
+    l.log('Running in testing mode!');
+    require(`./${path.join(`tests`,`test_client.js`)}`);
+// DO_NOT_REMOVE:ADD TEST_FUNC1
 
 });
 
@@ -55,29 +58,14 @@ client.on("message", message =>
 {
     if (!message.content.startsWith(prefix) || message.channel.type !== `text`) return;
 
-    // DO_NOT_REMOVE:ADD TEST_FUNC2
-
-    // DO_NOT_REMOVE:RM INDEX_FUNC1
-    
-    if (message.guild.id !== '684842282926473287' || message.author.bot) return;
-    if (message.channel.id !== `697492398070300763`)
+        
+    if (message.guild.id !== '770990591357747221' && message.channel.id !== `770990593181483040`) return;
+    if (message.content ===`${prefix}botquit`)
     {
-        return message.channel.send(`Please use the bot channel to interact with me!`).then( msg =>
-            {
-                setTimeout(() =>
-                {
-                    try 
-                    {
-                        msg.delete();
-                        message.delete();
-                    } 
-                    catch (error) 
-                    {
-                        l.logError(Error(`WARNING: Unable to delete message! Has it already been deleted?`));
-                    }
-                }, 10000);
-            });
+        l.log("Test completed!");
+        exit();
     }
+// DO_NOT_REMOVE:ADD TEST_FUNC2
 
     // DO_NOT_REMOVE:RM INDEX_FUNC2
 

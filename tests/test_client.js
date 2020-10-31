@@ -3,7 +3,7 @@ const l = require(`../log.js`);
 const fs = require(`fs`);
 const path = require('path');
 const Discord = require('discord.js');
-const {prefix} = require('../index.js');
+
 
 let token;
 if (process.env.TOKENT)
@@ -18,29 +18,7 @@ else
     });
 }
 
-function getLineBreakChar(string) 
-{
-    const indexOfLF = string.indexOf('\n', 1);  // No need to check first-character
-
-    if (indexOfLF === -1) 
-    {
-        if (string.indexOf('\r') !== -1) return '\r';
-
-        return '\n';
-    }
-
-    if (string[indexOfLF - 1] === '\r') return '\r\n';
-
-    return '\n';
-}
-
 let client = new Discord.Client();
-
-const str_tests = fs.readFileSync(path.join('tests','test-commands.txt'), `utf8`);   // Write all commands in here
-
-tests = str_tests.split(getLineBreakChar(str_tests));     // runs in whatever line ending you want
-
-count = 0;
 
 const channelName = "770990593181483040";
 
