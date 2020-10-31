@@ -15,14 +15,16 @@ module.exports =
         // If the bot isn't in a voiceChannel, don't execute any other code
         if (!clientVoiceConnection)
         {
-            return message.reply("I'm not in a voice channel, why are you trying to make me leave?");
+            if (args !== `silent`) message.reply("I'm not in a voice channel, why are you trying to make me leave?");
+            return;
         }
 
         const userVoiceChannel = message.member.voice.channel;
 
         if (!userVoiceChannel) 
-{
-            return message.reply("You aren't in a voice channel, please join to tell me to leave!");
+        {
+            if (args !== `silent`) message.reply("You aren't in a voice channel, please join to tell me to leave!");
+            return;
         }
 
         // Compare the voiceChannels

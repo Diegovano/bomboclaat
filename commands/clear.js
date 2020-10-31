@@ -14,6 +14,6 @@ module.exports =
         currentQueue.pause();
         am.deleteQueue(message);
 
-        message.client.commands.get(`leave`).execute(message, args);
+        message.client.commands.get(`leave`).execute(message, `silent`);
     }
 };

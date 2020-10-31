@@ -15,20 +15,20 @@ function checkNodeVersion()
 checkNodeVersion();
 
 const client = new Discord.Client();
+
+let token;
 if (process.env.TOKEN)
 {
-    var tokens = process.env.TOKEN;
+    token = process.env.TOKEN;
 }
 else
 {
-    var tokens = fs.readFileSync(`.token`, `utf8`, (err, data) => 
+    token = fs.readFileSync(`.token`, `utf8`, (err, data) => 
     {
         if (err) throw `FATAL: Cannot read token`;
         // l.log(data);
     }).split(`\n`)[0];
 }
-
-const token = tokens;
 
 const prefix = "|";
 

@@ -19,10 +19,9 @@ module.exports = {
                                  .setURL(currentQueue.getSong().sourceLink)
                                  .setAuthor('Bomborastclaat', message.client.user.displayAvatarURL())
                                  .addFields(
-                                     {name : `Song title`, value : currentQueue.getSong().title},
-                                     {name : `Author`, value : currentQueue.getSong().author},
-                                     {name : `Requested by:`, value : currentQueue.getSong().requestedBy},
-                                     {name : `Video link`, value : currentQueue.getSong().sourceLink}
+                                     { name : `Song title`, value : `[${currentQueue.getSong().title}](${currentQueue.getSong().sourceLink})` },
+                                     { name : `Author`, value : currentQueue.getSong().author },
+                                     { name : `Requested by:`, value : currentQueue.getSong().requestedBy }
                                  )
                                  .setImage(currentQueue.getSong().icon)
                                  .setTimestamp();

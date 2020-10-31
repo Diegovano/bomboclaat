@@ -38,9 +38,14 @@ function ConvertIsoToSec(t)
 }
 
 
-function replaceUnicode(origStr)
+function replaceUnicode(origStr)  //and escape markdown
 {
-    return origStr.replace(/&amp;/gi, `&`).replace(/&#39;/gi, `'`).replace(/&quot;/gi, `"`);
+    origStr = origStr.replace(/&amp;/gi, `&`)
+                  .replace(/&#39;/gi, `'`)
+                  .replace(/&quot;/gi, `"`);
+
+    let unescaped = origStr.replace(/\\(\*|_|`|~|\\)/g, `$1`);
+    return unescaped.replace(/(\*|_|`|~|\\)/g, '\\$1');
 }
 
 function getQueue(message)
@@ -69,13 +74,13 @@ function embedOutLimits(embed)
     
     for (let i = 0; embed.fields && i < embed.fields.length; i++)
     {
-        if (embed.fields[i].name.length > 256) reason += `A field's name is limited t o 256 characters. `;
+        if (embed.fields[i].name.length > 256) reason += `A field's name is limited to 256 characters. `;
         if (embed.fields[i].value.length > 1024) reason += `A field's value is limited to 1024 characters. `;
     }
     
     if (embed.footer && embed.footer.text.length > 2048) reason += `The footer text is limited to 2048 characters. `;
     if (embed.author && embed.author.name.length > 256) reason += `The author name is limited to 256 characters. `;
-    if (embed.author && embed.length + embed.author.name.length > 6000) reason += `The sum of all characters in an embed structure must not exceed 6000 characters. `;
+    if (embed.length + (embed.author ? embed.author.name.length : 0) > 6000) reason += `The sum of all characters in an embed structure must not exceed 6000 characters. `;
 
     return reason === `` ? null : reason;
 }
@@ -108,6 +113,7 @@ class song
             {
                 ytkey = process.env.YTTOKEN;
             }
+
             const opts =
                 {
                     part: `contentDetails`,
@@ -287,65 +293,12 @@ class queue
             }
         }
                          
-        l.log(`Printing ${queueEmbeds.length} Embeds!`);
+        // l.log(`Printing ${queueEmbeds.length} Embeds!`);
         for (let i = 0; i < queueEmbeds.length; i++)
         {
-            message.channel.send(queueEmbeds[i]);
+            message.channel.send(queueEmbeds[i])
+                .catch(error => l.logError(Error(`WARNING: Unable to create queue embed! Is it within character limits? ${error.message}`)));
         }
-        // for (let i = 0; embedOutLimits(queueEmbeds[i++]);)
-        // {
-        //     if (pastTracks[0] !== ``)
-        //     {
-        //         for (let i2 = 0; i2 < pastTracks.length; i2++)
-        //         {
-        //             queueEmbeds[i].addField(i2 === 0 ? `Past Track${this.queuePos > 1 ? 's' : ''}:` : `continued...`, pastTracks[i2]);
-        //         }
-        //     }
-        //     if (currentTrack[0] !== ``)
-        //     {
-        //             queueEmbeds[i].addField(`Current Track:`, currentTrack[0]);
-        //     }
-        //     if (nextTracks[0] !== ``)
-        //     {
-        //         for (let i2 = 0; i2 < nextTracks.length; i2++)
-        //         {
-        //             queueEmbeds[i].addField(i2 === 0 ? `Upcoming Track${this.queuePos < this.songList.length - 2  ? 's' : ''}:` : `continued...`, nextTracks[i2]);
-        //         }
-        //     }
-        // }
-
-
-        // if (embedOutLimits(queueEmbeds[0]))
-        // {
-        //     l.logError(Error(`WARNING: Unable to send queue embed: ${embedOutLimits(queueEmbeds[0])}`));
-        
-        //     for (let i = 0; embedOutLimits(queueEmbeds[i]); i++)                            
-        //     {
-        //         if (i > 300) return l.logError(Error(`WARNING: Unable to cut embed!`));
-        //         l.log(embedOutLimits(queueEmbeds[i]));
-
-        //         if (embedOutLimits(queueEmbeds[i]).includes(`A field's value is limited to 1024 characters. `))
-        //         {
-        //             for (let i2 = 0; queueEmbeds[i].fields && i2 < queueEmbeds[i].fields.length; i++)
-        //             {
-        //                 if (queueEmbeds[i].fields[i2].value.length > 1024)
-        //                 {
-        //                     let i3 = 0;
-
-        //                     while (queueEmbeds[i].fields[i2].value[queueEmbeds[i].fields[i2].value.length - i3] !== `\n`)
-        //                     {
-        //                         if (i3 > 1000) return l.logError(Error(`WARNING: Unable to cut embed!`));
-        //                         i3++;
-        //                     }
-
-        //                     queueEmbeds[i].fields[i2].value = queueEmbeds[i].fields[i2].value.substr(0, queueEmbeds[i].fields[i2].value.length - i3);
-        //                 }
-        //             }
-        //         }
-        //     }
-        // }
-
-        // else return message.channel.send(queueEmbeds[0]).catch(error => l.logError(Error(`WARNING: Unable to create queue embed! Is it within character limits? ${error.message}`)));
     }
 
     async skip(message)
