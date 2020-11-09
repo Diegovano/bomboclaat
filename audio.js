@@ -226,17 +226,24 @@ class queue
         }
 
         let currentTrack = [``];
+        let queueDuration = 0;
 
         if (this.songList.length > this.queuePos)
         {
-            currentTrack[0] = `\nTrack ${this.queuePos + 1}: [${this.songList[this.queuePos].title}](${this.songList[this.queuePos].sourceLink}) [${ConvertSecToFormat(this.songList[this.queuePos].duration)}], requested by ${this.songList[this.queuePos].requestedBy}.`;
+          let trackDuration = this.songList[this.queuePos].duration;
+          queueDuration += trackDuration;
+          currentTrack[0] = `\nTrack ${this.queuePos + 1}: [${this.songList[this.queuePos].title}](${this.songList[this.queuePos].sourceLink}) [${ConvertSecToFormat(trackDuration)}], requested by ${this.songList[this.queuePos].requestedBy}.`;
         }
 
         let nextTracks = [``];
 
+
+
         for (let i = this.queuePos + 1, i2 = 0; i < this.songList.length; i++)
         {
-            const trackAppend = `\nTrack ${i + 1}: [${this.songList[i].title}](${this.songList[i].sourceLink}) [${ConvertSecToFormat(this.songList[i].duration)}], requested by ${this.songList[i].requestedBy}.`;
+            let trackDuration = this.songList[i].duration;
+            queueDuration += trackDuration
+            const trackAppend = `\nTrack ${i + 1}: [${this.songList[i].title}](${this.songList[i].sourceLink}) [${ConvertSecToFormat(trackDuration)}], requested by ${this.songList[i].requestedBy}.`;
             if (nextTracks[i2].length + trackAppend.length < 1024) nextTracks[i2] += trackAppend;
             else
             {
@@ -247,7 +254,7 @@ class queue
 
         let queueEmbeds = [ new Discord.MessageEmbed()
                                      .setColor(`#0000ff`)
-                                     .setTitle(`Queue`)
+                                     .setTitle(`Queue                                 Queue Duration: ${ConvertSecToFormat(queueDuration)}`)
                                      .setAuthor('Bomborastclaat', message.client.user.displayAvatarURL()) ];
 
         let i2 = 0;
