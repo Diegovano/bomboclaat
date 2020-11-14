@@ -14,22 +14,22 @@ function ytSearch(searchTerm, message, callback)
     if (!process.env.YTTOKEN)   // Check if running github actions or just locally
     {
         ytkey = fs.readFileSync(`.yttoken`, `utf8`, (err, data) => 
-        {
-            if (err) throw `SEVERE: Cannot read YouTube key!`;
-        });
+            {
+                if (err) throw `SEVERE: Cannot read YouTube key!`;
+            });
     }
     else
     {
         ytkey = process.env.YTTOKEN;
     }
     const opts =
-        {
-            q: searchTerm,
-            part: `snippet`,
-            maxResults: 5,
-            type: `video`,
-            key: ytkey
-        };
+          {
+              q: searchTerm,
+              part: `snippet`,
+              maxResults: 5,
+              type: `video`,
+              key: ytkey
+          };
 
     youtube.search.list(opts).then( res =>
         {
@@ -131,18 +131,18 @@ function userSelect(results, message, callback)
             const waitTime = 5000;
             
             const filters =
-                [
-                    (reaction, user) => reaction.emoji.name === reactionList[0] && user.id === message.author.id,
-                    (reaction, user) => reaction.emoji.name === reactionList[1] && user.id === message.author.id,
-                    (reaction, user) => reaction.emoji.name === reactionList[2] && user.id === message.author.id,
-                    (reaction, user) => reaction.emoji.name === reactionList[3] && user.id === message.author.id,
-                    (reaction, user) => reaction.emoji.name === reactionList[4] && user.id === message.author.id,
-                    (reaction, user) => reaction.emoji.name === reactionList[5] && user.id === message.author.id,
-                    (reaction, user) => reaction.emoji.name === reactionList[6] && user.id === message.author.id,
-                    (reaction, user) => reaction.emoji.name === reactionList[7] && user.id === message.author.id,
-                    (reaction, user) => reaction.emoji.name === reactionList[8] && user.id === message.author.id,
-                    (reaction, user) => reaction.emoji.name === reactionList[9] && user.id === message.author.id
-                ];
+                  [
+                      (reaction, user) => reaction.emoji.name === reactionList[0] && user.id === message.author.id,
+                      (reaction, user) => reaction.emoji.name === reactionList[1] && user.id === message.author.id,
+                      (reaction, user) => reaction.emoji.name === reactionList[2] && user.id === message.author.id,
+                      (reaction, user) => reaction.emoji.name === reactionList[3] && user.id === message.author.id,
+                      (reaction, user) => reaction.emoji.name === reactionList[4] && user.id === message.author.id,
+                      (reaction, user) => reaction.emoji.name === reactionList[5] && user.id === message.author.id,
+                      (reaction, user) => reaction.emoji.name === reactionList[6] && user.id === message.author.id,
+                      (reaction, user) => reaction.emoji.name === reactionList[7] && user.id === message.author.id,
+                      (reaction, user) => reaction.emoji.name === reactionList[8] && user.id === message.author.id,
+                      (reaction, user) => reaction.emoji.name === reactionList[9] && user.id === message.author.id
+                  ];
 
             const collector0 = msg.createReactionCollector( filters[0], options );
             collector0.on('collect', () =>
@@ -300,9 +300,9 @@ module.exports =
                 {
 
                     ytkey = fs.readFileSync(`.yttoken`, `utf8`, (err, data) => 
-                    {
-                        if (err) throw `SEVERE: Cannot read YouTube key!`;
-                    });
+                        {
+                            if (err) throw `SEVERE: Cannot read YouTube key!`;
+                        });
                 }
                 else
                 {
@@ -319,9 +319,9 @@ module.exports =
                 return youtube.videos.list(opts).then( res =>
                     {
                         const song = new am.song(res.data.items[0].id, res.data.items[0].snippet.channelTitle,
-                                               res.data.items[0].snippet.localized.title, res.data.items[0].snippet.localized.description,
-                                               res.data.items[0].snippet.thumbnails.high.url || ``, message.member.displayName,
-                                               timestamp, res.data.items[0].contentDetails.duration);
+                                                 res.data.items[0].snippet.localized.title, res.data.items[0].snippet.localized.description,
+                                                 res.data.items[0].snippet.thumbnails.high.url || ``, message.member.displayName,
+                                                 timestamp, res.data.items[0].contentDetails.duration);
                         currentQueue.add(song, message);
                     }, reason =>
                     {
@@ -337,9 +337,9 @@ module.exports =
                 if (!process.env.YTTOKEN)   // Check if running github actions or just locally
                 {   
                     ytkey = fs.readFileSync(`.yttoken`, `utf8`, (err, data) => 
-                    {
-                    if (err) throw `SEVERE: Cannot read YouTube key!`;
-                    });
+                        {
+                            if (err) throw `SEVERE: Cannot read YouTube key!`;
+                        });
                 }
                 else
                 {
@@ -354,23 +354,23 @@ module.exports =
                     if (i > 20) return l.logError(Error(`Too many pages in playlist!`));
 
                     const opts =
-                        {
-                            part: [`snippet`, `status`],
-                            playlistId: playlistId,
-                            maxResults: 50,
-                            pageToken: nextPage,
-                            key: ytkey
-                        };
+                          {
+                              part: [`snippet`, `status`],
+                              playlistId: playlistId,
+                              maxResults: 50,
+                              pageToken: nextPage,
+                              key: ytkey
+                          };
 
-                        await youtube.playlistItems.list(opts).then( async res =>
+                    await youtube.playlistItems.list(opts).then( async res =>
                         {
                             for (let i2 = 0; i2 < res.data.items.length; i2++) 
                             {
                                 if (res.data.items[i2].status.privacyStatus !== `private`)
                                 {
                                     let song = new am.song(res.data.items[i2].snippet.resourceId.videoId, res.data.items[i2].snippet.channelTitle,
-                                                        res.data.items[i2].snippet.title, res.data.items[i2].snippet.description,
-                                                        res.data.items[i2].snippet.thumbnails.high.url || ``, message.member.displayName, 0);
+                                                           res.data.items[i2].snippet.title, res.data.items[i2].snippet.description,
+                                                           res.data.items[i2].snippet.thumbnails.high.url || ``, message.member.displayName, 0);
                                     await currentQueue.add(song, message, true);
                                 }
                             }
@@ -384,7 +384,23 @@ module.exports =
                 }
             }
 
-            else ytSearch(args.join(` `), message, song =>
+            /*
+              if (args[0].includes(`https://open.spotify.com/`)){
+              const spotifyRegex = /(?:spotify.com\/)(.*?)(?:\/)(.*?)(?:\?)/i;
+              switch spotifyRegex[1]{
+              case `track`:
+              break;
+
+              case `playlist`:
+              break;
+
+              case `artist`:
+              break;
+              }
+              }
+            */
+
+            ytSearch(args.join(` `), message, song =>
                 {
                     currentQueue.add(song, message);
                 });

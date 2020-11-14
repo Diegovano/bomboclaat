@@ -383,6 +383,14 @@ class queue
             }
         }
     }
+
+    remove(index)
+    {
+
+
+
+        this.songList.splice(index, 1);
+    }
 }
 
 exports.getQueue = getQueue;
