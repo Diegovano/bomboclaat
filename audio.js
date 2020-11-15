@@ -7,6 +7,7 @@ const ytdl = require(`ytdl-core`);
 const youtube = google.youtube(`v3`);
 const Discord = require(`discord.js`);
 
+const DEFAULT_VOLUME = 0.05;
 
 let queueMap = new Map();
 
@@ -19,6 +20,7 @@ function pad(num)
 
 function ConvertSecToFormat(duration)
 {
+    duration = Math.round(duration);
     const seconds = duration % 60;
     const minutes = Math.floor(duration/60) % 60;
     const hours = Math.floor(duration/3600);
@@ -103,7 +105,6 @@ class song
             let ytkey;
             if (!process.env.YTTOKEN)   // Check if running github actions or just locally
             {
-
                 ytkey = fs.readFileSync(`.yttoken`, `utf8`, (err, data) => 
                 {
                     if (err) throw `SEVERE: Cannot read YouTube key!`;
@@ -150,10 +151,11 @@ class queue
         this.playing = false;
         this.paused = false;
         this.dispatcher = false;
-        this.volume = 1;
+        this.volume = DEFAULT_VOLUME;
+        this.seekTime = 0;
     }
 
-    async play(seconds = 0, isSeek = false)
+    async play(seconds = 0, isSeek = false, repeated = 0)
     {
         try
         {
@@ -171,7 +173,6 @@ class queue
                 {
                     quality: `highestaudio`,
                     highWaterMark: 1 << 25,
-                    // begin: begin // NOT WORKING?!
                 }),
                 {
                     seek: begin,
@@ -179,6 +180,8 @@ class queue
             .on(`finish`, () =>
             {
                 this.queuePos++;
+                this.seekTime = 0;
+
                 if (this.queuePos >= this.songList.length)
                 {
                     this.playing = false;
@@ -188,10 +191,22 @@ class queue
                 }
                 this.play();
             })
-            .on(`error`, error => l.logError(Error(`WARNING: Unable to play song! ${error}`)));
+            .on(`error`, error => 
+            {
+                repeated = repeated || 0;
+                if (repeated > 4)
+                {
+                    l.log(`Unable to play song! ${error.message}`);
+                    this.textChannel.send(`Unable to play that! Skipping...`);
+                    return this.skip();
+                }
+
+                l.log(`Error playing song, trying again! ${error.message}`);
+                return this.play(0, isSeek, ++repeated); // test the use of return
+            });
 
         this.dispatcher.setVolume(this.volume);
-        if (!isSeek) this.textChannel.send(`Now playing ***${this.songList[this.queuePos].title}***, requested by **${this.songList[this.queuePos].requestedBy}**`);
+        if (!isSeek && repeated === 0) this.textChannel.send(`Now playing ***${this.songList[this.queuePos].title}*** [${ConvertSecToFormat(this.songList[this.queuePos].duration)}], requested by **${this.songList[this.queuePos].requestedBy}**`);
     }
 
     async add(song, message, playlist)
@@ -199,10 +214,12 @@ class queue
         if (message.channel.id !== this.textChannel.id)
             return message.channel.send(`Bot is bound to ${this.textChannel.name}, please use this channel to queue!`);
 
+        const oldQueueLength = this.queueDuration;
+
         this.voiceChannel = message.member.voice.channel;
         this.songList.push(song);
         if (!this.playing) await this.play();
-        else if (!playlist) this.textChannel.send(`${song.title} has been added to the queue by ${message.member.nickname}`);
+        else if (!playlist) this.textChannel.send(`${song.title} [${ConvertSecToFormat(song.duration)}], *playing in ${ConvertSecToFormat(oldQueueLength)} has been added to the queue by ${song.requestedBy}`);
     }
 
     async printQueue(message)
@@ -226,12 +243,10 @@ class queue
         }
 
         let currentTrack = [``];
-        let queueDuration = 0;
 
         if (this.songList.length > this.queuePos)
         {
           let trackDuration = this.songList[this.queuePos].duration;
-          queueDuration += trackDuration;
           currentTrack[0] = `\nTrack ${this.queuePos + 1}: [${this.songList[this.queuePos].title}](${this.songList[this.queuePos].sourceLink}) [${ConvertSecToFormat(trackDuration)}], requested by ${this.songList[this.queuePos].requestedBy}.`;
         }
 
@@ -242,7 +257,6 @@ class queue
         for (let i = this.queuePos + 1, i2 = 0; i < this.songList.length; i++)
         {
             let trackDuration = this.songList[i].duration;
-            queueDuration += trackDuration
             const trackAppend = `\nTrack ${i + 1}: [${this.songList[i].title}](${this.songList[i].sourceLink}) [${ConvertSecToFormat(trackDuration)}], requested by ${this.songList[i].requestedBy}.`;
             if (nextTracks[i2].length + trackAppend.length < 1024) nextTracks[i2] += trackAppend;
             else
@@ -254,7 +268,7 @@ class queue
 
         let queueEmbeds = [ new Discord.MessageEmbed()
                                      .setColor(`#0000ff`)
-                                     .setTitle(`Queue                                 Queue Duration: ${ConvertSecToFormat(queueDuration)}`)
+                                     .setTitle(`Queue [${this.queueDuration !== 0 ? ConvertSecToFormat(this.queueDuration) : ` no upcoming tracks `}]`)
                                      .setAuthor('Bomborastclaat', message.client.user.displayAvatarURL()) ];
 
         let i2 = 0;
@@ -308,9 +322,9 @@ class queue
         }
     }
 
-    async skip(message)
+    async skip(message = null)
     {
-        if (message.channel.id !== this.textChannel.id)
+        if (message && message.channel.id !== this.textChannel.id)
             return message.channel.send(`Bot is bound to ${this.textChannel.name}, please use this channel to skip!`);
 
         if (this.songList.length === 0) return this.textChannel.send(`No track to skip!`);
@@ -325,13 +339,27 @@ class queue
         }
 
         this.play();
-        return this.textChannel.send(`Skipping ${this.songList[this.queuePos++].title},`);
+        return this.textChannel.send(`Skipping ${this.songList[this.queuePos++].title}.`);
     }
 
-    getSong() // keep sync as function return an object
+    get currentSong() // keep sync as function return an object
     {
         if (this.playing) return this.songList[this.queuePos];
-        else throw `No track playing!`;
+        else return null;
+    }
+
+    get timestamp()
+    {
+        return Math.round((this.seekTime !== 0 ? this.seekTime : this.songList[this.queuePos].startOffset ) + ( this.dispatcher.streamTime / 1000 ));
+    }
+
+    get queueDuration()
+    {
+        let duration = 0;
+        for (let i = this.queuePos + 1; i < this.songList.length; i++)  duration += this.songList[i].duration;
+        duration += this.currentSong ? this.currentSong.duration - this.timestamp : 0;
+
+        return duration;
     }
 
     async pause()
@@ -345,7 +373,7 @@ class queue
 
     async unpause()
     {
-        if (!this.playing) return this.textChannel.send(`Cannot Unpause: Noting playing!`);
+        if (!this.playing) return this.textChannel.send(`Cannot Unpause: Nothing playing!`);
         if (!this.paused) return this.textChannel.send(`Cannot Unpause: Player is not paused!`);
 
         this.paused = false;
@@ -375,6 +403,7 @@ class queue
         {
             if (seconds < this.songList[this.queuePos].duration)
             {
+                this.seekTime = parseInt(seconds);
                 this.play(seconds, true);
             }
             else
@@ -384,15 +413,72 @@ class queue
         }
     }
 
-    remove(index)
+    async remove(index)
     {
-
-
-
         this.songList.splice(index, 1);
+    }
+
+    async clear()
+    {
+        this.songList = [ this.currentSong ? this.currentSong : undefined ];
+        this.queuePos = 0;
+    }
+
+    async infoEmbed(pos = this.queuePos)
+    {
+        if (pos >= this.songList.length) throw Error(`Song number out of range!`);
+
+        const PROGRESS_BAR_LENGTH = 25;
+
+        let infoEmbed = new Discord.MessageEmbed()
+                            .setColor(`#ff0000`)
+                            .setTitle(`Song Information`)
+                            .addField(`Song Title`, `[${this.songList[pos].title}](${this.songList[pos].sourceLink}) [${ConvertSecToFormat(this.songList[pos].duration)}]`);
+
+        try
+        {
+            if (pos === this.queuePos)
+            {
+                let progressBar = `>`;
+    
+                let i = 0;
+                for (; i < Math.round((this.timestamp / this.currentSong.duration) * PROGRESS_BAR_LENGTH); i++)
+                {
+                    progressBar += `█`;
+                }
+                for (; i < PROGRESS_BAR_LENGTH; i++)
+                {
+                    progressBar += `░`;
+                }
+                progressBar += `<`;
+
+                infoEmbed.addField(`Song Progress`, `${progressBar} \u0009 [${ConvertSecToFormat(Math.round(this.timestamp))} / ${ConvertSecToFormat(this.currentSong.duration)}]`);
+            }
+
+            else if (pos > this.queuePos)
+            {
+                let cumulativeSeconds = 0;
+                for (let i = 1; i < pos - this.queuePos; i++) cumulativeSeconds += this.songList[pos + i].duration;
+                infoEmbed.addField(`Time to Play`, `${ConvertSecToFormat(this.currentSong.duration - this.timestamp + cumulativeSeconds)}`);
+            }
+
+            infoEmbed.addFields({ name : `Author`, value : this.songList[pos].author },
+                                { name : `Requested by:`, value : this.songList[pos].requestedBy })
+                                .setImage(this.songList[pos].icon)
+                                .setTimestamp();
+                                
+            return infoEmbed;
+        } 
+        catch (err) 
+        {
+            err.message = `WARNING: Cannot send embed: ${err.message}`;
+            l.logError(err);
+        }
+
     }
 }
 
 exports.getQueue = getQueue;
 exports.deleteQueue = deleteQueue;
 exports.song = song;
+exports.ConvertSecToFormat = ConvertSecToFormat;

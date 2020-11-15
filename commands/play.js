@@ -22,14 +22,15 @@ function ytSearch(searchTerm, message, callback)
     {
         ytkey = process.env.YTTOKEN;
     }
+    
     const opts =
-          {
-              q: searchTerm,
-              part: `snippet`,
-              maxResults: 5,
-              type: `video`,
-              key: ytkey
-          };
+        {
+            q: searchTerm,
+            part: [`snippet`],
+            maxResults: 5,
+            type: `video`,
+            key: ytkey
+        };
 
     youtube.search.list(opts).then( res =>
         {
@@ -37,9 +38,12 @@ function ytSearch(searchTerm, message, callback)
 
             for (let i = 0; i < res.data.items.length; i++)
             {
-                resArr.push(new am.song(res.data.items[i].id.videoId, res.data.items[i].snippet.channelTitle,
-                                        res.data.items[i].snippet.title, res.data.items[i].snippet.description,
-                                        res.data.items[i].snippet.thumbnails.high.url, message.member.displayName));
+                resArr.push(new am.song(res.data.items[i].id.videoId, 
+                                        res.data.items[i].snippet.channelTitle,
+                                        res.data.items[i].snippet.title, 
+                                        res.data.items[i].snippet.description,
+                                        res.data.items[i].snippet.thumbnails.high.url, 
+                                        message.member.displayName));
             }
 
             userSelect(resArr, message, callback);
@@ -208,201 +212,199 @@ function userSelect(results, message, callback)
 }
 
 module.exports =
+{
+    name: `play`,
+    aliases: [`p`],
+    description: `If paused, unpause, otherwise add song to queue.`,
+    usage: `[song name]`,
+    guidOnly: true,
+    async execute(message, args)
     {
-        name: `play`,
-        aliases: [`p`],
-        description: `If paused, unpause, otherwise add song to queue.`,
-        usage: `[song name]`,
-        guidOnly: true,
-        async execute(message, args)
+        if (!message.member.voice.channel) return message.reply(`please join a voice channel to queue songs!`);
+        if (!(message.member.voice.channel.permissionsFor(message.client.user).has(`CONNECT`)) ||
+            !(message.member.voice.channel.permissionsFor(message.client.user).has(`SPEAK`)))
+            return message.channel.send(`I need permissions to join and speak in your voice channel!`);
+
+        const currentQueue = am.getQueue(message);
+
+        if (!args[0])
         {
-            if (!message.member.voice.channel) return message.reply(`please join a voice channel to queue songs!`);
-            if (!(message.member.voice.channel.permissionsFor(message.client.user).has(`CONNECT`)) ||
-                !(message.member.voice.channel.permissionsFor(message.client.user).has(`SPEAK`)))
-                return message.channel.send(`I need permissions to join and speak in your voice channel!`);
-
-            const currentQueue = am.getQueue(message);
-
-            if (!args[0])
+            try
             {
-                try
-                {
-                    currentQueue.unpause();
-                }
-                catch (error)
-                {
-                    message.channel.send(`Unable to unpause the player! Is anything in queue? ${error}`);
-                }
-                return;
+                currentQueue.unpause();
             }
-
-            if (args[0].match(/(?:youtu)(?:.*?)(?:^|\/|v=)([a-z0-9_-]{11})(?:.*)/i))
+            catch (error)
             {
-                const videoID = args[0].match(/(?:.*?)(?:^|\/|v=)([a-z0-9_-]{11})(?:.*)/i)[1];
+                message.channel.send(`Unable to unpause the player! Is anything in queue? ${error}`);
+            }
+            return;
+        }
 
-                let timestamp = 0;
-                if (args[0].match(/[?&]t=/i))
+        if (args[0].match(/(?:youtu)(?:.*?)(?:^|\/|v=)([a-z0-9_-]{11})(?:.*)/i))
+        {
+            const videoID = args[0].match(/(?:.*?)(?:^|\/|v=)([a-z0-9_-]{11})(?:.*)/i)[1];
+
+            let timestamp = 0;
+            if (args[0].match(/[?&]t=/i))
+            {
+                timestamp = args[0].match(/(?:[?&]t=)(.*?)(?:&|$)/i)[1];
+
+                let seconds = 0;
+                if (timestamp.includes(`h`))
                 {
-                    timestamp = args[0].match(/(?:[?&]t=)(.*?)(?:&|$)/i)[1];
+                    let i = 0;
+                    while (timestamp[i] !== `h`) i++;
 
-                    let seconds = 0;
-                    if (timestamp.includes(`h`))
+                    for (let i2 = 0; i2 < i; i2++)
                     {
-                        let i = 0;
-                        while (timestamp[i] !== `h`) i++;
-
-                        for (let i2 = 0; i2 < i; i2++)
-                        {
-                            seconds += timestamp[i - i2 - 1] * 10**(i2) * 3600;
-                        }
-
-                        timestamp[0].shift(i);
+                        seconds += timestamp[i - i2 - 1] * 10**(i2) * 3600;
                     }
 
-                    if (timestamp.includes(`m`))
-                    {
-                        let i = 0;
-                        while (timestamp[i] !== `h`) i++;
-
-                        for (let i2 = 0; i2 < i; i2++)
-                        {
-                            seconds += timestamp[i - i2 - 1] * 10**(i2) * 60;
-                        }
-
-                        timestamp[0].shift(i);
-                    }
-
-                    if (timestamp.includes(`s`))
-                    {
-                        let i = 0;
-                        while (timestamp[i] !== `s`) i++;
-
-                        for (let i2 = 0; i2 < i; i2++)
-                        {
-                            seconds += timestamp[i - i2 - 1] * 10**(i2);
-                        }
-                    }
-
-                    if (!timestamp.includes(`h`) && !timestamp.includes(`m`) && !timestamp.includes(`s`))
-                    {
-                        for (let i = 0; i < timestamp.length; i++)
-                        {
-                            seconds += timestamp[timestamp.length - i - 1] * 10**(i);
-                        }
-                    }
-
-                    timestamp = seconds;
-                }
-                
-                let ytkey;
-
-                if (!process.env.YTTOKEN)   // Check if running github actions or just locally
-                {
-
-                    ytkey = fs.readFileSync(`.yttoken`, `utf8`, (err, data) => 
-                        {
-                            if (err) throw `SEVERE: Cannot read YouTube key!`;
-                        });
-                }
-                else
-                {
-                    ytkey = process.env.YTTOKEN;
+                    timestamp[0].shift(i);
                 }
 
-                let opts =
-                    {
-                        part: [`snippet`,`contentDetails`], // IMPORTANT: CONTENT DETAILS PART REQUIRED!
-                        id: videoID,
-                        key: ytkey
-                    };
+                if (timestamp.includes(`m`))
+                {
+                    let i = 0;
+                    while (timestamp[i] !== `h`) i++;
 
-                return youtube.videos.list(opts).then( res =>
+                    for (let i2 = 0; i2 < i; i2++)
                     {
-                        const song = new am.song(res.data.items[0].id, res.data.items[0].snippet.channelTitle,
-                                                 res.data.items[0].snippet.localized.title, res.data.items[0].snippet.localized.description,
-                                                 res.data.items[0].snippet.thumbnails.high.url || ``, message.member.displayName,
-                                                 timestamp, res.data.items[0].contentDetails.duration);
-                        currentQueue.add(song, message);
-                    }, reason =>
+                        seconds += timestamp[i - i2 - 1] * 10**(i2) * 60;
+                    }
+
+                    timestamp[0].shift(i);
+                }
+
+                if (timestamp.includes(`s`))
+                {
+                    let i = 0;
+                    while (timestamp[i] !== `s`) i++;
+
+                    for (let i2 = 0; i2 < i; i2++)
                     {
-                        l.logError(Error(`WARNING: Unable to get video information from link! ${reason}`));
+                        seconds += timestamp[i - i2 - 1] * 10**(i2);
+                    }
+                }
+
+                if (!timestamp.includes(`h`) && !timestamp.includes(`m`) && !timestamp.includes(`s`))
+                {
+                    for (let i = 0; i < timestamp.length; i++)
+                    {
+                        seconds += timestamp[timestamp.length - i - 1] * 10**(i);
+                    }
+                }
+
+                timestamp = seconds;
+            }
+            
+            let ytkey;
+
+            if (!process.env.YTTOKEN)   // Check if running github actions or just locally
+            {
+                ytkey = fs.readFileSync(`.yttoken`, `utf8`, (err, data) => 
+                    {
+                        if (err) throw `SEVERE: Cannot read YouTube key!`;
                     });
             }
-
-            else if (args[0].match(/(?<=[&?]list=)(.*?)(?=(&|$))/i)) 
-            {                
-                let playlistId = args[0].match(/(?<=[&?]list=)(.*?)(?=(&|$))/i)[1];
-
-                let ytkey;
-                if (!process.env.YTTOKEN)   // Check if running github actions or just locally
-                {   
-                    ytkey = fs.readFileSync(`.yttoken`, `utf8`, (err, data) => 
-                        {
-                            if (err) throw `SEVERE: Cannot read YouTube key!`;
-                        });
-                }
-                else
-                {
-                    ytkey = process.env.YTTOKEN;
-                }
-
-                let nextPage = ``;
-                let done = false;
-
-                for (let i = 0; !done; i++)
-                {
-                    if (i > 20) return l.logError(Error(`Too many pages in playlist!`));
-
-                    const opts =
-                          {
-                              part: [`snippet`, `status`],
-                              playlistId: playlistId,
-                              maxResults: 50,
-                              pageToken: nextPage,
-                              key: ytkey
-                          };
-
-                    await youtube.playlistItems.list(opts).then( async res =>
-                        {
-                            for (let i2 = 0; i2 < res.data.items.length; i2++) 
-                            {
-                                if (res.data.items[i2].status.privacyStatus !== `private`)
-                                {
-                                    let song = new am.song(res.data.items[i2].snippet.resourceId.videoId, res.data.items[i2].snippet.channelTitle,
-                                                           res.data.items[i2].snippet.title, res.data.items[i2].snippet.description,
-                                                           res.data.items[i2].snippet.thumbnails.high.url || ``, message.member.displayName, 0);
-                                    await currentQueue.add(song, message, true);
-                                }
-                            }
-
-                            if (res.data.pageInfo.resultsPerPage * (i + 1) > res.data.pageInfo.totalResults) done = true;
-                            else nextPage = res.data.nextPageToken;
-                        }, reason =>
-                        {
-                            l.logError(Error(`WARNING: Unable to get playlist information from link! ${reason}`));
-                        });
-                }
+            else
+            {
+                ytkey = process.env.YTTOKEN;
             }
 
-            /*
-              if (args[0].includes(`https://open.spotify.com/`)){
-              const spotifyRegex = /(?:spotify.com\/)(.*?)(?:\/)(.*?)(?:\?)/i;
-              switch spotifyRegex[1]{
-              case `track`:
-              break;
-
-              case `playlist`:
-              break;
-
-              case `artist`:
-              break;
-              }
-              }
-            */
-
-            ytSearch(args.join(` `), message, song =>
+            let opts =
                 {
+                    part: [`snippet`,`contentDetails`], // IMPORTANT: CONTENT DETAILS PART REQUIRED!
+                    id: videoID,
+                    key: ytkey
+                };
+
+            return youtube.videos.list(opts).then( res =>
+                {
+                    const song = new am.song(res.data.items[0].id, res.data.items[0].snippet.channelTitle,
+                                            res.data.items[0].snippet.localized.title, res.data.items[0].snippet.localized.description,
+                                            res.data.items[0].snippet.thumbnails.high.url || ``, message.member.displayName,
+                                            timestamp, res.data.items[0].contentDetails.duration);
                     currentQueue.add(song, message);
+                }, reason =>
+                {
+                    l.logError(Error(`WARNING: Unable to get video information from link! ${reason}`));
                 });
         }
-    };
+
+        else if (args[0].match(/(?<=[&?]list=)(.*?)(?=(&|$))/i)) 
+        {                
+            let playlistId = args[0].match(/(?<=[&?]list=)(.*?)(?=(&|$))/i)[1];
+
+            let ytkey;
+            if (!process.env.YTTOKEN)   // Check if running github actions or just locally
+            {   
+                ytkey = fs.readFileSync(`.yttoken`, `utf8`, (err, data) => 
+                {
+                    if (err) throw `SEVERE: Cannot read YouTube key!`;
+                });
+            }
+            else
+            {
+                ytkey = process.env.YTTOKEN;
+            }
+
+            let nextPage = ``;
+            let done = false;
+
+            const MAX_SONGS_PER_PLAYLIST = 100; // multiples of 50
+
+            for (let i = 0; !done; i++)
+            {
+                let resultsPerPage;
+                let totalResults;
+                
+                if (i > 20) return l.logError(Error(`Too many pages in playlist!`)); // Safety net
+                
+                const opts =
+                {
+                    part: [`snippet`, `status`],
+                    playlistId: playlistId,
+                    maxResults: 50,
+                    pageToken: nextPage,
+                    key: ytkey
+                };
+                
+                await youtube.playlistItems.list(opts).then( async res =>
+                    {
+                        for (let i2 = 0; i2 < res.data.items.length; i2++) 
+                        {
+                            resultsPerPage = res.data.pageInfo.resultsPerPage;
+                            totalResults = res.data.pageInfo.totalResults;
+
+                            if (res.data.items[i2].status.privacyStatus !== `private`)
+                            {
+                                let song = new am.song(res.data.items[i2].snippet.resourceId.videoId, res.data.items[i2].snippet.channelTitle,
+                                    res.data.items[i2].snippet.title, res.data.items[i2].snippet.description,
+                                    res.data.items[i2].snippet.thumbnails.high.url || ``, message.member.displayName, 0);
+                                    await currentQueue.add(song, message, true);
+                            }
+                        }
+                        
+                        if (res.data.pageInfo.resultsPerPage * (i + 1) > res.data.pageInfo.totalResults)
+                        {
+                            message.channel.send(`Added ${res.data.pageInfo.totalResults} songs to the queue!`);
+                            done = true;
+                        }
+                        else nextPage = res.data.nextPageToken;
+                    }, reason =>
+                    {
+                        l.logError(Error(`WARNING: Unable to get playlist information from link! ${reason}`));
+                    });
+
+                if (i + 1 >= MAX_SONGS_PER_PLAYLIST / resultsPerPage) return message.channel.send(`Added ${(i + 1) * resultsPerPage} songs to the queue out of ${totalResults}!`);
+            }
+                
+        }
+        
+        else ytSearch(args.join(` `), message, song =>
+        {
+            currentQueue.add(song, message);
+        });
+    }
+};

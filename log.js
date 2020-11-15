@@ -22,7 +22,7 @@ async function logError(error)
 
     console.error(`[${pad(date_ob.getHours())}:${pad(date_ob.getMinutes())}:${pad(date_ob.getSeconds())}] ${error.message}`); 
 
-    fs.appendFile(`./logs/${date_ob.getFullYear()}-${date_ob.getDate()}-${date_ob.getMonth() + 1}.log`, `${pad(date_ob.getHours())}:${pad(date_ob.getMinutes())}:${pad(date_ob.getSeconds())}\n${error.stack}\n\n`, function(app_err)
+    fs.appendFile(`./logs/${date_ob.getFullYear()}-${pad(date_ob.getDate())}-${pad(date_ob.getMonth() + 1)}.log`, `${pad(date_ob.getHours())}:${pad(date_ob.getMinutes())}:${pad(date_ob.getSeconds())}\n${error.stack}\n\n`, function(app_err)
     {
         if (app_err)
         {
@@ -37,7 +37,7 @@ async function logError(error)
                 }
 
                 log(`./logs directory successfully created!`);
-                fs.appendFile(`./logs/${date_ob.getFullYear()}-${date_ob.getDate()}-${date_ob.getMonth() + 1}.log.txt`, `${pad(date_ob.getHours())}:${pad(date_ob.getMinutes())}:${pad(date_ob.getSeconds())}\n${error.stack}\n\n`, function(app_err)
+                fs.appendFile(`./logs/${date_ob.getFullYear()}-${pad(date_ob.getDate())}-${pad(date_ob.getMonth() + 1)}.log`, `${pad(date_ob.getHours())}:${pad(date_ob.getMinutes())}:${pad(date_ob.getSeconds())}\n${error.stack}\n\n`, function(app_err)
                 {
                     if (app_err) throw Error(`FATAL: CANNOT LOG ERRORS`);
                 });

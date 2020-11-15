@@ -4,8 +4,8 @@ const Discord = require(`discord.js`);
 
 module.exports =
 {
-    name: `info`,
-    aliases: [`i`, `inf`],
+    name: `personinfo`,
+    aliases: [`person`, `pinfo`],
     description: `Gives critical information about the person.`,
     guildOnly: true,
     execute(message, args)
