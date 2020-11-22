@@ -132,7 +132,7 @@ class song
         }
         else
         {
-            this.duration = ConvertIsoToSec(duration);
+            this.duration = parseInt(duration) == duration ? duration : ConvertIsoToSec(duration);
         }
     }
 }

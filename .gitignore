@@ -6,6 +6,7 @@
 # Ignore file with token
 .*token
 .tokent
+.spotify_tokens.json
 
 # Ignore DS_Store
 .DS_Store
