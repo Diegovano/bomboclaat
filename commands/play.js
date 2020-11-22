@@ -397,7 +397,7 @@ module.exports =
                         l.logError(Error(`WARNING: Unable to get playlist information from link! ${reason}`));
                     });
 
-                if (i + 1 >= MAX_SONGS_PER_PLAYLIST / resultsPerPage) return message.channel.send(`Added ${(i + 1) * resultsPerPage} songs to the queue out of ${totalResults}!`);
+                if (i + 1 > MAX_SONGS_PER_PLAYLIST / resultsPerPage) return message.channel.send(`Added ${(i + 1) * resultsPerPage} songs to the queue out of ${totalResults}!`);
             }
                 
         }

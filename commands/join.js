@@ -1,5 +1,7 @@
 'use strict';
 
+const am = require(`../audio.js`);
+
 module.exports = 
 {
     name: `join`,
@@ -13,6 +15,7 @@ module.exports =
             return message.reply(`You aren't in a Voice Channel! Bot cannot connect!`);
         }
 
-        const connection = message.member.voice.channel.join();
+        const currentQueue = am.getQueue(message);
+        currentQueue.play();
     }
 };

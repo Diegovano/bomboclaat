@@ -8,7 +8,9 @@ module.exports = {
     name : `songinfo`,
     description : `Show info about a song in the queue`,
     aliases : [`info`, `songinfo`],
-    usage: `[ Track Number ]`,
+    usage: `[track number]`,
+    args: true,
+    guildOnly: true,
     execute(message, args)
     {        
         const currentQueue = am.getQueue(message);
@@ -25,7 +27,7 @@ module.exports = {
                 })
             .catch( error => 
                 {  
-                    l.log(`INFO: Could not find song info! ${error.message}`);
+                    l.log(`Could not find song info! ${error.message}`);
                     message.reply(`error finding track information! Is value in range?`);
                 });
             

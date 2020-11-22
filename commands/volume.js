@@ -5,10 +5,15 @@ const l = require(`../log.js`);
 
 module.exports = {
     name : `volume`,
-    aliases: [`vol`],
+    aliases: [`v`, `vol`],
     description : 'earrape',
+    args: true,
+    usage: `<volume level>`,
+    guildOnly: true,
     execute(message, args)
     {
+        if (parseInt(args) != args) return message.channel.send(`Please provide a number!`);
+
         const currentQueue = am.getQueue(message);
 
         try

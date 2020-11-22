@@ -6,7 +6,7 @@ const l = require(`../log.js`);
 module.exports = 
 {
     name: `version`,
-    aliases: [`ver`, `v`],
+    aliases: [`ver`],
     description: `Display bomoclaat's version.`,
     execute(message, args)
     {

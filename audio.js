@@ -7,7 +7,7 @@ const ytdl = require(`ytdl-core`);
 const youtube = google.youtube(`v3`);
 const Discord = require(`discord.js`);
 
-const DEFAULT_VOLUME = 0.05;
+const DEFAULT_VOLUME = 0.25;
 
 let queueMap = new Map();
 
@@ -100,6 +100,7 @@ class song
         this.icon = icon;
         this.requestedBy = requestedBy;
         this.startOffset = startOffset ? startOffset : 0;
+
         if (!duration)
         {
             let ytkey;
@@ -153,6 +154,8 @@ class queue
         this.dispatcher = false;
         this.volume = DEFAULT_VOLUME;
         this.seekTime = 0;
+        this.loopSong = false;
+        this.loopQueue = false;
     }
 
     async play(seconds = 0, isSeek = false, repeated = 0)
@@ -179,16 +182,25 @@ class queue
                 })
             .on(`finish`, () =>
             {
-                this.queuePos++;
+                if (!this.loopSong) this.queuePos++;
                 this.seekTime = 0;
 
                 if (this.queuePos >= this.songList.length)
                 {
-                    this.playing = false;
-                    this.dispatcher.destroy();
-                    this.voiceChannel.leave();
-                    return;
+                    if (!this.loopQueue)
+                    {
+                        this.playing = false;
+                        this.dispatcher.destroy();
+                        this.voiceChannel.leave();
+                        return;
+                    }
+                    else
+                    {
+                        this.queuePos = 0;
+                        this.play();
+                    }
                 }
+
                 this.play();
             })
             .on(`error`, error => 
@@ -196,7 +208,7 @@ class queue
                 repeated = repeated || 0;
                 if (repeated > 4)
                 {
-                    l.log(`Unable to play song! ${error.message}`);
+                    l.logError(`WARNING: Unable to play song! ${error.message}`);
                     this.textChannel.send(`Unable to play that! Skipping...`);
                     return this.skip();
                 }
@@ -219,7 +231,7 @@ class queue
         this.voiceChannel = message.member.voice.channel;
         this.songList.push(song);
         if (!this.playing) await this.play();
-        else if (!playlist) this.textChannel.send(`${song.title} [${ConvertSecToFormat(song.duration)}], *playing in ${ConvertSecToFormat(oldQueueLength)} has been added to the queue by ${song.requestedBy}`);
+        else if (!playlist) this.textChannel.send(`${song.title} [${ConvertSecToFormat(song.duration)}], playing in ${ConvertSecToFormat(oldQueueLength)} has been added to the queue by ${song.requestedBy}`);
     }
 
     async printQueue(message)
@@ -330,12 +342,21 @@ class queue
         if (this.songList.length === 0) return this.textChannel.send(`No track to skip!`);
         if (this.queuePos >= this.songList.length - 1) // -1 becuase the last track is being played
         {
-            this.textChannel.send(`Skipping final track: ${this.songList[this.queuePos].title} and disconnecting.`);
-            this.queuePos++;
-            this.playing = false;
-            this.dispatcher.destroy();
-            this.voiceChannel.leave();
-            return;
+            if (!this.loopQueue)
+            {
+                this.textChannel.send(`Skipping final track: ${this.songList[this.queuePos].title} and disconnecting.`);
+                this.queuePos++;
+                this.playing = false;
+                this.dispatcher.destroy();
+                this.voiceChannel.leave();
+                return;
+            }
+
+            else
+            {
+                this.queuePos = 0;
+                return this.play();
+            }
         }
 
         this.play();
@@ -385,7 +406,7 @@ class queue
     {
         if (!this.playing) return this.textChannel.send(`Cannot set Volume: Nothing playing!`);
 
-        this.volume = volumeAmount;
+        this.volume = volumeAmount * DEFAULT_VOLUME;
         this.dispatcher.setVolume(this.volume);
     }
 
@@ -420,7 +441,8 @@ class queue
 
     async clear()
     {
-        this.songList = [ this.currentSong ? this.currentSong : undefined ];
+        if (this.currentSong) this.songList = [ this.currentSong ];
+        else this.songList = [ ];
         this.queuePos = 0;
     }
 
@@ -475,6 +497,18 @@ class queue
             l.logError(err);
         }
 
+    }
+
+    async toggleSongLoop()
+    {
+        if (this.loopSong) this.loopSong = false;
+        else this.loopSong = true;
+    }
+
+    async toggleQueueLoop()
+    {
+        if (this.loopQueue) this.loopQueue = false;
+        else this.loopQueue = true;
     }
 }
 

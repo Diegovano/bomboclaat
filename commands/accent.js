@@ -8,6 +8,7 @@ module.exports =
     aliases: [`a`],
     description: `Fuck diegos descriptions`,
     usage: `fuck diegos usage`,
+    guildOnly: true,
     async execute(message, args)
     {
         const languages = ['french', 'german', 'russian', 'japanese', 'chinese', 'english', 'arabic', 'italian', 'spanish', 'korean', 'portuguese', 'swedish', 'dutch', 'nz', 'aussie', 'quebec', 'indian', 'american', 'welsh'];
