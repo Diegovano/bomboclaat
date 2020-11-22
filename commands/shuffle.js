@@ -25,7 +25,7 @@ module.exports = {
 
         var maybe = shuffle(currentQueue.songList.slice(currentQueue.queuePos));
 
-        for (let i = 0; i < maybe.length; i++){
+        for (let i = 0; i < maybe.length + 1; i++){
             currentQueue.songList[currentQueue.songList.length - i] = maybe[maybe.length - i];
         }
     }
