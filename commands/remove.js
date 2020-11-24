@@ -7,7 +7,8 @@ module.exports =
     name: `remove`,
     alisases: [`r`],
     description: `Gets rid of a song in the queue`,
-    usage: `[song position]`,
+    usage: `<song position>`,
+    args: true,
     guildOnly: true,
     execute(message, args)
     {
@@ -17,7 +18,8 @@ module.exports =
         {
             currentQueue.queuePos--;
         }
-
+        message.channel.send(`Removed Track ${args[0]}: ${currentQueue.songList[args[0]].title} [${am.ConvertSecToFormat(currentQueue.songList[args[0]].duration)}]`)
         currentQueue.songList.splice(parseInt(args[0]) - 1, 1);
+        
     }
 };
