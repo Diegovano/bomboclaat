@@ -13,8 +13,8 @@ module.exports =
     {
         const currentQueue = am.getQueue(message);
 
-        if (message && message.channel.id !== this.textChannel.id)
-            return message.channel.send(`Bot is bound to ${this.textChannel.name}, please use this channel to skip!`);
+        if (message && message.channel.id !== currentQueue.textChannel.id)
+            return message.channel.send(`Bot is bound to ${currentQueue.textChannel.name}, please use this channel to skip!`);
 
         currentQueue.skip().then( msg =>
             {

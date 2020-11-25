@@ -22,9 +22,16 @@ module.exports =
         if (!(message.member.voice.channel.permissionsFor(message.client.user).has(`CONNECT`)) ||
         !(message.member.voice.channel.permissionsFor(message.client.user).has(`SPEAK`)))
             return message.channel.send(`I need permissions to join and speak in your voice channel!`);
-
+   
         const currentQueue = am.getQueue(message);
+        
+        if (message.channel.id !== currentQueue.textChannel.id)
+        {
+            return message.channel.send(`Bot is bound to ${this.textChannel.name}, please use this channel to queue!`);
+        }
 
+        currentQueue.voiceChannel = message.member.voice.channel;
+        
         if (!args[0])
         {
             try
@@ -40,9 +47,10 @@ module.exports =
 
         getSongObjects(message, args).then( async songs =>
             {
+
                 if (songs.length === 1) 
                 {
-                    currentQueue.add(songs[0], message, false, false).then( msg =>
+                    currentQueue.add(songs[0], false, false).then( msg =>
                         {
                             if (msg) message.channel.send(msg);
                         }, err =>
@@ -56,8 +64,7 @@ module.exports =
                     
                     for (let i = 0; i < songs.length; i++) 
                     {
-                        await currentQueue.add(songs[i], message, true, false)
-                        .then( msg =>
+                        await currentQueue.add(songs[i], true, false).then( msg =>
                             {
                                 if (msg) message.channel.send(msg);
                             }, err =>
@@ -232,10 +239,11 @@ const getSongObjects = async (message, searchTerm) =>
                         {
                             await youtube.playlistItems.list(opts).then( async res =>
                                 {
+                                    resultsPerPage = res.data.pageInfo.resultsPerPage;
+                                    totalResults = res.data.pageInfo.totalResults;
+
                                     for (let i2 = 0; i2 < res.data.items.length; i2++)
                                     {
-                                        resultsPerPage = res.data.pageInfo.resultsPerPage;
-                                        totalResults = res.data.pageInfo.totalResults;
                 
                                         if (res.data.items[i2].status.privacyStatus !== `private`)
                                         {
@@ -252,8 +260,8 @@ const getSongObjects = async (message, searchTerm) =>
                                     reject(err);
                                 });
 
-                            resolve(songsToAdd);
-                        }
+                            }
+                        resolve(songsToAdd);
                     }, reason =>
                     {
                         l.logError(Error(`WARNING: Unable to get playlist information from link! ${reason}`));

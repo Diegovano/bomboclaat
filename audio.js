@@ -144,91 +144,102 @@ class queue
         }
         catch (err)
         {
-            return l.logError(Error(`WARNING: Unable to join voice channel! ${err.message}`));
+            return new Promise.reject(Error(`Unable to join voice channel! ${err.message}`));
         }
 
-        this.playing = true;
-        let begin = seconds !== 0 ? `${seconds}s` : `${this.songList[this.queuePos].startOffset}s`;
-        if (this.queuePos > this.songList.length - 1) return l.logError(Error(`WARNING: queuePos out of range`));
-        this.dispatcher = this.connection.play(ytdl(this.songList[this.queuePos].sourceLink,
+        return new Promise( (resolve, reject) =>
+        {
+            this.playing = true;
+            let begin = seconds !== 0 ? `${seconds}s` : `${this.songList[this.queuePos].startOffset}s`;
+            if (this.queuePos > this.songList.length - 1) return reject(Error(`queuePos out of range`));
+            this.dispatcher = this.connection.play(ytdl(this.songList[this.queuePos].sourceLink,
+                    {
+                        quality: `highestaudio`,
+                        highWaterMark: 1 << 25,
+                    }),
+                    {
+                        seek: begin,
+                    })
+                .on(`finish`, () =>
                 {
-                    quality: `highestaudio`,
-                    highWaterMark: 1 << 25,
-                }),
-                {
-                    seek: begin,
+                    if (!this.loopSong) this.queuePos++;
+                    this.seekTime = 0;
+    
+                    if (this.queuePos >= this.songList.length)
+                    {
+                        if (!this.loopQueue)
+                        {
+                            this.playing = false;
+                            this.dispatcher.destroy();
+                            this.voiceChannel.leave();
+                            return;
+                        }
+                        else
+                        {
+                            this.queuePos = 0;
+                            this.play().then( msg =>
+                                {
+                                    this.textChannel.send(msg);
+                                }, err =>
+                                {
+                                    l.logError(err);
+                                    this.skip().catch(err => l.logError(err));        
+                                });
+                        }
+                    }
+    
+                    this.play().then( msg =>
+                        {
+                            this.textChannel.send(msg);
+                        }, err =>
+                        {
+                            l.logError(err);
+                            this.skip().catch(err => l.logError(err));
+                        });
                 })
-            .on(`finish`, () =>
-            {
-                if (!this.loopSong) this.queuePos++;
-                this.seekTime = 0;
-
-                if (this.queuePos >= this.songList.length)
+                .on(`error`, error => 
                 {
-                    if (!this.loopQueue)
+                    repeated = repeated || 0;
+                    if (repeated > 4)
                     {
-                        this.playing = false;
-                        this.dispatcher.destroy();
-                        this.voiceChannel.leave();
-                        return;
+                        reject(Error(`Unable to play song after five attempts! ${error.message}`));
+                        this.textChannel.send(`Unable to play that! Skipping...`);
+                        return this.skip();
                     }
-                    else
-                    {
-                        this.queuePos = 0;
-                        this.play();
-                    }
-                }
-
-                this.play();
-            })
-            .on(`error`, error => 
-            {
-                repeated = repeated || 0;
-                if (repeated > 4)
-                {
-                    l.logError(Error(`WARNING: Unable to play song after five attempts! ${error.message}`));
-                    this.textChannel.send(`Unable to play that! Skipping...`);
-                    return this.skip();
-                }
-
-                if (repeated === 0) l.log(`Error playing song, trying again! ${error.message}`);
-                return this.play(0, isSeek, ++repeated); // test the use of return
-            });
-
-        this.dispatcher.setVolume(this.volume);
-        if (!isSeek && repeated === 0) this.textChannel.send(`Now playing **${this.songList[this.queuePos].title}** [${ConvertSecToFormat(this.songList[this.queuePos].duration)}], requested by **${this.songList[this.queuePos].requestedBy}** at ${this.songList[this.queuePos].requestTime.toLocaleTimeString([], {hour: `2-digit`, minute: `2-digit`})}`);
+    
+                    if (repeated === 0) l.log(`Error playing song, trying again! ${error.message}`);
+                    return this.play(0, isSeek, ++repeated); // test the use of return
+                });
+    
+            this.dispatcher.setVolume(this.volume);
+            if (!isSeek && repeated === 0) return resolve(`Now playing **${this.songList[this.queuePos].title}** [${ConvertSecToFormat(this.songList[this.queuePos].duration)}], requested by **${this.songList[this.queuePos].requestedBy}** at ${this.songList[this.queuePos].requestTime.toLocaleTimeString([], {hour: `2-digit`, minute: `2-digit`})}`);
+            else resolve();
+        });
     }
 
-    async add(song, message, playlist, playingNext)
+    async add(song, playlist, playingNext)
     {
         return new Promise( (resolve, reject) =>
         {
-            try
+            const oldQueueLength = this.queueDuration;
+    
+            this.songList.splice(playingNext ? this.queuePos + 1 : this.songList.length, 0, song);
+            if (!this.playing) 
             {
-                if (message.channel.id !== this.textChannel.id)
-                {
-                    // message.channel.send(`Bot is bound to ${this.textChannel.name}, please use this channel to queue!`);
-                    reject(Error(`Bot is bound to ${this.textChannel.name}, please use this channel to queue!`));
-                }
-        
-                const oldQueueLength = this.queueDuration;
-        
-                this.voiceChannel = message.member.voice.channel;
-                this.songList.splice(playingNext ? this.queuePos + 1 : this.songList.length, 0, song);
-                if (!this.playing) 
-                {
-                    this.play();
-                    resolve();
-                }
-                else if (!playlist)
-                {
-                    resolve(`${song.title} [${ConvertSecToFormat(song.duration)}], playing in ${ConvertSecToFormat(oldQueueLength)} has been added to the queue by ${song.requestedBy}`);   
-                }
+                this.play().then( msg =>
+                    {
+                        resolve(msg);
+                    }, err =>
+                    {
+                        reject(err);
+                    });
             }
-            catch (error)
+            else if (!playlist)
             {
-                reject(error);
+                return resolve(`${song.title} [${ConvertSecToFormat(song.duration)}], playing in ${playingNext ? this.currentSong.duration /* this.currentSong exits because playing bool is true */ : ConvertSecToFormat(oldQueueLength)} has been added to the queue by ${song.requestedBy}`);   
             }
+
+            else return resolve();
         });
     }
 
@@ -238,7 +249,7 @@ class queue
         {
             try
             {
-                if (this.songList.length === 0) resolve( [ `Queue is empty!` ] );
+                if (this.songList.length === 0) return resolve( [ `Queue is empty!` ] );
         
                 let pastTracks = [``];
         
@@ -324,7 +335,7 @@ class queue
                     }
                 }
                              
-                resolve(queueEmbeds);
+                return resolve(queueEmbeds);
             }
             catch (error)
             {
@@ -344,23 +355,35 @@ class queue
                 {
                     if (!this.loopQueue)
                     {
-                        this.queuePos++;
                         this.playing = false;
                         this.dispatcher.destroy();
                         this.voiceChannel.leave();
-                        resolve(`Skipping final track: ${this.songList[this.queuePos].title} and disconnecting.`);
+                        this.queuePos++;
+                        return resolve(`Skipping final track: ${this.songList[this.queuePos - 1].title} and disconnecting.`);
                     }
         
                     else
                     {
                         this.queuePos = 0;
-                        this.play();
                         resolve(`Looping the queue!`);
+                        this.play().then( msg =>
+                            {
+                                resolve(`Looping the queue!\n${msg}`);
+                            }, err => 
+                            {
+                                reject(err);
+                            });
                     }
                 }
 
-                this.play();
-                resolve(`Skipping ${this.songList[this.queuePos++].title}.`);
+                this.queuePos++;
+                this.play().then( msg =>
+                    {
+                        resolve(`Skipping ${this.songList[this.queuePos - 1].title}.\n${msg}`);
+                    }, err =>
+                    {
+                        reject(err);
+                    });
             } 
             catch (error) 
             {
@@ -416,7 +439,7 @@ class queue
         this.dispatcher.setVolume(this.volume);
     }
 
-    async seek(seconds, relative = false)
+    async seek(seconds)
     {
         if (!this.playing) throw `Nothing playing!`;
         if (this.paused) throw `Player is paused!`;
@@ -442,7 +465,12 @@ class queue
 
     async remove(index)
     {
-        this.songList.splice(index, 1);
+        return new Promise( (resolve, _reject) =>
+        {
+            this.songList.splice(index, 1);
+            if (this.queuePos > index) this.queuePos--;
+            return resolve();
+        });
     }
 
     async clear()

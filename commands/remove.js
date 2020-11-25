@@ -1,6 +1,7 @@
 'use strict';
 
 const am = require(`../audio.js`);
+const l = require(`../log.js`);
 
 module.exports = 
 {
@@ -14,12 +15,14 @@ module.exports =
     {
         const currentQueue = am.getQueue(message);
 
-        if (currentQueue.queuePos > args[0])
-        {
-            currentQueue.queuePos--;
-        }
-        message.channel.send(`Removed Track ${args[0]}: ${currentQueue.songList[args[0]].title} [${am.ConvertSecToFormat(currentQueue.songList[args[0]].duration)}]`)
-        currentQueue.songList.splice(parseInt(args[0]) - 1, 1);
-        
+        currentQueue.remove(parseInt(args[0]) - 1).then( _msg =>
+            {
+                message.channel.send(`Removed Track ${args[0]}: ${currentQueue.songList[args[0]].title} [${am.ConvertSecToFormat(currentQueue.songList[args[0]].duration)}]`);
+            }, err =>
+            {
+                err.message = `WARNING: Error removing track ${err.message}`;
+                message.channel.send(`Error removing track!`);
+                l.logError(err);
+            });
     }
 };
