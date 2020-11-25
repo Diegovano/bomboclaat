@@ -1,26 +1,23 @@
-'use strict'
+'use strict';
 
-const { google } = require(`googleapis`);
 const fs = require(`fs`);
 const SpotifyWebApi = require('spotify-web-api-node');
 const am = require(`./audio.js`);
-const youtube = google.youtube(`v3`);
-const play = require(`./commands/play.js`);
-const l = require(`./log.js`)
-const yts = require( 'yt-search' )
+const l = require(`./log.js`);
+const yts = require( 'yt-search' );
 
 const spotify_tokens = JSON.parse(fs.readFileSync(`.spotify_tokens.json`, `utf-8`, (err, data) =>
 {
     if (err) throw `FATAL: Cannot read token`;
-}))
+}));
 
-var spotifyApi = new SpotifyWebApi({
+const spotifyApi = new SpotifyWebApi({
     clientId: spotify_tokens.clientId,
     clientSecret: spotify_tokens.clientSecret,
     redirectUri: spotify_tokens.redirectUri
 });
 
-spotifyApi.setAccessToken(spotify_tokens.access_token)
+spotifyApi.setAccessToken(spotify_tokens.access_token);
 
 function parseUrl(url)
 {
@@ -28,7 +25,7 @@ function parseUrl(url)
     return urlInfo;
 }
 
-async function getYtInfo(searchTerm, message, playlist)
+async function getYtSong(searchTerm, message, playlist)
 {
     let ytkey;
     if (!process.env.YTTOKEN)
@@ -43,59 +40,52 @@ async function getYtInfo(searchTerm, message, playlist)
         ytkey = process.env.YTTOKEN;
     }
 
-    var currentQueue = am.getQueue(message);
-
     const r = await yts(searchTerm);
-    r.videos.slice(0,1).forEach( function (v) {
-        var song = new am.song(v.videoId, `https://www.youtube.com/watch?v=${v.videoId}`, v.title, v.description, v.thumbnail, message.member.displayName, 0, v.seconds);
-        currentQueue.add(song, message, playlist);
-    })
+    r.videos.slice(0, 1).forEach( res => 
+    {
+        return new am.song(res.videoId, `https://www.youtube.com/watch?v=${res.videoId}`, res.title, res.description, res.thumbnail, message.member.displayName, 0, res.seconds);
+    });
 }
 
-function getSpotifyMetadata(message, args)
+const getSpotifyMetadata = ( (message, args) =>
 {
-    var songInfo = parseUrl(args[0]);
-    switch (songInfo[1]) {
-        case 'track':
-            spotifyApi.getTrack(songInfo[2]).then(
-                async function(data) {
-                    await getYtInfo(`${data.body.name} ${data.body.artists[0].name}`, message, false);
-                },
-                function(err) {
-                    console.error(err);
-                });
-            break;
-
-        case 'playlist':
-            spotifyApi.getPlaylist(songInfo[2]).then(
-                async function(data) {
-                    await getYtInfo(`${data.body.tracks.items[0].track.name} ${data.body.tracks.items[0].track.artists[0].name}`, message, true);
-                    for (var i = 1; i < data.body.tracks.items.length; i++)
+    return new Promise( (resolve, reject) =>
+    {
+        var songInfo = parseUrl(args[0]);
+        switch (songInfo[1]) 
+        {
+            case 'track':
+                spotifyApi.getTrack(songInfo[2]).then( async data =>
+                    {
+                        resolve([ await getYtSong(`${data.body.name} ${data.body.artists[0].name}`, message, false) ]); // return array element
+                    }, err =>
+                    {
+                        err.message = `Unable to get track from Spotify API! Code ${err.statusCode}: ${err.message}`; // Warning added in the play command
+                        message.channel.send(`Unable to play using Spotify API!`);
+                        reject(Error(err.message));
+                    });
+                break;
+    
+            case 'playlist':
+                spotifyApi.getPlaylist(songInfo[2]).then( async data => 
+                    {
+                        let songs = [ ];
+                        
+                        songs.push(await getYtSong(`${data.body.tracks.items[0].track.name} ${data.body.tracks.items[0].track.artists[0].name}`, message, true));
+                        for (var i = 1; i < data.body.tracks.items.length; i++)
                         {
-                            await getYtInfo(`${data.body.tracks.items[i].track.name} ${data.body.tracks.items[i].track.artists[0].name}`, message, true);
+                            songs.push(await getYtSong(`${data.body.tracks.items[i].track.name} ${data.body.tracks.items[i].track.artists[0].name}`, message, true));
                         }
-                },
-                function(err){
-                    console.log(err);
-                }
-            )
-            break;
-
-        case 'artist':
-            spotifyApi.getArtistTopTracks(songInfo[2]).then(
-                function(data) {
-                    console.log(data)
-                    for (var i = 0; i < 10; i++)
-                        {
-                            getYtInfo(`this doesnt work`);
-                        }
-                },
-                function(err) {
-                    console.log(err);
-                }
-            )
-            break;
-    }
-}
+                        resolve(songs);
+                    }, err =>
+                    {
+                        err.message = `Unable to get playlist from Spotify API! Code ${err.statusCode}: ${err.message}`;
+                        message.channel.send(`Unable to play using Spotify API!`);
+                        reject(Error(err.message));
+                    });
+                break;
+        }
+    });
+});
 
 exports.getSpotifyMetadata = getSpotifyMetadata;

@@ -28,7 +28,7 @@ function ConvertSecToFormat(duration)
     if (hours > 0) return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
     if (minutes > 0) return `${pad(minutes)}:${pad(seconds)}`;
     if (seconds > 0) return `00:${pad(seconds)}`;
-    return `LIVE!`;
+    return `LIVE`;
 }
 
 function ConvertIsoToSec(t)
@@ -46,7 +46,7 @@ function replaceUnicode(origStr)  //and escape markdown
                   .replace(/&#39;/gi, `'`)
                   .replace(/&quot;/gi, `"`);
 
-    let unescaped = origStr.replace(/\\(\*|_|`|~|\\)/g, `$1`);
+    let unescaped = origStr.replace(/\\(\*|_|`|\||~|\\)/g, `$1`);
     return unescaped.replace(/(\*|_|`|~|\\)/g, '\\$1');
 }
 
@@ -65,29 +65,6 @@ function deleteQueue(message, suppressWarning = false)
     else if (!suppressWarning) message.channel.send(`No queue exists!`);
 }
 
-function embedOutLimits(embed)
-{
-    let reason = ``;
-
-    // if (!embed) return `Embed empty!`;
-
-    if (embed.description > 2048) reason += `Embed descriptions are limited to 2048 characters. `; // reason ends with . + space to ensure correct presentation of multiple fails.
-    if (embed.fields && embed.fields.length > 25) reason += `Embeds can have up to 25 fields. `;
-    
-    for (let i = 0; embed.fields && i < embed.fields.length; i++)
-    {
-        if (embed.fields[i].name.length > 256) reason += `A field's name is limited to 256 characters. `;
-        if (embed.fields[i].value.length > 1024) reason += `A field's value is limited to 1024 characters. `;
-    }
-    
-    if (embed.footer && embed.footer.text.length > 2048) reason += `The footer text is limited to 2048 characters. `;
-    if (embed.author && embed.author.name.length > 256) reason += `The author name is limited to 256 characters. `;
-    if (embed.length + (embed.author ? embed.author.name.length : 0) > 6000) reason += `The sum of all characters in an embed structure must not exceed 6000 characters. `;
-
-    return reason === `` ? null : reason;
-}
-
-
 class song
 {
     constructor(videoID, author, title, description, icon, requestedBy, startOffset, duration = undefined)
@@ -100,6 +77,7 @@ class song
         this.icon = icon;
         this.requestedBy = requestedBy;
         this.startOffset = startOffset ? startOffset : 0;
+        this.requestTime = new Date();
 
         if (!duration)
         {
@@ -208,159 +186,187 @@ class queue
                 repeated = repeated || 0;
                 if (repeated > 4)
                 {
-                    l.logError(`WARNING: Unable to play song! ${error.message}`);
+                    l.logError(Error(`WARNING: Unable to play song after five attempts! ${error.message}`));
                     this.textChannel.send(`Unable to play that! Skipping...`);
                     return this.skip();
                 }
 
-                l.log(`Error playing song, trying again! ${error.message}`);
+                if (repeated === 0) l.log(`Error playing song, trying again! ${error.message}`);
                 return this.play(0, isSeek, ++repeated); // test the use of return
             });
 
         this.dispatcher.setVolume(this.volume);
-        if (!isSeek && repeated === 0) this.textChannel.send(`Now playing ***${this.songList[this.queuePos].title}*** [${ConvertSecToFormat(this.songList[this.queuePos].duration)}], requested by **${this.songList[this.queuePos].requestedBy}**`);
+        if (!isSeek && repeated === 0) this.textChannel.send(`Now playing **${this.songList[this.queuePos].title}** [${ConvertSecToFormat(this.songList[this.queuePos].duration)}], requested by **${this.songList[this.queuePos].requestedBy}** at ${this.songList[this.queuePos].requestTime.toLocaleTimeString([], {hour: `2-digit`, minute: `2-digit`})}`);
     }
 
-    async add(song, message, playlist)
+    async add(song, message, playlist, playingNext)
     {
-        if (message.channel.id !== this.textChannel.id)
-            return message.channel.send(`Bot is bound to ${this.textChannel.name}, please use this channel to queue!`);
-
-        const oldQueueLength = this.queueDuration;
-
-        this.voiceChannel = message.member.voice.channel;
-        this.songList.push(song);
-        if (!this.playing) await this.play();
-        else if (!playlist) this.textChannel.send(`${song.title} [${ConvertSecToFormat(song.duration)}], playing in ${ConvertSecToFormat(oldQueueLength)} has been added to the queue by ${song.requestedBy}`);
-    }
-
-    async printQueue(message)
-    {
-        if (message.channel.id !== this.textChannel.id)
-            return message.channel.send(`Bot is bound to ${this.textChannel.name}, please use this channel to see the queue!`);
-
-        if (this.songList.length === 0) return this.textChannel.send(`Queue is empty!`);
-
-        let pastTracks = [``];
-
-        for (let i = 0, i2 = 0; i < this.queuePos; i++)
+        return new Promise( (resolve, reject) =>
         {
-            const trackAppend = `\nTrack ${i + 1}: [${this.songList[i].title}](${this.songList[i].sourceLink}) [${ConvertSecToFormat(this.songList[i].duration)}], requested by ${this.songList[i].requestedBy}.`;
-            if (pastTracks[i2].length + trackAppend.length < 1024) pastTracks[i2] += trackAppend;
-            else
+            try
             {
-                i2++;
-                pastTracks.push(trackAppend);
-            }
-        }
-
-        let currentTrack = [``];
-
-        if (this.songList.length > this.queuePos)
-        {
-          let trackDuration = this.songList[this.queuePos].duration;
-          currentTrack[0] = `\nTrack ${this.queuePos + 1}: [${this.songList[this.queuePos].title}](${this.songList[this.queuePos].sourceLink}) [${ConvertSecToFormat(trackDuration)}], requested by ${this.songList[this.queuePos].requestedBy}.`;
-        }
-
-        let nextTracks = [``];
-
-
-
-        for (let i = this.queuePos + 1, i2 = 0; i < this.songList.length; i++)
-        {
-            let trackDuration = this.songList[i].duration;
-            const trackAppend = `\nTrack ${i + 1}: [${this.songList[i].title}](${this.songList[i].sourceLink}) [${ConvertSecToFormat(trackDuration)}], requested by ${this.songList[i].requestedBy}.`;
-            if (nextTracks[i2].length + trackAppend.length < 1024) nextTracks[i2] += trackAppend;
-            else
-            {
-                i2++;
-                nextTracks.push(trackAppend);
-            }
-        }
-
-        let queueEmbeds = [ new Discord.MessageEmbed()
-                                     .setColor(`#0000ff`)
-                                     .setTitle(`Queue [${this.queueDuration !== 0 ? ConvertSecToFormat(this.queueDuration) : ` no upcoming tracks `}]`)
-                                     .setAuthor('Bomborastclaat', message.client.user.displayAvatarURL()) ];
-
-        let i2 = 0;
-        if (pastTracks[0] !== ``)
-        {
-            for (let i = 0; i < pastTracks.length; i++)
-            {
-                const fieldToAdd = { name: i === 0 ? `Past Track${this.queuePos > 1 ? 's' : ''}:` : `continued...`, value: pastTracks[i] };
-                if (queueEmbeds[i2].length + (queueEmbeds.author ? queueEmbeds[i2].author.name.length : 0) + fieldToAdd.name.length + fieldToAdd.value.length < 6000) queueEmbeds[i2].addField(fieldToAdd.name, fieldToAdd.value);
-                else
+                if (message.channel.id !== this.textChannel.id)
                 {
-                    queueEmbeds.push( new Discord.MessageEmbed().setColor(`#0000ff`) );
-                    
-                    queueEmbeds[++i2].addField(fieldToAdd.name, fieldToAdd.value);
+                    // message.channel.send(`Bot is bound to ${this.textChannel.name}, please use this channel to queue!`);
+                    reject(Error(`Bot is bound to ${this.textChannel.name}, please use this channel to queue!`));
+                }
+        
+                const oldQueueLength = this.queueDuration;
+        
+                this.voiceChannel = message.member.voice.channel;
+                this.songList.splice(playingNext ? this.queuePos + 1 : this.songList.length, 0, song);
+                if (!this.playing) 
+                {
+                    this.play();
+                    resolve();
+                }
+                else if (!playlist)
+                {
+                    resolve(`${song.title} [${ConvertSecToFormat(song.duration)}], playing in ${ConvertSecToFormat(oldQueueLength)} has been added to the queue by ${song.requestedBy}`);   
                 }
             }
-        }
-        if (currentTrack[0] !== ``)
-        {
-            const fieldToAdd = { name: `Current Track:`, value: currentTrack[0] };
-            if (queueEmbeds[i2].length + (queueEmbeds.author ? queueEmbeds[i2].author.name.length : 0) + fieldToAdd.name.length + fieldToAdd.value.length < 6000) queueEmbeds[i2].addField(fieldToAdd.name, fieldToAdd.value);
-            else
+            catch (error)
             {
-                queueEmbeds.push( new Discord.MessageEmbed().setColor(`#0000ff`) );
-
-                queueEmbeds[++i2].addField(fieldToAdd.name, fieldToAdd.value);
+                reject(error);
             }
-
-            queueEmbeds[i2].setThumbnail(this.songList[this.queuePos].icon);
-        }
-        if (nextTracks[0] !== ``)
-        {
-            for (let i = 0; i < nextTracks.length; i++)
-            {
-                const fieldToAdd = { name: i === 0 ? `Upcoming Track${this.queuePos < this.songList.length - 2  ? 's' : ''}:` : `continued...`, value: nextTracks[i] };
-                if (queueEmbeds[i2].length + (queueEmbeds.author ? queueEmbeds[i2].author.name.length : 0) + fieldToAdd.name.length + fieldToAdd.value.length < 6000) queueEmbeds[i2].addField(fieldToAdd.name, fieldToAdd.value);
-                else
-                {
-                    queueEmbeds.push( new Discord.MessageEmbed().setColor(`#0000ff`) );
-    
-                    queueEmbeds[++i2].addField(fieldToAdd.name, fieldToAdd.value);
-                }
-            }
-        }
-                         
-        // l.log(`Printing ${queueEmbeds.length} Embeds!`);
-        for (let i = 0; i < queueEmbeds.length; i++)
-        {
-            message.channel.send(queueEmbeds[i])
-                .catch(error => l.logError(Error(`WARNING: Unable to create queue embed! Is it within character limits? ${error.message}`)));
-        }
+        });
     }
 
-    async skip(message = null)
+    async getQueueMessage()
     {
-        if (message && message.channel.id !== this.textChannel.id)
-            return message.channel.send(`Bot is bound to ${this.textChannel.name}, please use this channel to skip!`);
-
-        if (this.songList.length === 0) return this.textChannel.send(`No track to skip!`);
-        if (this.queuePos >= this.songList.length - 1) // -1 becuase the last track is being played
+        return new Promise( (resolve, reject) =>
         {
-            if (!this.loopQueue)
+            try
             {
-                this.textChannel.send(`Skipping final track: ${this.songList[this.queuePos].title} and disconnecting.`);
-                this.queuePos++;
-                this.playing = false;
-                this.dispatcher.destroy();
-                this.voiceChannel.leave();
-                return;
+                if (this.songList.length === 0) resolve( [ `Queue is empty!` ] );
+        
+                let pastTracks = [``];
+        
+                for (let i = 0, i2 = 0; i < this.queuePos; i++)
+                {
+                    const trackAppend = `\nTrack ${i + 1}: [${this.songList[i].title}](${this.songList[i].sourceLink}) [${ConvertSecToFormat(this.songList[i].duration)}], requested by ${this.songList[i].requestedBy}.`;
+                    if (pastTracks[i2].length + trackAppend.length < 1024) pastTracks[i2] += trackAppend;
+                    else
+                    {
+                        i2++;
+                        pastTracks.push(trackAppend);
+                    }
+                }
+        
+                let currentTrack = [``];
+        
+                if (this.songList.length > this.queuePos)
+                {
+                  let trackDuration = this.songList[this.queuePos].duration;
+                  currentTrack[0] = `\nTrack ${this.queuePos + 1}: [${this.songList[this.queuePos].title}](${this.songList[this.queuePos].sourceLink}) [${ConvertSecToFormat(trackDuration)}], requested by ${this.songList[this.queuePos].requestedBy}.`;
+                }
+        
+                let nextTracks = [``];
+        
+                for (let i = this.queuePos + 1, i2 = 0; i < this.songList.length; i++)
+                {
+                    let trackDuration = this.songList[i].duration;
+                    const trackAppend = `\nTrack ${i + 1}: [${this.songList[i].title}](${this.songList[i].sourceLink}) [${ConvertSecToFormat(trackDuration)}], requested by ${this.songList[i].requestedBy}.`;
+                    if (nextTracks[i2].length + trackAppend.length < 1024) nextTracks[i2] += trackAppend;
+                    else
+                    {
+                        i2++;
+                        nextTracks.push(trackAppend);
+                    }
+                }
+        
+                let queueEmbeds = [ new Discord.MessageEmbed()
+                                             .setColor(`#0000ff`)
+                                             .setTitle(`Queue [${this.queueDuration !== 0 ? ConvertSecToFormat(this.queueDuration) : ` no upcoming tracks `}]`)
+                                             .setDescription(`Looping: ${this.loopSong ? `Song` : this.loopQueue ? `Queue` : `Disabled`}`)
+                                             .setAuthor('Bomborastclaat', this.textChannel.client.user.displayAvatarURL()) ];
+        
+                let i2 = 0;
+                if (pastTracks[0] !== ``)
+                {
+                    for (let i = 0; i < pastTracks.length; i++)
+                    {
+                        const fieldToAdd = { name: i === 0 ? `Past Track${this.queuePos > 1 ? 's' : ''}:` : `continued...`, value: pastTracks[i] };
+                        if (queueEmbeds[i2].length + (queueEmbeds.author ? queueEmbeds[i2].author.name.length : 0) + fieldToAdd.name.length + fieldToAdd.value.length < 6000) queueEmbeds[i2].addField(fieldToAdd.name, fieldToAdd.value);
+                        else
+                        {
+                            queueEmbeds.push( new Discord.MessageEmbed().setColor(`#0000ff`) );
+                            
+                            queueEmbeds[++i2].addField(fieldToAdd.name, fieldToAdd.value);
+                        }
+                    }
+                }
+                if (currentTrack[0] !== ``)
+                {
+                    const fieldToAdd = { name: `Current Track:`, value: currentTrack[0] };
+                    if (queueEmbeds[i2].length + (queueEmbeds.author ? queueEmbeds[i2].author.name.length : 0) + fieldToAdd.name.length + fieldToAdd.value.length < 6000) queueEmbeds[i2].addField(fieldToAdd.name, fieldToAdd.value);
+                    else
+                    {
+                        queueEmbeds.push( new Discord.MessageEmbed().setColor(`#0000ff`) );
+        
+                        queueEmbeds[++i2].addField(fieldToAdd.name, fieldToAdd.value);
+                    }
+        
+                    queueEmbeds[i2].setThumbnail(this.songList[this.queuePos].icon);
+                }
+                if (nextTracks[0] !== ``)
+                {
+                    for (let i = 0; i < nextTracks.length; i++)
+                    {
+                        const fieldToAdd = { name: i === 0 ? `Upcoming Track${this.queuePos < this.songList.length - 2  ? 's' : ''}:` : `continued...`, value: nextTracks[i] };
+                        if (queueEmbeds[i2].length + (queueEmbeds.author ? queueEmbeds[i2].author.name.length : 0) + fieldToAdd.name.length + fieldToAdd.value.length < 6000) queueEmbeds[i2].addField(fieldToAdd.name, fieldToAdd.value);
+                        else
+                        {
+                            queueEmbeds.push( new Discord.MessageEmbed().setColor(`#0000ff`) );
+            
+                            queueEmbeds[++i2].addField(fieldToAdd.name, fieldToAdd.value);
+                        }
+                    }
+                }
+                             
+                resolve(queueEmbeds);
             }
-
-            else
+            catch (error)
             {
-                this.queuePos = 0;
-                return this.play();
+                reject(error);
             }
-        }
+        });
+    }
 
-        this.play();
-        return this.textChannel.send(`Skipping ${this.songList[this.queuePos++].title}.`);
+    async skip()
+    {
+        return new Promise( (resolve, reject) =>
+        {
+            try 
+            {
+                if (this.songList.length === 0) resolve(`No track to skip!`);
+                if (this.queuePos >= this.songList.length - 1) // -1 becuase the last track is being played
+                {
+                    if (!this.loopQueue)
+                    {
+                        this.queuePos++;
+                        this.playing = false;
+                        this.dispatcher.destroy();
+                        this.voiceChannel.leave();
+                        resolve(`Skipping final track: ${this.songList[this.queuePos].title} and disconnecting.`);
+                    }
+        
+                    else
+                    {
+                        this.queuePos = 0;
+                        this.play();
+                        resolve(`Looping the queue!`);
+                    }
+                }
+
+                this.play();
+                resolve(`Skipping ${this.songList[this.queuePos++].title}.`);
+            } 
+            catch (error) 
+            {
+                reject(error);
+            }
+        });
     }
 
     get currentSong() // keep sync as function return an object
@@ -501,14 +507,12 @@ class queue
 
     async toggleSongLoop()
     {
-        if (this.loopSong) this.loopSong = false;
-        else this.loopSong = true;
+        this.loopSong = !this.loopSong;
     }
 
     async toggleQueueLoop()
     {
-        if (this.loopQueue) this.loopQueue = false;
-        else this.loopQueue = true;
+        this.loopQueue = !this.loopQueue;
     }
 }
 

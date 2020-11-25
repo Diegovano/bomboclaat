@@ -1,6 +1,7 @@
 'use strict';
 
 const am = require(`../audio.js`);
+const l = require(`../log.js`);
 
 module.exports =
 {
@@ -10,6 +11,26 @@ module.exports =
     guildOnly: true,
     execute(message, args)
     {
-        am.getQueue(message).printQueue(message);
+        const currentQueue = am.getQueue(message);
+
+        if (message.channel.id !== currentQueue.textChannel.id)
+            return message.channel.send(`Bot is bound to ${this.textChannel.name}, please use this channel to see the queue!`);
+
+        am.getQueue(message).getQueueMessage().then( messageContent =>
+            {
+                for (let i = 0; i < messageContent.length; i++)
+                {
+                    message.channel.send(messageContent[i]).catch( err =>
+                        {
+                            message.channel.send(`Unable to send queue message`);
+                            l.logError(err);
+                        });
+                }
+            }, err =>
+            {
+                message.channel.send(`Unable to get queue message`);
+                l.logError(err);
+            });
+
     }
 };

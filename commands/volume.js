@@ -12,7 +12,7 @@ module.exports = {
     guildOnly: true,
     execute(message, args)
     {
-        if (parseInt(args) != args) return message.channel.send(`Please provide a number!`);
+        if (parseFloat(args) != args) return message.channel.send(`Please provide a number!`);
 
         const currentQueue = am.getQueue(message);
 
