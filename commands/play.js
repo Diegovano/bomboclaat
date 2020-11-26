@@ -55,12 +55,14 @@ module.exports =
                             if (msg) message.channel.send(msg);
                         }, err =>
                         {
-                            message.channel.send(err.message);
+                            err.message = `WARNING: Cannot add track to queue! ${err.message}`;
+                            l.logError(err);
+                            message.channel.send(`Cannot add track to queue!`);
                         });
                 }
                 else
                 {
-                    message.channel.send(`Adding ${songs.length} songs to the queue!`);
+                    message.channel.send(`Adding ${songs.length} tracks to the queue!`);
                     
                     for (let i = 0; i < songs.length; i++) 
                     {
@@ -69,17 +71,18 @@ module.exports =
                                 if (msg) message.channel.send(msg);
                             }, err =>
                             {
-                                message.channel.send(err.message);
+                                err.message = `WARNING: Cannot add track to playlist! ${err.message}`;
+                                l.logError(err);
+                                message.channel.send(`Cannot add track to playlist!`);
                             });
                     }
                 }
             },  err =>
             {
                 err.message = `WARNING: Unable to get song information! ${err.message}`;
+                l.logError(err);
                 message.channel.send(`Unable to add song to queue!`);
-                return l.logError(err);
             });
-
     },
 
 };

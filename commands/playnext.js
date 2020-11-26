@@ -33,7 +33,9 @@ module.exports =
                         if (msg) message.channel.send(msg);
                     }, err =>
                     {
-                        message.channel.send(err.message);
+                        err.message = `WARNING: Cannot add track to queue! ${err.message}`;
+                        l.logError(err);
+                        message.channel.send(`Cannot add track to queue!`);
                     });
                 else
                 {

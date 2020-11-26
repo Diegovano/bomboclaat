@@ -15,13 +15,16 @@ module.exports =
     {
         const currentQueue = am.getQueue(message);
 
-        currentQueue.remove(parseInt(args[0]) - 1).then( _msg =>
+        if (message.channel.id !== currentQueue.textChannel.id)
+            return message.channel.send(`Bot is bound to ${this.textChannel.name}, please use this channel to remove tracks!`);
+
+        currentQueue.remove(parseInt(args[0]) - 1).then( msg =>
             {
-                message.channel.send(`Removed Track ${args[0]}: ${currentQueue.songList[args[0]].title} [${am.ConvertSecToFormat(currentQueue.songList[args[0]].duration)}]`);
+                message.channel.send(msg);
             }, err =>
             {
+                message.channel.send(`Error removing track! Is song position in range? `);
                 err.message = `WARNING: Error removing track ${err.message}`;
-                message.channel.send(`Error removing track!`);
                 l.logError(err);
             });
     }

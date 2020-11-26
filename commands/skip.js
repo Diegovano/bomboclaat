@@ -9,7 +9,7 @@ module.exports =
     aliases: [`s`, `next`],
     description: `Skip the current track.`,
     guildOnly: true,
-    execute(message, args)
+    execute(message, _args)
     {
         const currentQueue = am.getQueue(message);
 
@@ -22,6 +22,7 @@ module.exports =
             }, err =>
             {
                 message.channel.send(`Unable to skip track!`);
+                err.message = `WARNING: Unable to skip track! ${err.message}`;
                 l.logError(err);
             });
     }

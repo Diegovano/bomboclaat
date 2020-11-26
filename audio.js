@@ -84,7 +84,7 @@ class song
             let ytkey;
             if (!process.env.YTTOKEN)   // Check if running github actions or just locally
             {
-                ytkey = fs.readFileSync(`.yttoken`, `utf8`, (err, data) => 
+                ytkey = fs.readFileSync(`.yttoken`, `utf8`, (err, _data) => 
                 {
                     if (err) throw `SEVERE: Cannot read YouTube key!`;
                 });
@@ -144,7 +144,7 @@ class queue
         }
         catch (err)
         {
-            return new Promise.reject(Error(`Unable to join voice channel! ${err.message}`));
+            return new Promise.reject(err);
         }
 
         return new Promise( (resolve, reject) =>
@@ -182,8 +182,13 @@ class queue
                                     this.textChannel.send(msg);
                                 }, err =>
                                 {
+                                    err.message = `WARNING: Cannot play track! ${err.message}`;
                                     l.logError(err);
-                                    this.skip().catch(err => l.logError(err));        
+                                    this.skip().catch(err1 =>
+                                        { 
+                                            err1.message = `WARNING: Cannot skip track! ${err.message}`;
+                                            l.logError(err1); 
+                                        });        
                                 });
                         }
                     }
@@ -193,8 +198,13 @@ class queue
                             this.textChannel.send(msg);
                         }, err =>
                         {
+                            err.message = `WARNING: Cannot play track! ${err.message}`;
                             l.logError(err);
-                            this.skip().catch(err => l.logError(err));
+                            this.skip().catch(err1 =>
+                                { 
+                                    err1.message = `WARNING: Cannot skip track! ${err.message}`;
+                                    l.logError(err1); 
+                                });        
                         });
                 })
                 .on(`error`, error => 
@@ -202,13 +212,23 @@ class queue
                     repeated = repeated || 0;
                     if (repeated > 4)
                     {
-                        reject(Error(`Unable to play song after five attempts! ${error.message}`));
+                        error.message = `Unable to play song after five attempts! ${error.message}`;
+                        l.logError(error);
                         this.textChannel.send(`Unable to play that! Skipping...`);
-                        return this.skip();
+                        this.skip().then( msg =>
+                            {
+                                this.textChannel.send(msg);
+                            }, err =>
+                            {
+                                err.message = `WARNING: Cannot play track after an unavailable one! ${err.message}`;
+                                l.logError(err);
+                            });
+                        return reject(error);
                     }
     
                     if (repeated === 0) l.log(`Error playing song, trying again! ${error.message}`);
-                    return this.play(0, isSeek, ++repeated); // test the use of return
+                    this.play(0, isSeek, ++repeated); // test the use of return
+                    return reject(error);
                 });
     
             this.dispatcher.setVolume(this.volume);
@@ -247,69 +267,82 @@ class queue
     {
         return new Promise( (resolve, reject) =>
         {
-            try
+            if (this.songList.length === 0) return resolve( [ `Queue is empty!` ] );
+    
+            let pastTracks = [``];
+    
+            for (let i = 0, i2 = 0; i < this.queuePos; i++)
             {
-                if (this.songList.length === 0) return resolve( [ `Queue is empty!` ] );
-        
-                let pastTracks = [``];
-        
-                for (let i = 0, i2 = 0; i < this.queuePos; i++)
+                const trackAppend = `\nTrack ${i + 1}: [${this.songList[i].title}](${this.songList[i].sourceLink}) [${ConvertSecToFormat(this.songList[i].duration)}], requested by ${this.songList[i].requestedBy}.`;
+                if (pastTracks[i2].length + trackAppend.length < 1024) pastTracks[i2] += trackAppend;
+                else
                 {
-                    const trackAppend = `\nTrack ${i + 1}: [${this.songList[i].title}](${this.songList[i].sourceLink}) [${ConvertSecToFormat(this.songList[i].duration)}], requested by ${this.songList[i].requestedBy}.`;
-                    if (pastTracks[i2].length + trackAppend.length < 1024) pastTracks[i2] += trackAppend;
+                    i2++;
+                    pastTracks.push(trackAppend);
+                }
+            }
+    
+            let currentTrack = [``];
+    
+            if (this.songList.length > this.queuePos)
+            {
+                let trackDuration = this.songList[this.queuePos].duration;
+                currentTrack[0] = `\nTrack ${this.queuePos + 1}: [${this.songList[this.queuePos].title}](${this.songList[this.queuePos].sourceLink}) [${ConvertSecToFormat(trackDuration)}], requested by ${this.songList[this.queuePos].requestedBy}.`;
+            }
+    
+            let nextTracks = [``];
+    
+            for (let i = this.queuePos + 1, i2 = 0; i < this.songList.length; i++)
+            {
+                let trackDuration = this.songList[i].duration;
+                const trackAppend = `\nTrack ${i + 1}: [${this.songList[i].title}](${this.songList[i].sourceLink}) [${ConvertSecToFormat(trackDuration)}], requested by ${this.songList[i].requestedBy}.`;
+                if (nextTracks[i2].length + trackAppend.length < 1024) nextTracks[i2] += trackAppend;
+                else
+                {
+                    i2++;
+                    nextTracks.push(trackAppend);
+                }
+            }
+    
+            let queueEmbeds = [ new Discord.MessageEmbed()
+                                            .setColor(`#0000ff`)
+                                            .setTitle(`Queue [${this.queueDuration !== 0 ? ConvertSecToFormat(this.queueDuration) : ` no upcoming tracks `}]`)
+                                            .setDescription(`Looping: ${this.loopSong ? `Song` : this.loopQueue ? `Queue` : `Disabled`}`)
+                                            .setAuthor('Bomborastclaat', this.textChannel.client.user.displayAvatarURL()) ];
+    
+            let i2 = 0;
+            if (pastTracks[0] !== ``)
+            {
+                for (let i = 0; i < pastTracks.length; i++)
+                {
+                    const fieldToAdd = { name: i === 0 ? `Past Track${this.queuePos > 1 ? 's' : ''}:` : `continued...`, value: pastTracks[i] };
+                    if (queueEmbeds[i2].length + (queueEmbeds.author ? queueEmbeds[i2].author.name.length : 0) + fieldToAdd.name.length + fieldToAdd.value.length < 6000) queueEmbeds[i2].addField(fieldToAdd.name, fieldToAdd.value);
                     else
                     {
-                        i2++;
-                        pastTracks.push(trackAppend);
+                        queueEmbeds.push( new Discord.MessageEmbed().setColor(`#0000ff`) );
+                        
+                        queueEmbeds[++i2].addField(fieldToAdd.name, fieldToAdd.value);
                     }
                 }
-        
-                let currentTrack = [``];
-        
-                if (this.songList.length > this.queuePos)
+            }
+            if (currentTrack[0] !== ``)
+            {
+                const fieldToAdd = { name: `Current Track:`, value: currentTrack[0] };
+                if (queueEmbeds[i2].length + (queueEmbeds.author ? queueEmbeds[i2].author.name.length : 0) + fieldToAdd.name.length + fieldToAdd.value.length < 6000) queueEmbeds[i2].addField(fieldToAdd.name, fieldToAdd.value);
+                else
                 {
-                  let trackDuration = this.songList[this.queuePos].duration;
-                  currentTrack[0] = `\nTrack ${this.queuePos + 1}: [${this.songList[this.queuePos].title}](${this.songList[this.queuePos].sourceLink}) [${ConvertSecToFormat(trackDuration)}], requested by ${this.songList[this.queuePos].requestedBy}.`;
+                    queueEmbeds.push( new Discord.MessageEmbed().setColor(`#0000ff`) );
+    
+                    queueEmbeds[++i2].addField(fieldToAdd.name, fieldToAdd.value);
                 }
-        
-                let nextTracks = [``];
-        
-                for (let i = this.queuePos + 1, i2 = 0; i < this.songList.length; i++)
+    
+                queueEmbeds[i2].setThumbnail(this.songList[this.queuePos].icon);
+            }
+            if (nextTracks[0] !== ``)
+            {
+                for (let i = 0; i < nextTracks.length; i++)
                 {
-                    let trackDuration = this.songList[i].duration;
-                    const trackAppend = `\nTrack ${i + 1}: [${this.songList[i].title}](${this.songList[i].sourceLink}) [${ConvertSecToFormat(trackDuration)}], requested by ${this.songList[i].requestedBy}.`;
-                    if (nextTracks[i2].length + trackAppend.length < 1024) nextTracks[i2] += trackAppend;
-                    else
-                    {
-                        i2++;
-                        nextTracks.push(trackAppend);
-                    }
-                }
-        
-                let queueEmbeds = [ new Discord.MessageEmbed()
-                                             .setColor(`#0000ff`)
-                                             .setTitle(`Queue [${this.queueDuration !== 0 ? ConvertSecToFormat(this.queueDuration) : ` no upcoming tracks `}]`)
-                                             .setDescription(`Looping: ${this.loopSong ? `Song` : this.loopQueue ? `Queue` : `Disabled`}`)
-                                             .setAuthor('Bomborastclaat', this.textChannel.client.user.displayAvatarURL()) ];
-        
-                let i2 = 0;
-                if (pastTracks[0] !== ``)
-                {
-                    for (let i = 0; i < pastTracks.length; i++)
-                    {
-                        const fieldToAdd = { name: i === 0 ? `Past Track${this.queuePos > 1 ? 's' : ''}:` : `continued...`, value: pastTracks[i] };
-                        if (queueEmbeds[i2].length + (queueEmbeds.author ? queueEmbeds[i2].author.name.length : 0) + fieldToAdd.name.length + fieldToAdd.value.length < 6000) queueEmbeds[i2].addField(fieldToAdd.name, fieldToAdd.value);
-                        else
-                        {
-                            queueEmbeds.push( new Discord.MessageEmbed().setColor(`#0000ff`) );
-                            
-                            queueEmbeds[++i2].addField(fieldToAdd.name, fieldToAdd.value);
-                        }
-                    }
-                }
-                if (currentTrack[0] !== ``)
-                {
-                    const fieldToAdd = { name: `Current Track:`, value: currentTrack[0] };
+                    const fieldToAdd = { name: i === 0 ? `Upcoming Track${this.queuePos < this.songList.length - 2  ? 's' : ''}:` : `continued...`, value: nextTracks[i] };
                     if (queueEmbeds[i2].length + (queueEmbeds.author ? queueEmbeds[i2].author.name.length : 0) + fieldToAdd.name.length + fieldToAdd.value.length < 6000) queueEmbeds[i2].addField(fieldToAdd.name, fieldToAdd.value);
                     else
                     {
@@ -317,30 +350,9 @@ class queue
         
                         queueEmbeds[++i2].addField(fieldToAdd.name, fieldToAdd.value);
                     }
-        
-                    queueEmbeds[i2].setThumbnail(this.songList[this.queuePos].icon);
                 }
-                if (nextTracks[0] !== ``)
-                {
-                    for (let i = 0; i < nextTracks.length; i++)
-                    {
-                        const fieldToAdd = { name: i === 0 ? `Upcoming Track${this.queuePos < this.songList.length - 2  ? 's' : ''}:` : `continued...`, value: nextTracks[i] };
-                        if (queueEmbeds[i2].length + (queueEmbeds.author ? queueEmbeds[i2].author.name.length : 0) + fieldToAdd.name.length + fieldToAdd.value.length < 6000) queueEmbeds[i2].addField(fieldToAdd.name, fieldToAdd.value);
-                        else
-                        {
-                            queueEmbeds.push( new Discord.MessageEmbed().setColor(`#0000ff`) );
-            
-                            queueEmbeds[++i2].addField(fieldToAdd.name, fieldToAdd.value);
-                        }
-                    }
-                }
-                             
-                return resolve(queueEmbeds);
-            }
-            catch (error)
-            {
-                reject(error);
-            }
+            }    
+            return resolve(queueEmbeds);
         });
     }
 
@@ -348,47 +360,39 @@ class queue
     {
         return new Promise( (resolve, reject) =>
         {
-            try 
+            if (this.songList.length === 0) return resolve(`No track to skip!`);
+            if (this.queuePos >= this.songList.length - 1) // -1 becuase the last track is being played
             {
-                if (this.songList.length === 0) resolve(`No track to skip!`);
-                if (this.queuePos >= this.songList.length - 1) // -1 becuase the last track is being played
+                if (!this.loopQueue)
                 {
-                    if (!this.loopQueue)
-                    {
-                        this.playing = false;
-                        this.dispatcher.destroy();
-                        this.voiceChannel.leave();
-                        this.queuePos++;
-                        return resolve(`Skipping final track: ${this.songList[this.queuePos - 1].title} and disconnecting.`);
-                    }
-        
-                    else
-                    {
-                        this.queuePos = 0;
-                        resolve(`Looping the queue!`);
-                        this.play().then( msg =>
-                            {
-                                resolve(`Looping the queue!\n${msg}`);
-                            }, err => 
-                            {
-                                reject(err);
-                            });
-                    }
+                    this.playing = false;
+                    this.dispatcher.destroy();
+                    this.voiceChannel.leave();
+                    this.queuePos++;
+                    return resolve(`Skipping final track: ${this.songList[this.queuePos - 1].title} and disconnecting.`);
                 }
-
-                this.queuePos++;
-                this.play().then( msg =>
-                    {
-                        resolve(`Skipping ${this.songList[this.queuePos - 1].title}.\n${msg}`);
-                    }, err =>
-                    {
-                        reject(err);
-                    });
-            } 
-            catch (error) 
-            {
-                reject(error);
+    
+                else
+                {
+                    this.queuePos = 0;
+                    this.play().then( msg =>
+                        {
+                            resolve(`Looping the queue!\n${msg}`);
+                        }, err => 
+                        {
+                            reject(err);
+                        });
+                }
             }
+
+            this.queuePos++;
+            this.play().then( msg =>
+                {
+                    resolve(`Skipping ${this.songList[this.queuePos - 1].title}.\n${msg}`);
+                }, err =>
+                {
+                    reject(err);
+                });
         });
     }
 
@@ -467,9 +471,10 @@ class queue
     {
         return new Promise( (resolve, _reject) =>
         {
+            const removedSong = this.songList[index];
             this.songList.splice(index, 1);
             if (this.queuePos > index) this.queuePos--;
-            return resolve();
+            return resolve(`Removed Track ${index + 1}: ${removedSong.title} [${ConvertSecToFormat(removedSong.duration)}]`);
         });
     }
 
