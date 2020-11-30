@@ -6,6 +6,7 @@ const Discord = require(`discord.js`);
 const path = require('path');
 const { exit } = require("process");    // I can't be bothered to remove it as it will mean rewriting my build code
 
+
 function checkNodeVersion()
 {
     if (parseInt(process.versions.node.split(`.`)[0]) < 12) throw Error(`Use Node version 12 or greater!`);
