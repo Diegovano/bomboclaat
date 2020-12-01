@@ -3,11 +3,10 @@
 const fs = require(`fs`);
 const l = require(`../log.js`);
 
-module.exports =
-{
+module.exports = {
     name: `insult`,
     description: `Provide the user with a searing insult.`,
-    execute(message, args)
+    async execute(message, _args)
     {
         let insults;
         try

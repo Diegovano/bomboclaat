@@ -256,7 +256,7 @@ class queue
             }
             else if (!playlist)
             {
-                return resolve(`${song.title} [${ConvertSecToFormat(song.duration)}], playing in ${playingNext ? this.currentSong.duration /* this.currentSong exits because playing bool is true */ : ConvertSecToFormat(oldQueueLength)} has been added to the queue by ${song.requestedBy}`);   
+                return resolve(`${song.title} [${ConvertSecToFormat(song.duration)}], playing in ${playingNext ? ConvertSecToFormat(this.currentSong.duration - this.timestamp) /* this.currentSong exits because playing bool is true */ : ConvertSecToFormat(oldQueueLength)} has been added to the queue by ${song.requestedBy}`);   
             }
 
             else return resolve();
@@ -265,7 +265,7 @@ class queue
 
     async getQueueMessage()
     {
-        return new Promise( (resolve, reject) =>
+        return new Promise( (resolve, _reject) =>
         {
             if (this.songList.length === 0) return resolve( [ `Queue is empty!` ] );
     
@@ -469,12 +469,36 @@ class queue
 
     async remove(index)
     {
-        return new Promise( (resolve, _reject) =>
+        return new Promise( (resolve, reject) =>
         {
+            if (index >= this.songList.length) return reject(Error(`Cannot remove: index out of range!`));
             const removedSong = this.songList[index];
             this.songList.splice(index, 1);
             if (this.queuePos > index) this.queuePos--;
             return resolve(`Removed Track ${index + 1}: ${removedSong.title} [${ConvertSecToFormat(removedSong.duration)}]`);
+        });
+    }
+
+    async move(index1, index2)
+    {
+        return new Promise( (resolve, reject) =>
+        {
+            if (index1 >= this.songList.length || index2 >= this.songList.length) return reject(Error(`Cannot move: At least one of indices is out of range!`));
+            [ this.songList[index1], this.songList[index2] ] = [ this.songList[index2], this.songList[index1] ];
+            if (index2 === this.queuePos)
+            {
+                this.play().then( msg =>
+                    {
+                        resolve(`Moving track ${index1 + 1} to position ${index2 + 1}\n${msg}`);
+                    }, err =>
+                    {
+                        reject(err);
+                    });
+            }
+            else
+            {
+                resolve(`Moving track ${index1 + 1} to position ${index2 + 1}`);
+            }
         });
     }
 

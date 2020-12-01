@@ -2,13 +2,12 @@
 
 const Discord = require(`discord.js`);
 
-module.exports =
-{
+module.exports = {
     name: `personinfo`,
     aliases: [`person`, `pinfo`],
     description: `Gives critical information about the person.`,
     guildOnly: true,
-    execute(message, args)
+    async execute(message, args)
     {
         let sexuality = `Straight`;
         switch (message.author.username)

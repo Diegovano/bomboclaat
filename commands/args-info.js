@@ -1,12 +1,11 @@
 'use strict';
 
-module.exports = 
-{
+module.exports = {
 	name: `args-info`,
     description: `Information about the arguments provided.`,
     args: true,
     usage: `<arg1> [arg2] ...`,
-	execute(message, args) 
+	async execute(message, args) 
     {
         if (args[0] === `foo`) 
         {

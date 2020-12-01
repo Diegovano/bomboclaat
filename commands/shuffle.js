@@ -1,17 +1,18 @@
-const am = require(`../audio.js`)
+const am = require(`../audio.js`);
 
 module.exports = {
     name: `shuffle`,
     description: `figure it out yourself its not rocket science`,
-    execute(message, args){
-
+    async execute(message, _args)
+    {
         const currentQueue = am.getQueue(message);
 
-        function shuffle(array) {
-            var currentIndex = array.length, temporaryValue, randomIndex;
+        function shuffle(array) 
+        {
+            let currentIndex = array.length, temporaryValue, randomIndex;
 
-            while (0 !== currentIndex) {
-
+            while (0 !== currentIndex) 
+            {
                 randomIndex = Math.floor(Math.random() * currentIndex);
                 currentIndex -= 1;
 
@@ -23,10 +24,11 @@ module.exports = {
             return array;
         }
 
-        var maybe = shuffle(currentQueue.songList.slice(currentQueue.queuePos));
+        const maybe = shuffle(currentQueue.songList.slice(currentQueue.queuePos));
 
-        for (let i = 0; i < maybe.length + 1; i++){
+        for (let i = 0; i < maybe.length + 1; i++)
+        {
             currentQueue.songList[currentQueue.songList.length - i] = maybe[maybe.length - i];
         }
     }
-}
+};

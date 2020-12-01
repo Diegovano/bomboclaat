@@ -1,10 +1,9 @@
 'use strict';
 
-module.exports =
-{
+module.exports = {
     name: `bg`,
     description: `Self encouragement!`,
-    execute(message, args)
+    async execute(message, _args)
     {
         switch (message.author.username)
         {

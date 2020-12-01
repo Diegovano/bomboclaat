@@ -2,12 +2,11 @@
 
 const am = require(`../audio.js`);
 
-module.exports =
-{
+module.exports = {
     name: `switch`,
     description: `The bot will join the voice channel of the requestor.`,
     guildOnly: true,
-    execute(message, args)
+    async execute(message, _args)
     {
         if (!message.member.voice.channel) return message.reply(`please join a voice channel to call the bot!`);
         if (!(message.member.voice.channel.permissionsFor(message.client.user).has(`CONNECT`)) ||

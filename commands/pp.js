@@ -1,11 +1,10 @@
 'use strict';
 
-module.exports =
-{
+module.exports = {
     name: `pp`,
     aliases: [`dick`, `penis`, `hector`],
     description: `Reveals the true size of people's ╭∩╮`,
-    execute(message, args)
+    async execute(message, _args)
     {
         if (message.author.username === `Terminator00702` || message.author.username === `Bobnotarobot`)
         {

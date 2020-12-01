@@ -4,15 +4,14 @@ const am = require(`../audio.js`);
 const play = require(`./play.js`);
 const l = require(`../log.js`);
 
-module.exports = 
-{
+module.exports = {
     name: `playnext`,
     aliases: [`pn`, `next`],
     description: `Add a song to the queue that will play after the current one.`,
     guildOnly: true,
     args: true,
     usage: `<song name>`,
-    execute(message, args)
+    async execute(message, args)
     {
         if (!message.member.voice.channel) return message.reply(`please join a voice channel to queue songs!`);
         if (!(message.member.voice.channel.permissionsFor(message.client.user).has(`CONNECT`)) ||

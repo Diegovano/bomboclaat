@@ -9,8 +9,7 @@ const youtube = google.youtube(`v3`);
 const spotifyHandler = require(`../spotifyHandler.js`);
 
 
-module.exports =
-{
+module.exports = {
     name: `play`,
     aliases: [`p`],
     description: `If paused, unpause, otherwise add song to queue.`,
@@ -194,10 +193,10 @@ const getSongObjects = async (message, searchTerm) =>
                                                         timestamp, res.data.items[0].contentDetails.duration);
                             songsToAdd.push(song);
                             resolve(songsToAdd);
-                        }, reason =>
+                        }, err =>
                         {
-                            l.logError(Error(`WARNING: Unable to get video information from link! ${reason}`));
-                            reject(reason);
+                            err.message = `Unable to get video information from link! ${err.message}`;
+                            reject(err);
                         });
             }
         
@@ -265,10 +264,10 @@ const getSongObjects = async (message, searchTerm) =>
 
                             }
                         resolve(songsToAdd);
-                    }, reason =>
+                    }, err =>
                     {
-                        l.logError(Error(`WARNING: Unable to get playlist information from link! ${reason}`));
-                        reject(reason);
+                        err.message = `Unable to get playlist information from link! ${err.message}`;
+                        reject(err);
                     }).then( () =>
                     {
                         // if (i + 1 > MAX_SONGS_PER_PLAYLIST / resultsPerPage) return message.channel.send(`Added ${(i + 1) * resultsPerPage} songs to the queue out of ${totalResults}!`);
@@ -298,14 +297,14 @@ const getSongObjects = async (message, searchTerm) =>
         });
 };
 
-const ytSearch = async (searchTerm, message) =>
+async function ytSearch(searchTerm, message)
 {
     return new Promise( (resolve, reject) => 
     {
         let ytkey;
         if (!process.env.YTTOKEN)   // Check if running github actions or just locally
         {
-            ytkey = fs.readFileSync(`.yttoken`, `utf8`, (err, data) =>
+            ytkey = fs.readFileSync(`.yttoken`, `utf8`, (err, _data) =>
                 {
                     if (err) throw `SEVERE: Cannot read YouTube key!`;
                 });
@@ -350,9 +349,9 @@ const ytSearch = async (searchTerm, message) =>
                 l.logError(Error(`Unable to search using googleApis! ${reason}`));
             });
     });
-};
+}
 
-const userSelect = (results, message) =>
+function userSelect(results, message)
 {
     return new Promise( (resolve, reject) =>
     {
@@ -430,6 +429,6 @@ const userSelect = (results, message) =>
                 reject(err);
             });
     });
-};
+}
 
 module.exports.getSongObjects = getSongObjects;

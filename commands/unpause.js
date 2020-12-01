@@ -2,13 +2,12 @@
 
 const am = require(`../audio.js`);
 
-module.exports = 
-{
+module.exports = {
     name: `unpause`,
     aliases: [`go`],
     desciption: `Unpause the player`,
     guidOnly: true,
-    execute(message, args)
+    async execute(message, _args)
     {
         const currentQueue = am.getQueue(message);
 

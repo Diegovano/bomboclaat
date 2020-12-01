@@ -2,13 +2,12 @@
 
 const l = require(`../log.js`);
 
-module.exports =
-{
+module.exports = {
     name: `reload`,
     description: `Reloads a command.`,
     args: true,
     usage: `<command to reload>`,
-    execute(message, args)
+    async execute(message, args)
     {
         const commandName = args[0].toLowerCase();
         const command = message.client.commands.get(commandName)

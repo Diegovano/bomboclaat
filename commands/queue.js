@@ -3,13 +3,12 @@
 const am = require(`../audio.js`);
 const l = require(`../log.js`);
 
-module.exports =
-{
+module.exports = {
     name: `queue`,
     aliases: [`q`, `list`, `next`, `playlist`],
     description: `Print a list of the songs added to the queue since the bot joined the voice channel.`,
     guildOnly: true,
-    execute(message, _args)
+    async execute(message, _args)
     {
         const currentQueue = am.getQueue(message);
 

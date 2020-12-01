@@ -2,13 +2,12 @@
 
 const am = require(`../audio.js`);
 
-module.exports = 
-{
+module.exports = {
     name: `loop`,
     aliases: [`l`, `replay`, `again`],
     description: `Toggle between no loop, song loop and queue loop`,
     guildOnly: true,
-    execute(message, args)
+    async execute(message, _args)
     {
         const currentQueue = am.getQueue(message);
 

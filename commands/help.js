@@ -3,13 +3,12 @@
 const Discord = require("discord.js");
 const prefix = `|`; // static prefix for now
 
-module.exports =
-{
+module.exports = {
     name: `help`,
     aliases: [`h`, `commands`],
     description: `List all commands or more info about a specific command.`,
     usage: `[command name]`,
-    execute(message, args)
+    async execute(message, args)
     {
         const { commands } = message.client;
 

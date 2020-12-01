@@ -1,16 +1,25 @@
-'use strict'
+'use strict';
 
 const am = require(`../audio.js`);
+const l = require(`../log.js`);
 
-module.exports =
+module.exports = {
+    name: `move`,
+    description: `Moves a song to a certain position in the queue`,
+    args: true,
+    usage: `<song position> <wanted position>`,
+    async execute(message, args)
     {
-        name: `move`,
-        description: `Moves a song to a certain position in the queue`,
-        usage: `[song position] [wanted position]`,
-        execute(message, args)
-        {
-            const currentQueue = am.getQueue(message);
+        const currentQueue = am.getQueue(message);
 
-            [currentQueue.songList[args[0] - 1], currentQueue.songList[args[1] - 1]] = [currentQueue.songList[args[1] - 1], currentQueue.songList[args[0] - 1]]
-        }
-    };
+        currentQueue.move(args[0] - 1, args[1] - 1).then( msg =>
+            {
+                if (msg) message.channel.send(msg);
+            }, err =>
+            {
+                err.message = `WARNING: Cannot move tracks! ${err.message}`;
+                l.logError(err);
+                message.channel.send(`Cannot move track!`);
+            });
+    }
+};

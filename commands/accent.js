@@ -2,8 +2,7 @@
 
 const am = require(`../audio.js`);  // Need to integrate with audio.js
 
-module.exports =
-{
+module.exports = {
     name: `accent`,
     aliases: [`a`],
     description: `Fuck diegos descriptions`,

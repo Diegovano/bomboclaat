@@ -11,7 +11,7 @@ module.exports = {
     usage: `[track number]`,
     args: true,
     guildOnly: true,
-    execute(message, args)
+    async execute(message, args)
     {        
         const currentQueue = am.getQueue(message);
 

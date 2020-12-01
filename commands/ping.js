@@ -1,11 +1,10 @@
 'use strict';
 
-module.exports =
-{
+module.exports = {
     name: `ping`,
     description: `Ping... Pong!`,
     args: false,
-    execute(message, args)
+    async execute(message, _args)
     {
         message.channel.send(`Pong!`);
     }

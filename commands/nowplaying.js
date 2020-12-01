@@ -8,7 +8,7 @@ module.exports =
     description: `shows the banger currently playing`,
     aliases: [`np`, `current`, `playing`],
     guildOnly: true,
-    execute(message, args)
+    async execute(message, _args)
     {
         const currentQueue = am.getQueue(message);
 

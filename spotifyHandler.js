@@ -25,22 +25,24 @@ function parseUrl(url)
     return urlInfo;
 }
 
-const getYtSong = async (searchTerm, message, _playlist) =>
-      {
-          return new Promise( (resolve, reject) => {
+async function getYtSong(searchTerm, message, _playlist)
+    {
+        return new Promise( (resolve, reject) => 
+        {
+            yts(searchTerm).then( res => 
+            {
+                res.videos.slice(0, 1).forEach( res =>
+                    {
+                        resolve(new am.song(res.videoId, `https://www.youtube.com/watch?v=${res.videoId}`, res.title, res.description, res.thumbnail, message.member.displayName, 0, res.seconds));
+                    });
+            }, err => 
+            {
+                reject(err);
+            });
+        });
+    }
 
-              yts(searchTerm).then( res => {
-                  res.videos.slice(0, 1).forEach( res =>
-                      {
-                          resolve(new am.song(res.videoId, `https://www.youtube.com/watch?v=${res.videoId}`, res.title, res.description, res.thumbnail, message.member.displayName, 0, res.seconds));
-                      });
-              }, err => {
-                  reject(err);
-              });
-          });
-      }
-
-const getSpotifyMetadata = ( (message, args) =>
+async function getSpotifyMetadata(message, args)
     {
         return new Promise( (resolve, reject) =>
             {
@@ -64,12 +66,18 @@ const getSpotifyMetadata = ( (message, args) =>
                         {
                             let songs = [ ];
 
-                            songs.push(await getYtSong(`${data.body.tracks.items[0].track.name} ${data.body.tracks.items[0].track.artists[0].name}`, message, true));
+                            songs.push( await getYtSong(`${data.body.tracks.items[0].track.name} ${data.body.tracks.items[0].track.artists[0].name}`, message, true) );
                             for (var i = 1; i < data.body.tracks.items.length; i++)
                             {
-                                songs.push(await getYtSong(`${data.body.tracks.items[i].track.name} ${data.body.tracks.items[i].track.artists[0].name}`, message, true));
+                                getYtSong(`${data.body.tracks.items[i].track.name} ${data.body.tracks.items[i].track.artists[0].name}`, message, true).then( res =>
+                                    {
+                                        songs.push(res);
+                                    }, err =>
+                                    {
+                                        l.log(`Error adding song to queue from Spotify, continuing. ${err.message}`);
+                                    });
                             }
-                            resolve(songs);
+                            resolve(songs); //CANNOT RESOLVE UNFINISHED ARRAY
                         }, err =>
                         {
                             err.message = `Unable to get playlist from Spotify API! Code ${err.statusCode}: ${err.message}`;
@@ -98,6 +106,6 @@ const getSpotifyMetadata = ( (message, args) =>
                     break;
                 }
             });
-    });
+    }
 
 exports.getSpotifyMetadata = getSpotifyMetadata;
