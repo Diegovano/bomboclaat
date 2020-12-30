@@ -16,3 +16,6 @@
 
 # Ignore config
 /config
+
+# Ignore node_modules
+/node_modules

@@ -27,11 +27,16 @@
     "zlib-sync": "^0.1.7"
   },
   "devDependencies": {
-    "eslint": "^7.12.1"
+    "eslint": "^7.16.0",
+    "eslint-config-semistandard": "^15.0.1",
+    "eslint-config-standard": "^16.0.2",
+    "eslint-plugin-import": "^2.22.1",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^4.2.1"
   },
   "scripts": {
-    "build": "node build.js",
-    "test": "node test.js",
+    "test": "semistandard",
+    "testold": "node test.js",
     "run": "node index.js"
   },
   "repository": {

@@ -1,7 +1,0 @@
-    
-    if (message.guild.id !== '770990591357747221' && message.channel.id !== `770990593181483040`) return;
-    if (message.content ===`${prefix}botquit`)
-    {
-        l.log("Test completed!");
-        exit();
-    }

@@ -1,49 +1,41 @@
 'use strict';
 
-const fs = require(`fs`);
+const fs = require('fs');
 
-function pad(num)
-{
-    let s = num + ``;
-    while (s.length < 2) s = `0` + s;
-    return s;
+function pad (num) {
+  let s = num + '';
+  while (s.length < 2) s = '0' + s;
+  return s;
 }
 
-async function log(text)
-{
-    const date_ob = new Date();
+async function log (text) {
+  const dateOb = new Date();
 
-    console.log(`[${pad(date_ob.getHours())}:${pad(date_ob.getMinutes())}:${pad(date_ob.getSeconds())}] INFO: ${text}`);
+  console.log(`[${pad(dateOb.getHours())}:${pad(dateOb.getMinutes())}:${pad(dateOb.getSeconds())}] INFO: ${text}`);
 }
 
-async function logError(error)
-{
-    const date_ob = new Date();
+async function logError (error) {
+  const dateOb = new Date();
 
-    console.error(`[${pad(date_ob.getHours())}:${pad(date_ob.getMinutes())}:${pad(date_ob.getSeconds())}] ${error.message}`); 
+  console.error(`[${pad(dateOb.getHours())}:${pad(dateOb.getMinutes())}:${pad(dateOb.getSeconds())}] ${error.message}`);
 
-    fs.appendFile(`./logs/${date_ob.getFullYear()}-${pad(date_ob.getMonth() + 1)}-${pad(date_ob.getDate())}.log`, `${pad(date_ob.getHours())}:${pad(date_ob.getMinutes())}:${pad(date_ob.getSeconds())}\n${error.stack}\n\n`, function(app_err)
-    {
-        if (app_err)
-        {
-            if (app_err) log(`Cannot create file in ./logs directory. Attempting to create!`);
-            
-            fs.mkdir(`./logs`, (dir_err) =>
-            {
-                if (dir_err) 
-                {
-                    logError(`SEVERE: Unable to write to ./logs directory! ${app_err.message}`);
-                    logError(`SEVERE: Unable to create ./logs directory! ${dir_err.message}`);
-                }
+  fs.appendFile(`./logs/${dateOb.getFullYear()}-${pad(dateOb.getMonth() + 1)}-${pad(dateOb.getDate())}.log`, `${pad(dateOb.getHours())}:${pad(dateOb.getMinutes())}:${pad(dateOb.getSeconds())}\n${error.stack}\n\n`, function (appErr) {
+    if (appErr) {
+      if (appErr) log('Cannot create file in ./logs directory. Attempting to create!');
 
-                log(`./logs directory successfully created!`);
-                fs.appendFile(`./logs/${date_ob.getFullYear()}-${pad(date_ob.getMonth() + 1)}-${pad(date_ob.getDate())}.log`, `${pad(date_ob.getHours())}:${pad(date_ob.getMinutes())}:${pad(date_ob.getSeconds())}\n${error.stack}\n\n`, function(app_err)
-                {
-                    if (app_err) throw Error(`FATAL: CANNOT LOG ERRORS`);
-                });
-            });
+      fs.mkdir('./logs', (dirErr) => {
+        if (dirErr) {
+          logError(`SEVERE: Unable to write to ./logs directory! ${appErr.message}`);
+          logError(`SEVERE: Unable to create ./logs directory! ${dirErr.message}`);
         }
-    });
+
+        log('./logs directory successfully created!');
+        fs.appendFile(`./logs/${dateOb.getFullYear()}-${pad(dateOb.getMonth() + 1)}-${pad(dateOb.getDate())}.log`, `${pad(dateOb.getHours())}:${pad(dateOb.getMinutes())}:${pad(dateOb.getSeconds())}\n${error.stack}\n\n`, function (appErr) {
+          if (appErr) throw Error('FATAL: CANNOT LOG ERRORS');
+        });
+      });
+    }
+  });
 }
 
 exports.log = log;

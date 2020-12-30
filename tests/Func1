@@ -1,3 +1,0 @@
-
-    l.log('Running in testing mode!');
-    require(`./${path.join(`tests`,`test_client.js`)}`);
