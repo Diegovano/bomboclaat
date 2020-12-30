@@ -11,17 +11,13 @@ module.exports = {
     guildOnly: true,
     args: true,
     usage: `<song name>`,
+    voiceConnection: true,
     async execute(message, args)
     {
-        if (!message.member.voice.channel) return message.reply(`please join a voice channel to queue songs!`);
-        if (!(message.member.voice.channel.permissionsFor(message.client.user).has(`CONNECT`)) ||
-        !(message.member.voice.channel.permissionsFor(message.client.user).has(`SPEAK`)))
-            return message.channel.send(`I need permissions to join and speak in your voice channel!`);
-
         const currentQueue = am.getQueue(message);
 
         if (message.channel.id !== currentQueue.textChannel.id)
-            return message.channel.send(`Bot is bound to ${this.textChannel.name}, please use this channel to see the queue!`);
+            return message.channel.send(`Bot is bound to ${currentQueue.textChannel.name}, please use this channel to see the queue!`);
 
         currentQueue.voiceChannel = message.member.voice.channel;
 

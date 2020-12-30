@@ -11,7 +11,7 @@ module.exports = {
         let insults;
         try
         {
-            insults = fs.readFileSync(`../slurs.txt`, `utf8`, function(err, data) { } );
+            insults = fs.readFileSync(`../slurs.txt`, `utf8`);
         }
         catch
         {

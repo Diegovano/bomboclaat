@@ -8,6 +8,7 @@ module.exports = {
     aliases: [`quit`, `bye`],
     description: `Tells the bot to disconnect from the voice channel.`,
     guildOnly: true,
+    voiceConnection: true,
     async execute(message, args)
     {
         const currentQueue = am.getQueue(message);
@@ -23,14 +24,7 @@ module.exports = {
         }
         
         const userVoiceChannel = message.member.voice.channel;
-        
-        if (!userVoiceChannel) 
-        {
-            if (args !== `silent`) message.reply("You aren't in a voice channel, please join to tell me to leave!");
-            currentQueue.pause();
-            return;
-        }
-        
+            
         // Compare the voiceChannels
         if (userVoiceChannel === clientVoiceConnection.channel) 
         {

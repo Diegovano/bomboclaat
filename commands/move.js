@@ -8,6 +8,7 @@ module.exports = {
     description: `Moves a song to a certain position in the queue`,
     args: true,
     usage: `<song position> <wanted position>`,
+    voiceConnection: true,
     async execute(message, args)
     {
         const currentQueue = am.getQueue(message);

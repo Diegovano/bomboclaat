@@ -7,6 +7,7 @@ module.exports = {
     aliases: [`l`, `replay`, `again`],
     description: `Toggle between no loop, song loop and queue loop`,
     guildOnly: true,
+    voiceConnection: true,
     async execute(message, _args)
     {
         const currentQueue = am.getQueue(message);

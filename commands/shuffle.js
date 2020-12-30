@@ -3,6 +3,7 @@ const am = require(`../audio.js`);
 module.exports = {
     name: `shuffle`,
     description: `figure it out yourself its not rocket science`,
+    voiceConnection: true,
     async execute(message, _args)
     {
         const currentQueue = am.getQueue(message);

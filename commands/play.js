@@ -15,18 +15,14 @@ module.exports = {
     description: `If paused, unpause, otherwise add song to queue.`,
     usage: `[song name]`,
     guidOnly: true,
+    voiceConnection: true,
     async execute(message, args)
-    {
-        if (!message.member.voice.channel) return message.reply(`please join a voice channel to queue songs!`);
-        if (!(message.member.voice.channel.permissionsFor(message.client.user).has(`CONNECT`)) ||
-        !(message.member.voice.channel.permissionsFor(message.client.user).has(`SPEAK`)))
-            return message.channel.send(`I need permissions to join and speak in your voice channel!`);
-   
+    {   
         const currentQueue = am.getQueue(message);
         
         if (message.channel.id !== currentQueue.textChannel.id)
         {
-            return message.channel.send(`Bot is bound to ${this.textChannel.name}, please use this channel to queue!`);
+            return message.channel.send(`Bot is bound to ${currentQueue.textChannel.name}, please use this channel to queue!`);
         }
 
         currentQueue.voiceChannel = message.member.voice.channel;
@@ -46,8 +42,8 @@ module.exports = {
 
         getSongObjects(message, args).then( async songs =>
             {
-
-                if (songs.length === 1) 
+                if (!songs) return; /* message.channel.send(`No tracks added!`);*/ //if no songs returned i.e. no search results
+                else if (songs.length === 1) 
                 {
                     currentQueue.add(songs[0], false, false).then( msg =>
                         {
@@ -59,7 +55,7 @@ module.exports = {
                             message.channel.send(`Cannot add track to queue!`);
                         });
                 }
-                else
+                else if (songs.length > 1)
                 {
                     message.channel.send(`Adding ${songs.length} tracks to the queue!`);
                     
@@ -96,7 +92,7 @@ const getSongObjects = async (message, searchTerm) =>
             {
                 const videoID = searchTerm[0].match(/(?:.*?)(?:^|\/|v=)([a-z0-9_-]{11})(?:.*)/i)[1];
                 
-                let timestamp = 0;
+                let timestamp = undefined;
                 if (searchTerm[0].match(/[?&]t=/i))
                 {
                     timestamp = searchTerm[0].match(/(?:[?&]t=)(.*?)(?:&|$)/i)[1];
@@ -161,17 +157,21 @@ const getSongObjects = async (message, searchTerm) =>
                         }
                     }
         
-                    timestamp = seconds;
+                    timestamp = timestamp ? seconds : 0;
                 }
         
                 let ytkey;
                 
                 if (!process.env.YTTOKEN)   // Check if running github actions or just locally
                 {
-                    ytkey = fs.readFileSync(`.yttoken`, `utf8`, (err, data) =>
-                        {
-                            if (err) throw `SEVERE: Cannot read YouTube key!`;
-                        });
+                    try 
+                    {
+                        ytkey = fs.readFileSync(`.yttoken`, `utf8`);
+                    } 
+                    catch (err) 
+                    {
+                        reject(Error(`SEVERE: Cannot read YouTube key!`));
+                    }
                 }
                 else
                 {
@@ -207,10 +207,14 @@ const getSongObjects = async (message, searchTerm) =>
                 let ytkey;
                 if (!process.env.YTTOKEN)   // Check if running github actions or just locally
                 {
-                    ytkey = fs.readFileSync(`.yttoken`, `utf8`, (err, data) =>
-                        {
-                            if (err) throw `SEVERE: Cannot read YouTube key!`;
-                        });
+                    try
+                    {
+                        ytkey = fs.readFileSync(`.yttoken`, `utf8`);
+                    }
+                    catch (err)
+                    {
+                        reject(Error(`SEVERE: Cannot read YouTube key!`));
+                    }
                 }
                 else
                 {
@@ -247,7 +251,8 @@ const getSongObjects = async (message, searchTerm) =>
                                     for (let i2 = 0; i2 < res.data.items.length; i2++)
                                     {
                 
-                                        if (res.data.items[i2].status.privacyStatus !== `private`)
+                                        if (res.data.items[i2].status.privacyStatus === `public`
+                                         || res.data.items[i2].status.privacyStatus === `unlisted`)
                                         {
                                             let song = new am.song(res.data.items[i2].snippet.resourceId.videoId, res.data.items[i2].snippet.channelTitle,
                                                                     res.data.items[i2].snippet.title, res.data.items[i2].snippet.description,
@@ -288,8 +293,12 @@ const getSongObjects = async (message, searchTerm) =>
         
             else ytSearch(searchTerm.join(` `), message).then( song =>
                 {
-                    songsToAdd.push(song);
-                    resolve(songsToAdd);
+                    if (!song) resolve(null);
+                    else 
+                    {
+                        songsToAdd.push(song);
+                        resolve(songsToAdd);
+                    }
                 }, err =>
                 {
                     reject(err);
@@ -304,11 +313,15 @@ async function ytSearch(searchTerm, message)
         let ytkey;
         if (!process.env.YTTOKEN)   // Check if running github actions or just locally
         {
-            ytkey = fs.readFileSync(`.yttoken`, `utf8`, (err, _data) =>
-                {
-                    if (err) throw `SEVERE: Cannot read YouTube key!`;
-                });
-        }
+            try
+            {
+                ytkey = fs.readFileSync(`.yttoken`, `utf8`);
+            }
+            catch (err)
+            {
+                reject(Error(`SEVERE: Cannot read YouTube key!`));
+            }
+}
         else
         {
             ytkey = process.env.YTTOKEN;
@@ -319,7 +332,7 @@ async function ytSearch(searchTerm, message)
                   q: searchTerm,
                   part: [`snippet`],
                   maxResults: 5,
-                  type: `video`,
+                  type: [`video`],
                   key: ytkey
               };
     
@@ -356,7 +369,11 @@ function userSelect(results, message)
     return new Promise( (resolve, reject) =>
     {
 
-        if (results.length === 0) return message.channel.send(`No results for your search!`);
+        if (results.length === 0)
+        {
+            message.channel.send(`No results for your search!`);
+            return resolve(null);
+        } 
     
         const reactionList = [`1️⃣`,`2️⃣`,`3️⃣`,`4️⃣`,`5️⃣`,`6️⃣`,`7️⃣`,`8️⃣`,`9️⃣`,`🔟`];
     
@@ -411,7 +428,7 @@ function userSelect(results, message)
                         {
                             if (collected) return;
                             collected = true;
-                            setTimeout( () =>
+                            message.client.setTimeout( () =>
                                 {
                                     if (!embedDeleted) msg.delete().then( () => embedDeleted = true);
                                 }, waitTime);
@@ -419,7 +436,7 @@ function userSelect(results, message)
                         });
                 }
     
-                setTimeout( () =>
+                message.client.setTimeout( () =>
                     {
                         if (!embedDeleted) msg.delete().then( () => embedDeleted = true);
                     }, reactionTime);

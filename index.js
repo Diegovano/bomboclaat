@@ -1,11 +1,15 @@
-'use strict';   // DO_NOT_REMOVE Is used for correct building.
+'use strict';
 
 const l = require(`./log.js`);
 const fs = require(`fs`);
 const Discord = require(`discord.js`);
 const path = require('path');
-const { exit } = require("process");    // I can't be bothered to remove it as it will mean rewriting my build code
+const conf = require(`./configFiles.js`);
+const am = require(`./audio.js`);
 
+const prefix = `|`;
+
+// const config = new conf.config();
 
 function checkNodeVersion()
 {
@@ -24,14 +28,15 @@ if (process.env.TOKEN)
 }
 else
 {
-    token = fs.readFileSync(`.token`, `utf8`, (err, data) => 
+    try 
+    {        
+        token = fs.readFileSync(`.token`, `utf8`);
+    } 
+    catch (err)
     {
-        if (err) throw `FATAL: Cannot read token`;
-        // l.log(data);
-    }).split(`\n`)[0];
+        throw Error(`FATAL: Cannot read token`);
+    }
 }
-
-global.prefix = "|";
 
 client.commands = new Discord.Collection(); // Holds all commands
 
@@ -43,44 +48,117 @@ for (const file of commandFiles)
     client.commands.set(command.name, command);
 }
 
-client.once("ready", () => 
-{
-    l.log(`Ready!`);
 
-    // DO_NOT_REMOVE:ADD TEST_FUNC1
-
-});
+client.once("ready", () =>  l.log(`Ready!`) );
 
 // Basic command handler
-client.on("message", message => 
+client.on("message", async message => 
 {
-    if (!message.content.startsWith(prefix) || message.channel.type !== `text`) return;
-
-    // DO_NOT_REMOVE:ADD TEST_FUNC2
-
-    // DO_NOT_REMOVE:RM INDEX_FUNC1
+    if (message.author.bot) return;
     
-    if (message.guild.id !== '684842282926473287' || message.author.bot) return;
-    if (message.channel.id !== `697492398070300763`)
+    let isCommand = false;
+
+    if (message.channel.type !== `text`)
     {
-        return message.channel.send(`Please use the bot channel to interact with me!`).then( msg =>
-            {
-                setTimeout(() =>
-                {
-                    try 
-                    {
-                        msg.delete();
-                        message.delete();
-                    } 
-                    catch (error) 
-                    {
-                        l.logError(Error(`WARNING: Unable to delete message! Has it already been deleted?`));
-                    }
-                }, 10000);
-            });
+        if (!message.content.startsWith(`|`)) return;
     }
 
-    // DO_NOT_REMOVE:RM INDEX_FUNC2
+    // Add user to accent database if not present
+    else
+    {
+        await conf.config.initGuild(message) // setup guild in config file
+        .then( () => 
+        {
+            return new Promise( (resolve, reject) =>
+            {
+                conf.config.accentUser(message, `none`, false).then( msg =>
+                {
+                    resolve(msg);
+                }, err =>
+                {
+                    reject(err);
+                });
+            });
+        })
+        .then( msg =>
+        {
+            return new Promise( (resolve, reject) =>
+            {
+                if (msg) message.channel.send(msg);
+                
+                if (message.content.startsWith(conf.config.configObject[message.guild.id].prefix)) isCommand = true;    
+                
+                const currentQueue = am.getQueue(message);
+
+                // check here if message is sent in bot channel if set-up
+                if (isCommand)
+                {
+                    const guildConfig = conf.config.configObject[message.guild.id]; // should always have value if guild is inited
+                    if (guildConfig)
+                    {
+                        if (Object.keys(guildConfig.botChannels).length !== 0 && !guildConfig.botChannels[message.channel.id]) 
+                        {
+                            if (message.content.split(` `)[0].toLowerCase().slice(prefix.length).trim() === `togglebotchannel`) return resolve();
+                            return message.channel.send(`Please use a bot channel to interact with me, such as ${Object.values(guildConfig.botChannels)[0].name}`).then( msg =>
+                                {
+                                    setTimeout(() =>
+                                    {
+                                        try 
+                                        {
+                                            msg.delete();
+                                            message.delete();
+                                        }     
+                                        catch (err)
+                                        {
+                                            err.message = `WARNING: Unable to delete message! Has it already been deleted? ${err.message}`;
+                                            l.logError(err);
+                                        }    
+                                    }, 10000);
+                                });
+                        }
+
+                        else if (!currentQueue.textChannel)
+                        {
+                            currentQueue.textChannel = message.channel;
+                        }
+                    }
+                }
+      
+                // auto-accent
+                if (!isCommand && conf.config.configObject[message.guild.id].autoAccent && conf.config.configObject[message.guild.id].accents[message.author.id].accent !== `none`)
+                {   
+                    if (!currentQueue.voiceChannel && message.member.voice.channel)
+                    {
+                        currentQueue.setVoiceChannel(message.member.voice.channel);
+                    }
+
+                    if (currentQueue.voiceChannel && currentQueue.voiceChannel.members.has(message.author.id)) 
+                    {
+                        if (!currentQueue.voiceChannel.permissionsFor(message.client.user).has([`CONNECT`, `SPEAK`]))
+                        {
+                            message.channel.send(`I need permissions to join and speak in your voice channel!`);
+                            return reject(Error(`Insufficient Permissions`));
+                        } 
+                        
+                        const args = [ conf.config.configObject[message.guild.id].accents[message.author.id].accent, message.content ];
+                        client.commands.get(`accent`).execute(message, args);
+                    }
+                }
+
+                resolve();
+            });
+        })
+        .catch( err =>
+        {
+            if (err)
+            {
+                err.message = `WARNING: Cannot update config file! ${err.message}`;
+                l.logError(err);
+            }
+        });     
+    }
+    
+    if (!isCommand) return;
 
     const args = message.content.slice(prefix.length).trim().split(/ +/);
     const commandName = args.shift().toLowerCase();
@@ -105,29 +183,73 @@ client.on("message", message =>
         return message.reply(`I can't execute that command inside DMs!`);
     }
 
-    if (command.args && !args.length) // If command requires arguments and user supplied none
+    if (command.args && args.length < command.args) // If command requires arguments and user supplied none
     {
-        let reply = `You didn't provide any arguments, ${message.author}!`;
+        let reply = `You didn't provide correct arguments, ${message.author}!`;
 
         if (command.usage) // If command specifies which arguments are required and their usage
         {
-            reply += `\nThe proper usage would be: ${prefix}${command.name} ${command.usage}`;
+            reply += `\nThe proper usage would be: \`${prefix}${command.name} ${command.usage}\``;
         } 
         
         return message.channel.send(reply);
     }
+
+    const voiceChannel = message.member.voice.channel;
+    if (command.voiceConnection && !voiceChannel) 
+        return message.reply(`please join a voice channel to perform this action!`);
+    if (command.voiceConnection && !voiceChannel.permissionsFor(message.client.user).has([`CONNECT`, `SPEAK`])) 
+        return message.channel.send(`I need permissions to join and speak in your voice channel!`);
     
     try 
     {
         command.execute(message, args);
     } 
-    catch (error) // If any exceptions are thrown during the execution of a command, stop running the command and run the following
+    catch (err) // If any exceptions are thrown during the execution of a command, stop running the command and run the following
     {
-        error.message = `SEVERE: Execution of "${commandName}" stopped! ${error.message}`;
-        l.logError(error); // For example when running a guild-related query in a DM environment without setting guildOnly to true.
+        err.message = `SEVERE: Execution of "${commandName}" stopped! ${err.message}`;
+        l.logError(err); // For example when running a guild-related query in a DM environment without setting guildOnly to true.
         message.reply(`there was an error trying to execute that command!`);
     }
 });
 
+async function exitHandler(code = undefined)
+{
+    for (const queue of am.queueMap) queue[1].clean();
+    client.destroy();
+    await l.log(`Shutting down bot after ${am.ConvertSecToFormat(client.uptime / 1000)}s of operation!`);
+    if (code) process.exitCode = code;
+    setTimeout(() => 
+    {
+        process.exit();
+    }, 5000).unref();
+}
+
+process.on(`SIGINT`, () => exitHandler(0) ); 
+
+process.on(`multipleResolves`, (type, promise, reason) =>
+    l.log(`Multiple promise resolutions! ${type} ${promise} with message ${reason}`));
+
+process.on(`uncaughtException`, (err, _origin) =>
+{
+    err.message = `FATAL: Uncaught Exception: ${err.message}`;
+    l.logError(err);
+    exitHandler(1);
+});
+
+process.on(`unhandledRejection`, (reason, _promise) =>
+{
+    if (reason instanceof Error)
+    {
+        reason.message = `FATAL: Unhandled Promise Rejection: ${reason.message}`;
+        l.logError(reason);
+    }
+    else
+    {
+        l.logError(`FATAL: Unhandled Promise Rejection!`);
+    }
+    // exitHandler(1);
+    process.exit();
+});
 
 client.login(token);

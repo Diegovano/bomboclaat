@@ -7,6 +7,7 @@ module.exports = {
     aliases: [`go`],
     desciption: `Unpause the player`,
     guidOnly: true,
+    voiceConnection: true,
     async execute(message, _args)
     {
         const currentQueue = am.getQueue(message);

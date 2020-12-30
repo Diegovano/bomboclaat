@@ -8,6 +8,7 @@ const youtube = google.youtube(`v3`);
 const Discord = require(`discord.js`);
 
 const DEFAULT_VOLUME = 0.25;
+const DISABLE_ACCENT_QUEUE = true;
 
 let queueMap = new Map();
 
@@ -35,7 +36,7 @@ function ConvertIsoToSec(t)
 {
     const regex = /P((([0-9]*\.?[0-9]*)Y)?(([0-9]*\.?[0-9]*)M)?(([0-9]*\.?[0-9]*)W)?(([0-9]*\.?[0-9]*)D)?)?(T(([0-9]*\.?[0-9]*)H)?(([0-9]*\.?[0-9]*)M)?(([0-9]*\.?[0-9]*)S)?)?/;    // Thanks regex101.com
     const matches = t.match(regex);
-    const sum = parseInt(matches[16] || 0) + parseInt((matches[14] * 60) || 0) + parseInt((matches[12] * 3600) || 0) + parseInt((matches[10] * 86400) || 0);    // || to remove undefined
+    const sum = parseInt(matches[16] || 0) + parseInt(matches[14] || 0) * 60 + parseInt(matches[12] || 0) * 3600 + parseInt(matches[9] || 0) * 86400;    // || to remove undefined
     return sum;    // Doing up to a day
 }
 
@@ -52,17 +53,23 @@ function replaceUnicode(origStr)  //and escape markdown
 
 function getQueue(message)
 {
-    if (queueMap[message.guild.id]) return queueMap[message.guild.id];
+    if (queueMap.has(message.guild.id)) return queueMap.get(message.guild.id);
     return new queue(message);
 }
 
 function deleteQueue(message, suppressWarning = false)
 {
-    if (queueMap[message.guild.id])
+    if (queueMap.has(message.guild.id))
     {
-        return delete queueMap[message.guild.id];
+        return queueMap.delete(message.guild.id);
     }
     else if (!suppressWarning) message.channel.send(`No queue exists!`);
+}
+
+function getTTSLink(language, text)
+{
+    
+    return new URL(`https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=${language}&q=${text}`).href;
 }
 
 class song
@@ -84,10 +91,14 @@ class song
             let ytkey;
             if (!process.env.YTTOKEN)   // Check if running github actions or just locally
             {
-                ytkey = fs.readFileSync(`.yttoken`, `utf8`, (err, _data) => 
+                try 
+                {        
+                    ytkey = fs.readFileSync(`.yttoken`, `utf8`);
+                } 
+                catch (err)
                 {
-                    if (err) throw `SEVERE: Cannot read YouTube key!`;
-                });
+                    throw Error(`Cannot read YouTube key!`);
+                }
             }
             else
             {
@@ -96,7 +107,7 @@ class song
 
             const opts =
                 {
-                    part: `contentDetails`,
+                    part: [`contentDetails`],
                     id: videoID,
                     key: ytkey
                 };
@@ -120,31 +131,56 @@ class queue
     constructor(message)
     {
         this.guildID = message.guild.id;
-        queueMap[this.guildID] = this;
-        this.textChannel = message.channel;
+        queueMap.set(this.guildID, this);
+        this.client = message.client;
+        
+        this.textChannel = undefined;
+        this.voiceChannel = undefined;
+        this.connection = undefined;
 
-        this.voiceChannel;
-        this.connection;
-        this.songList = [];
+        this.songList = [ ];
         this.queuePos = 0;
         this.playing = false;
         this.paused = false;
-        this.dispatcher = false;
+        this.songDispatcher = undefined;
         this.volume = DEFAULT_VOLUME;
         this.seekTime = 0;
         this.loopSong = false;
         this.loopQueue = false;
+        
+        this.accentDispatcher = undefined;
+        this.languages = [`fr`, `de`, `ru`, `ja`, `zh`, `en`, `it`, `es`, `ko`, `pt`, `sw`, `nl`, `en_nz`, `en_au`, `fr_ca`, `hi`, `en_us` ];
+        this.accentList = [ ];
+        this.playingAccent = false;
+        this.accentTimeoutID = null;
+        this.stopTimestamp = null;
+    }
+
+    setVoiceChannel(voiceChannel)
+    {
+        if (voiceChannel.permissionsFor(this.client.user).has([`CONNECT`, `SPEAK`]))
+        {
+            this.voiceChannel = voiceChannel;
+            return true;
+        }
+        else return false;
     }
 
     async play(seconds = 0, isSeek = false, repeated = 0)
     {
+        if (this.accentTimeoutID)
+        {
+            this.client.clearTimeout(this.accentTimeoutID);
+            this.accentTimeoutID = null;
+        }
+
         try
         {
-            if (this.connection !== this.voiceChannel) this.connection = await this.voiceChannel.join();
+            this.connection = await this.voiceChannel.join();
         }
         catch (err)
         {
-            return new Promise.reject(err);
+            return new Promise( (_resolve, reject) => reject(err) );
         }
 
         return new Promise( (resolve, reject) =>
@@ -152,12 +188,14 @@ class queue
             this.playing = true;
             let begin = seconds !== 0 ? `${seconds}s` : `${this.songList[this.queuePos].startOffset}s`;
             if (this.queuePos > this.songList.length - 1) return reject(Error(`queuePos out of range`));
-            this.dispatcher = this.connection.play(ytdl(this.songList[this.queuePos].sourceLink,
+            this.songDispatcher = this.connection.play(ytdl(this.songList[this.queuePos].sourceLink,
                     {
+                        filter: `audioonly`,
                         quality: `highestaudio`,
                         highWaterMark: 1 << 25,
                     }),
                     {
+                        highWaterMark: 1,
                         seek: begin,
                     })
                 .on(`finish`, () =>
@@ -170,7 +208,7 @@ class queue
                         if (!this.loopQueue)
                         {
                             this.playing = false;
-                            this.dispatcher.destroy();
+                            this.songDispatcher.destroy();
                             this.voiceChannel.leave();
                             return;
                         }
@@ -207,13 +245,13 @@ class queue
                                 });        
                         });
                 })
-                .on(`error`, error => 
+                .on(`error`, err => 
                 {
                     repeated = repeated || 0;
                     if (repeated > 4)
                     {
-                        error.message = `Unable to play song after five attempts! ${error.message}`;
-                        l.logError(error);
+                        err.message = `Unable to play song after five attempts! ${err.message}`;
+                        l.logError(err);
                         this.textChannel.send(`Unable to play that! Skipping...`);
                         this.skip().then( msg =>
                             {
@@ -223,15 +261,15 @@ class queue
                                 err.message = `WARNING: Cannot play track after an unavailable one! ${err.message}`;
                                 l.logError(err);
                             });
-                        return reject(error);
+                        return reject(err);
                     }
     
-                    if (repeated === 0) l.log(`Error playing song, trying again! ${error.message}`);
-                    this.play(0, isSeek, ++repeated); // test the use of return
-                    return reject(error);
+                    if (repeated === 0) l.log(`Error playing song, trying again! ${err.message}`);
+                    this.play(this.timestamp, isSeek, ++repeated); // test the use of return
+                    return reject(err);
                 });
     
-            this.dispatcher.setVolume(this.volume);
+            this.songDispatcher.setVolume(this.volume);
             if (!isSeek && repeated === 0) return resolve(`Now playing **${this.songList[this.queuePos].title}** [${ConvertSecToFormat(this.songList[this.queuePos].duration)}], requested by **${this.songList[this.queuePos].requestedBy}** at ${this.songList[this.queuePos].requestTime.toLocaleTimeString([], {hour: `2-digit`, minute: `2-digit`})}`);
             else resolve();
         });
@@ -316,7 +354,7 @@ class queue
                 for (let i = 0; i < pastTracks.length; i++)
                 {
                     const fieldToAdd = { name: i === 0 ? `Past Track${this.queuePos > 1 ? 's' : ''}:` : `continued...`, value: pastTracks[i] };
-                    if (queueEmbeds[i2].length + (queueEmbeds.author ? queueEmbeds[i2].author.name.length : 0) + fieldToAdd.name.length + fieldToAdd.value.length < 6000) queueEmbeds[i2].addField(fieldToAdd.name, fieldToAdd.value);
+                    if (queueEmbeds[i2].length + (queueEmbeds[i2].author ? queueEmbeds[i2].author.name.length : 0) + fieldToAdd.name.length + fieldToAdd.value.length < 6000) queueEmbeds[i2].addField(fieldToAdd.name, fieldToAdd.value);
                     else
                     {
                         queueEmbeds.push( new Discord.MessageEmbed().setColor(`#0000ff`) );
@@ -328,7 +366,7 @@ class queue
             if (currentTrack[0] !== ``)
             {
                 const fieldToAdd = { name: `Current Track:`, value: currentTrack[0] };
-                if (queueEmbeds[i2].length + (queueEmbeds.author ? queueEmbeds[i2].author.name.length : 0) + fieldToAdd.name.length + fieldToAdd.value.length < 6000) queueEmbeds[i2].addField(fieldToAdd.name, fieldToAdd.value);
+                if (queueEmbeds[i2].length + (queueEmbeds[i2].author ? queueEmbeds[i2].author.name.length : 0) + fieldToAdd.name.length + fieldToAdd.value.length < 6000) queueEmbeds[i2].addField(fieldToAdd.name, fieldToAdd.value);
                 else
                 {
                     queueEmbeds.push( new Discord.MessageEmbed().setColor(`#0000ff`) );
@@ -343,7 +381,7 @@ class queue
                 for (let i = 0; i < nextTracks.length; i++)
                 {
                     const fieldToAdd = { name: i === 0 ? `Upcoming Track${this.queuePos < this.songList.length - 2  ? 's' : ''}:` : `continued...`, value: nextTracks[i] };
-                    if (queueEmbeds[i2].length + (queueEmbeds.author ? queueEmbeds[i2].author.name.length : 0) + fieldToAdd.name.length + fieldToAdd.value.length < 6000) queueEmbeds[i2].addField(fieldToAdd.name, fieldToAdd.value);
+                    if (queueEmbeds[i2].length + (queueEmbeds[i2].author ? queueEmbeds[i2].author.name.length : 0) + fieldToAdd.name.length + fieldToAdd.value.length < 6000) queueEmbeds[i2].addField(fieldToAdd.name, fieldToAdd.value);
                     else
                     {
                         queueEmbeds.push( new Discord.MessageEmbed().setColor(`#0000ff`) );
@@ -366,7 +404,7 @@ class queue
                 if (!this.loopQueue)
                 {
                     this.playing = false;
-                    this.dispatcher.destroy();
+                    this.songDispatcher.destroy();
                     this.voiceChannel.leave();
                     this.queuePos++;
                     return resolve(`Skipping final track: ${this.songList[this.queuePos - 1].title} and disconnecting.`);
@@ -404,7 +442,7 @@ class queue
 
     get timestamp()
     {
-        return Math.round((this.seekTime !== 0 ? this.seekTime : this.songList[this.queuePos].startOffset ) + ( this.dispatcher.streamTime / 1000 ));
+        return Math.round((this.seekTime !== 0 ? this.seekTime : this.songList[this.queuePos].startOffset ) + ( this.songDispatcher.streamTime / 1000 ));
     }
 
     get queueDuration()
@@ -422,7 +460,7 @@ class queue
         if (this.paused) return this.textChannel.send(`Cannot Pause: Player is already paused!`);
 
         this.paused = true;
-        this.dispatcher.pause();
+        this.songDispatcher.pause();
     }
 
     async unpause()
@@ -431,8 +469,8 @@ class queue
         if (!this.paused) return this.textChannel.send(`Cannot Unpause: Player is not paused!`);
 
         this.paused = false;
-        this.dispatcher.setVolume(this.volume);
-        this.dispatcher.resume();
+        this.songDispatcher.setVolume(this.volume);
+        this.songDispatcher.resume();
     }
 
     async setVolume(volumeAmount)
@@ -440,7 +478,7 @@ class queue
         if (!this.playing) return this.textChannel.send(`Cannot set Volume: Nothing playing!`);
 
         this.volume = volumeAmount * DEFAULT_VOLUME;
-        this.dispatcher.setVolume(this.volume);
+        this.songDispatcher.setVolume(this.volume);
     }
 
     async seek(seconds)
@@ -450,8 +488,8 @@ class queue
 
         // if (relative)
         // {
-        //     let newLocation = this.dispatcher.streamTime / 1000 + seconds;
-        //     if (newLocation < this.songList[this.queuePos].duration.asSeconds() && newLocation >= 0) this.play(this.dispatcher.streamTime / 1000 + seconds, true);
+        //     let newLocation = this.songDispatcher.streamTime / 1000 + seconds;
+        //     if (newLocation < this.songList[this.queuePos].duration.asSeconds() && newLocation >= 0) this.play(this.songDispatcher.streamTime / 1000 + seconds, true);
         // }
         // else
         {
@@ -571,9 +609,137 @@ class queue
     {
         this.loopQueue = !this.loopQueue;
     }
+
+    async queueAccent(language, text)
+    {
+        return new Promise( (resolve, _reject) =>
+        {
+            if (!this.languages.includes(language))
+            {
+                language = `es`;
+                text = `That's not a language fucktard!`;
+            }
+
+            if (DISABLE_ACCENT_QUEUE) this.accentList = [ ];
+    
+            if (text.length > 200)
+            {
+                const numIter = Math.ceil(text.length / 200); // ensure correct iteration of for loop
+                for (let i = 0; i < numIter; i++)
+                {
+                    for (let i2 = 200; i2 > 0; i2--)
+                    {
+                        if (text[i2] === ` `)
+                        {
+                            this.accentList.push({ language: language, text: text.slice(0, i2) });
+                            text = text.slice(i2 + 1); // remove the extra space
+                            break;
+                        }
+                        if (i2 === 1)
+                        {
+                            this.accentList.push({ language: language, text: text.slice(0, 199) });
+                            text = text.slice(199);
+                        }
+                    }
+                }
+            }
+            
+            this.accentList.push({ language: language, text: text });
+    
+            this.playAccents().then( () =>
+                {
+                    resolve();
+                }, err => 
+                {
+                    err.message = `WARNING: Cannot play accent! ${err.message}`;
+                    l.logError(err);
+                });
+        });
+    }
+
+    async playAccents()
+    {
+        if (!this.playingAccent) this.stopTimestamp = null;
+        if (this.accentTimeoutID) 
+        {
+            clearTimeout(this.accentTimeoutID);
+            this.accentTimeoutID = null;
+        }
+
+        if (this.songDispatcher && !this.songDispatcher.paused && this.playing) 
+        {
+            this.stopTimestamp = this.timestamp;
+            this.songDispatcher.pause();
+        }
+    
+        try
+        {
+            this.connection = await this.voiceChannel.join();
+        }
+        catch (err)
+        {
+            return new Promise( (_resolve, reject) => reject(err));
+        }
+
+        return new Promise( (resolve, reject) =>
+        {
+            this.playingAccent = true;
+            // console.log(this.songDispatcher.destroyed);
+            this.accentDispatcher = this.connection.play(getTTSLink(this.accentList[0].language, this.accentList[0].text))
+                .on(`finish`, () =>
+                {
+                    this.accentList.splice(0, 1);
+                    if (this.accentList.length === 0) 
+                    {
+                        this.playingAccent = false;
+                        if (this.stopTimestamp) 
+                        {
+                            this.play().then( () =>
+                            {
+                                this.seek(this.stopTimestamp);
+                            }).catch( (err) =>
+                            {
+                                err.message = `WARNING: Cannot resume track after accent! ${err.message}`;
+                                l.logError(err);
+                            });
+                        }
+                        else
+                        {
+                            this.accentTimeoutID = this.client.setTimeout( () =>
+                            {
+                                this.accentDispatcher.destroy();
+                                this.voiceChannel.leave();
+                                this.connection = undefined;
+                            }, 30 * 1000);
+                        }
+                        return resolve();
+                    }
+                    this.playAccents().catch( err =>
+                        {
+                            err.message = `Cannot play accent! ${err.message}`;
+                            return reject(err);
+                        });
+                })
+                .on(`error`, err =>
+                {
+                    err.message = `WARNING: Cannot play accent! ${err.message}`;
+                    l.logError(err);
+                    this.accentList.splice(0, 1);
+                });
+            // console.log(this.songDispatcher.destroyed);
+        });
+    }
+
+    clean()
+    {
+        if (this.songDispatcher) this.songDispatcher.destroy();
+        if (this.accentDispatcher) this.accentDispatcher.destroy();
+        this.connection = undefined;
+    }
 }
 
 exports.getQueue = getQueue;
 exports.deleteQueue = deleteQueue;
 exports.song = song;
 exports.ConvertSecToFormat = ConvertSecToFormat;
+exports.queueMap = queueMap;

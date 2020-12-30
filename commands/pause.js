@@ -8,6 +8,7 @@ module.exports =
     aliases: [`stop`],
     description: `Pause the current song.`,
     guildOnly: true,
+    voiceConnection: true,
     async execute(message, _args)
     {
         const currentQueue = am.getQueue(message);

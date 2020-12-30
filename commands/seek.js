@@ -7,6 +7,7 @@ module.exports = {
     description: `Seeks innit`,
     args: true,
     guildOnly: true,
+    voiceConnection: true,
     async execute(message, args)
     {
         const currentQueue = am.getQueue(message);

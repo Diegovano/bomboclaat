@@ -8,6 +8,7 @@ module.exports = {
     aliases: [`s`, `next`],
     description: `Skip the current track.`,
     guildOnly: true,
+    voiceConnection: true,
     async execute(message, _args)
     {
         const currentQueue = am.getQueue(message);

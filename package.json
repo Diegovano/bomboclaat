@@ -4,23 +4,27 @@
   "description": "A Discord bot using discord.js",
   "main": "index.js",
   "dependencies": {
+    "@discordjs/opus": "^0.3.3",
     "@google-cloud/speech": "^4.1.4",
+    "bufferutil": "^4.0.2",
     "debug": "^3.2.6",
     "discord.js": "^12.3.1",
+    "erlpack": "github:discordapp/erlpack",
     "google-auth-library": "^6.1.3",
     "googleapis": "^61.0.0",
-    "lyrics-finder": "^21.4.0",
+    "libsodium-wrappers": "^0.7.8",
     "mime-db": "^1.44.0",
     "node-record-lpcm16": "^1.0.1",
-    "opusscript": "0.0.7",
     "package.json": "^2.0.1",
     "spotify-dl": "^0.4.4",
     "spotify-web-api-js": "^1.5.0",
     "spotify-web-api-node": "^4.0.0",
     "stream": "^0.0.2",
+    "utf-8-validate": "^5.0.3",
     "uuid": "^8.3.1",
     "yt-search": "^2.3.3",
-    "ytdl-core": "^4.1.1"
+    "ytdl-core": "^4.2.1",
+    "zlib-sync": "^0.1.7"
   },
   "devDependencies": {
     "eslint": "^7.12.1"

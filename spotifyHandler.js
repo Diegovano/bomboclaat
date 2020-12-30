@@ -6,10 +6,15 @@ const am = require(`./audio.js`);
 const l = require(`./log.js`);
 const yts = require( 'yt-search' );
 
-const spotify_tokens = JSON.parse(fs.readFileSync(`.spotify_tokens.json`, `utf-8`, (err, data) =>
-    {
-        if (err) throw `FATAL: Cannot read token`;
-    }));
+let spotify_tokens;
+try 
+{
+    spotify_tokens = JSON.parse(fs.readFileSync(`.spotify_tokens.json`, `utf-8`));
+} 
+catch (err)
+{
+    throw Error(`FATAL: Cannot read token`);
+}
 
 const spotifyApi = new SpotifyWebApi({
     clientId: spotify_tokens.clientId,
@@ -66,8 +71,8 @@ async function getSpotifyMetadata(message, args)
                         {
                             let songs = [ ];
 
-                            songs.push( await getYtSong(`${data.body.tracks.items[0].track.name} ${data.body.tracks.items[0].track.artists[0].name}`, message, true) );
-                            for (var i = 1; i < data.body.tracks.items.length; i++)
+                            songs.push( await getYtSong(`${data.body.tracks.items[0].track.name} ${data.body.tracks.items[0].track.artists[0].name}`, message, true ));
+                            for (let i = 1; i < data.body.tracks.items.length; i++)
                             {
                                 getYtSong(`${data.body.tracks.items[i].track.name} ${data.body.tracks.items[i].track.artists[0].name}`, message, true).then( res =>
                                     {
@@ -80,7 +85,7 @@ async function getSpotifyMetadata(message, args)
                             resolve(songs); //CANNOT RESOLVE UNFINISHED ARRAY
                         }, err =>
                         {
-                            err.message = `Unable to get playlist from Spotify API! Code ${err.statusCode}: ${err.message}`;
+                            err.message = `Unable to get playlist from Spotify API! ${err.statusCode ? `Code ${err.statusCode}:` : ``}${err.message}`;
                             message.channel.send(`Unable to play using Spotify API!`);
                             reject(Error(err.message));
                         });
@@ -91,10 +96,10 @@ async function getSpotifyMetadata(message, args)
                         {
                             let songs = [ ];
 
-                            songs.push(await getYtSong(`${data.body.tracks.items[0].name} ${data.body.tracks.items[0].artists[0].name}`, message, true));
-                            for (var i = 1; i < data.body.tracks.items.length; i++)
+                            songs.push(await getYtSong(`${data.body.items[0].name} ${data.body.items[0].artists[0].name}`, message, true));
+                            for (var i = 1; i < data.body.items.length; i++)
                             {
-                                songs.push(await getYtSong(`${data.body.tracks.items[i].name} ${data.body.tracks.items[i].artists[0].name}`, message, true));
+                                songs.push(await getYtSong(`${data.body.items[i].name} ${data.body.items[i].artists[0].name}`, message, true));
                             }
                             resolve(songs);
                         }, err =>
