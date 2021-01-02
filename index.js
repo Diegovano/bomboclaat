@@ -13,7 +13,7 @@ function checkNodeVersion () {
   if (parseInt(process.versions.node.split('.')[0]) < 12) {
     l.logError(Error('Use Node version 12 or greater!'));
     exitHandler(-1);
-  } 
+  }
   l.log(`You're running node.js ${process.version}`);
 }
 
@@ -202,7 +202,6 @@ process.on('unhandledRejection', (reason, _promise) => {
   exitHandler(1);
 });
 
-if (token)
-{
+if (token) {
   client.login(token);
 }
