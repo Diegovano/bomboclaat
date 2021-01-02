@@ -9,18 +9,6 @@ const yts = require('yt-search');
 let spotifyTokens;
 let spotifyApi;
 
-try {
-  spotifyTokens = JSON.parse(fs.readFileSync('.spotifyTokens.json', 'utf-8'));
-  spotifyApi = new SpotifyWebApi({
-    clientId: spotifyTokens.clientId,
-    clientSecret: spotifyTokens.clientSecret,
-    redirectUri: spotifyTokens.redirectUri
-  });
-  spotifyApi.setAccessToken(spotifyTokens.access_token);
-} catch (err) {
-  l.logError(Error('FATAL: Cannot read token'));
-}
-
 function parseUrl (url) {
   const urlInfo = url.match(/(?:spotify\.com\/)(.*)(?:\/)(.*)(?:\?|$)/im);
   return urlInfo;
@@ -40,7 +28,20 @@ async function getYTTrack (searchTerm, message, _playlist) {
 
 async function getSpotifyMetadata (message, args) {
   return new Promise((resolve, reject) => {
-    if (!spotifyApi) reject(Error('Spotify API not initialised! Was token accepted?'));
+    if (!spotifyTokens) {
+      try {
+        spotifyTokens = JSON.parse(fs.readFileSync('.spotifyTokens.json', 'utf-8'));
+        spotifyApi = new SpotifyWebApi({
+          clientId: spotifyTokens.clientId,
+          clientSecret: spotifyTokens.clientSecret,
+          redirectUri: spotifyTokens.redirectUri
+        });
+        spotifyApi.setAccessToken(spotifyTokens.accessToken);
+      } catch (err) {
+        return reject(Error('Cannot read Spotify token!'));
+      }
+    }
+
     const trackInfo = parseUrl(args[0]);
     switch (trackInfo[1]) {
       case 'track':
@@ -85,7 +86,7 @@ async function getSpotifyMetadata (message, args) {
         }, err => {
           err.message = `Unable to get playlist from Spotify API! Code ${err.statusCode}: ${err.message}`;
           message.channel.send('Unable to play using Spotify API!');
-          reject(Error(err.message));
+          reject(err);
         });
         break;
     }
