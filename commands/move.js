@@ -5,9 +5,9 @@ const l = require('../log.js');
 
 module.exports = {
   name: 'move',
-  description: 'Moves a song to a certain position in the queue',
+  description: 'Moves a track to a certain position in the queue',
   args: true,
-  usage: '<song position> <wanted position>',
+  usage: '<track position> <new position>',
   voiceConnection: true,
   async execute (message, args) {
     const currentQueue = am.getQueue(message);

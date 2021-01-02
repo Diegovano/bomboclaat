@@ -11,6 +11,6 @@ module.exports = {
     const currentQueue = am.getQueue(message);
 
     currentQueue.voiceChannel = message.member.voice.channel;
-    if (currentQueue.currentSong) currentQueue.play(currentQueue.timestamp);
+    if (currentQueue.currentTrack) currentQueue.play(currentQueue.timestamp);
   }
 };

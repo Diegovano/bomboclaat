@@ -7,10 +7,10 @@ const l = require('../log.js');
 module.exports = {
   name: 'playnext',
   aliases: ['pn', 'next'],
-  description: 'Add a song to the queue that will play after the current one.',
+  description: 'Add a track to the queue that will play after the current one.',
   guildOnly: true,
   args: true,
-  usage: '<song name>',
+  usage: '<track name>',
   voiceConnection: true,
   async execute (message, args) {
     const currentQueue = am.getQueue(message);
@@ -19,9 +19,9 @@ module.exports = {
 
     currentQueue.voiceChannel = message.member.voice.channel;
 
-    play.getSongObjects(message, args).then(async songs => {
-      if (songs.length === 1) {
-        currentQueue.add(songs[0], false, true).then(msg => {
+    play.getTrackObjects(message, args).then(async tracks => {
+      if (tracks.length === 1) {
+        currentQueue.add(tracks[0], false, true).then(msg => {
           if (msg) message.channel.send(msg);
         }, err => {
           err.message = `WARNING: Cannot add track to queue! ${err.message}`;
@@ -29,10 +29,10 @@ module.exports = {
           message.channel.send('Cannot add track to queue!');
         });
       } else {
-        message.channel.send(`Adding ${songs.length} songs to the queue!`);
+        message.channel.send(`Adding ${tracks.length} tracks to the queue!`);
 
-        for (let i = 0; i < songs.length; i++) {
-          await currentQueue.add(songs[i], true, true).then(msg => {
+        for (let i = 0; i < tracks.length; i++) {
+          await currentQueue.add(tracks[i], true, true).then(msg => {
             if (msg) message.channel.send(msg);
           }, err => {
             message.channel.send(err.message);
@@ -40,7 +40,7 @@ module.exports = {
         }
       }
     }, err => {
-      err.message = `WARNING: Unable to get song information! ${err.message}`;
+      err.message = `WARNING: Unable to get track information! ${err.message}`;
       l.logError(err);
     });
   }

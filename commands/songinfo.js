@@ -4,8 +4,8 @@ const am = require('../audio.js');
 const l = require('../log.js');
 
 module.exports = {
-  name: 'songinfo',
-  description: 'Show info about a song in the queue',
+  name: 'trackinfo',
+  description: 'Show info about a track in the queue',
   aliases: ['info', 'songinfo'],
   usage: '[track number]',
   args: true,
@@ -21,7 +21,7 @@ module.exports = {
           l.logError(error);
         });
     }, err => {
-      l.log(`Could not find song info! ${err.message}`);
+      l.log(`Could not find track info! ${err.message}`);
       message.reply('error finding track information! Is value in range?');
     });
   }

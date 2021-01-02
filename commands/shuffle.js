@@ -22,10 +22,10 @@ module.exports = {
       return array;
     }
 
-    const maybe = shuffle(currentQueue.songList.slice(currentQueue.queuePos));
+    const maybe = shuffle(currentQueue.trackList.slice(currentQueue.queuePos));
 
     for (let i = 0; i < maybe.length + 1; i++) {
-      currentQueue.songList[currentQueue.songList.length - i] = maybe[maybe.length - i];
+      currentQueue.trackList[currentQueue.trackList.length - i] = maybe[maybe.length - i];
     }
   }
 };

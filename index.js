@@ -10,7 +10,10 @@ const am = require('./audio.js');
 const prefix = '|';
 
 function checkNodeVersion () {
-  if (parseInt(process.versions.node.split('.')[0]) < 12) throw Error('Use Node version 12 or greater!');
+  if (parseInt(process.versions.node.split('.')[0]) < 12) {
+    l.logError(Error('Use Node version 12 or greater!'));
+    exitHandler(-1);
+  } 
   l.log(`You're running node.js ${process.version}`);
 }
 
@@ -25,16 +28,19 @@ if (process.env.TOKEN) {
   try {
     token = fs.readFileSync('.token', 'utf8');
   } catch (err) {
-    throw Error('FATAL: Cannot read token');
+    l.logError(Error('FATAL: Cannot read token'));
+    exitHandler(-1);
   }
 }
 
+// @ts-ignore
 client.commands = new Discord.Collection(); // Holds all commands
 
 // Add commands to collection
 const commandFiles = fs.readdirSync('commands').filter(file => path.extname(file) === '.js');
 for (const file of commandFiles) {
   const command = require(`./${path.join('commands', file)}`);
+  // @ts-ignore
   client.commands.set(command.name, command);
 }
 
@@ -103,6 +109,7 @@ client.on('message', async message => {
               }
 
               const args = [conf.config.configObject[message.guild.id].accents[message.author.id].accent, message.content];
+              // @ts-ignore
               client.commands.get('accent').execute(message, args);
             }
           }
@@ -126,10 +133,12 @@ client.on('message', async message => {
   let command;
 
   try {
+    // @ts-ignore
     command = client.commands.get(commandName) ||
+              // @ts-ignore
               client.commands.find(cmd => cmd.aliases && cmd.aliases.includes(commandName));
     if (!command) throw Error();
-  } catch (error) { // Catches the exception that could be thrown should the try block not find the command
+  } catch (_err) { // Catches the exception that could be thrown should the try block not find the command
     l.log(`Command "${commandName}" doesn't exist!`);
     message.reply('sorry, unable to find command...');
     return;
@@ -161,10 +170,10 @@ client.on('message', async message => {
   }
 });
 
-async function exitHandler (code = undefined) {
+function exitHandler (code = undefined) {
   for (const queue of am.queueMap) queue[1].clean();
   client.destroy();
-  await l.log(`Shutting down bot after ${am.ConvertSecToFormat(client.uptime / 1000)}s of operation!`);
+  l.log(`Shutting down bot after ${am.ConvertSecToFormat(client.uptime / 1000)}s of operation!`);
   if (code) process.exitCode = code;
   setTimeout(() => {
     console.log('Forced Exit!');
@@ -193,4 +202,7 @@ process.on('unhandledRejection', (reason, _promise) => {
   exitHandler(1);
 });
 
-client.login(token);
+if (token)
+{
+  client.login(token);
+}

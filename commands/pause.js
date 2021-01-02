@@ -6,7 +6,7 @@ module.exports =
 {
   name: 'pause',
   aliases: ['stop'],
-  description: 'Pause the current song.',
+  description: 'Pause the current track.',
   guildOnly: true,
   voiceConnection: true,
   async execute (message, _args) {

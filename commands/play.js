@@ -11,8 +11,8 @@ const spotifyHandler = require('../spotifyHandler.js');
 module.exports = {
   name: 'play',
   aliases: ['p'],
-  description: 'If paused, unpause, otherwise add song to queue.',
-  usage: '[song name]',
+  description: 'If paused, unpause, otherwise add track to queue.',
+  usage: '[track name]',
   guidOnly: true,
   voiceConnection: true,
   async execute (message, args) {
@@ -33,21 +33,21 @@ module.exports = {
       return;
     }
 
-    getSongObjects(message, args).then(async songs => {
-      /* message.channel.send(`No tracks added!`); */ // if no songs returned i.e. no search results
-      if (songs && songs.length === 1) {
-        currentQueue.add(songs[0], false, false).then(msg => {
+    getTrackObjects(message, args).then(async tracks => {
+      /* message.channel.send(`No tracks added!`); */ // if no tracks returned i.e. no search results
+      if (tracks && tracks.length === 1) {
+        currentQueue.add(tracks[0], false, false).then(msg => {
           if (msg) message.channel.send(msg);
         }, err => {
           err.message = `WARNING: Cannot add track to queue! ${err.message}`;
           l.logError(err);
           message.channel.send('Cannot add track to queue!');
         });
-      } else if (songs && songs.length > 1) {
-        message.channel.send(`Adding ${songs.length} tracks to the queue!`);
+      } else if (tracks && tracks.length > 1) {
+        message.channel.send(`Adding ${tracks.length} tracks to the queue!`);
 
-        for (let i = 0; i < songs.length; i++) {
-          await currentQueue.add(songs[i], true, false).then(msg => {
+        for (let i = 0; i < tracks.length; i++) {
+          await currentQueue.add(tracks[i], true, false).then(msg => {
             if (msg) message.channel.send(msg);
           }, err => {
             err.message = `WARNING: Cannot add track to playlist! ${err.message}`;
@@ -57,17 +57,17 @@ module.exports = {
         }
       }
     }, err => {
-      err.message = `WARNING: Unable to get song information! ${err.message}`;
+      err.message = `WARNING: Unable to get track information! ${err.message}`;
       l.logError(err);
-      message.channel.send('Unable to add song to queue!');
+      message.channel.send('Unable to add track to queue!');
     });
   }
 
 };
 
-const getSongObjects = async (message, searchTerm) => {
+const getTrackObjects = async (message, searchTerm) => {
   return new Promise((resolve, reject) => {
-    const songsToAdd = [];
+    const tracksToAdd = [];
 
     if (searchTerm[0].match(/(?:youtu)(?:.*?)(?:^|\/|v=)([a-z0-9_-]{11})(?:.*)/i)) {
       const videoID = searchTerm[0].match(/(?:.*?)(?:^|\/|v=)([a-z0-9_-]{11})(?:.*)/i)[1];
@@ -131,7 +131,7 @@ const getSongObjects = async (message, searchTerm) => {
         try {
           ytkey = fs.readFileSync('.yttoken', 'utf8');
         } catch (err) {
-          reject(Error('SEVERE: Cannot read YouTube key!'));
+          return reject(Error('Cannot read YouTube key!'));
         }
       } else {
         ytkey = process.env.YTTOKEN;
@@ -145,15 +145,15 @@ const getSongObjects = async (message, searchTerm) => {
                     };
 
       return youtube.videos.list(opts).then(res => {
-        const song = new am.Song(res.data.items[0].id, res.data.items[0].snippet.channelTitle,
+        const track = new am.Track(res.data.items[0].id, res.data.items[0].snippet.channelTitle,
           res.data.items[0].snippet.localized.title, res.data.items[0].snippet.localized.description,
           res.data.items[0].snippet.thumbnails.high.url || '', message.member.displayName,
           timestamp, res.data.items[0].contentDetails.duration);
-        songsToAdd.push(song);
-        resolve(songsToAdd);
+        tracksToAdd.push(track);
+        resolve(tracksToAdd);
       }, err => {
         err.message = `Unable to get video information from link! ${err.message}`;
-        reject(err);
+        return reject(err);
       });
     } else if (searchTerm[0].match(/(?<=[&?]list=)(.*?)(?=(&|$))/i)) {
       const playlistId = searchTerm[0].match(/(?<=[&?]list=)(.*?)(?=(&|$))/i)[1];
@@ -163,7 +163,7 @@ const getSongObjects = async (message, searchTerm) => {
         try {
           ytkey = fs.readFileSync('.yttoken', 'utf8');
         } catch (err) {
-          reject(Error('SEVERE: Cannot read YouTube key!'));
+          return reject(Error('Cannot read YouTube key!'));
         }
       } else {
         ytkey = process.env.YTTOKEN;
@@ -171,7 +171,7 @@ const getSongObjects = async (message, searchTerm) => {
 
       const nextPage = '';
 
-      const MAX_SONGS_PER_PLAYLIST = 100; // multiples of 50
+      const MAX_TRACKS_PER_PLAYLIST = 100; // multiples of 50
 
       const opts =
                 {
@@ -183,16 +183,16 @@ const getSongObjects = async (message, searchTerm) => {
                 };
 
       youtube.playlistItems.list(opts).then(async res => {
-        for (let i = 0; i < MAX_SONGS_PER_PLAYLIST / res.data.pageInfo.resultsPerPage && i < Math.ceil(res.data.pageInfo.totalResults / res.data.pageInfo.resultsPerPage); i++) {
+        for (let i = 0; i < MAX_TRACKS_PER_PLAYLIST / res.data.pageInfo.resultsPerPage && i < Math.ceil(res.data.pageInfo.totalResults / res.data.pageInfo.resultsPerPage); i++) {
           await youtube.playlistItems.list(opts).then(async res => {
             for (let i2 = 0; i2 < res.data.items.length; i2++) {
               if (res.data.items[i2].status.privacyStatus === 'public' ||
                                          res.data.items[i2].status.privacyStatus === 'unlisted') {
-                const song = new am.Song(res.data.items[i2].snippet.resourceId.videoId, res.data.items[i2].snippet.channelTitle,
+                const track = new am.Track(res.data.items[i2].snippet.resourceId.videoId, res.data.items[i2].snippet.channelTitle,
                   res.data.items[i2].snippet.title, res.data.items[i2].snippet.description,
                   res.data.items[i2].snippet.thumbnails.high.url || '', message.member.displayName, 0);
 
-                songsToAdd.push(song);
+                tracksToAdd.push(track);
               }
             }
             if (res.data.nextPageToken) opts.pageToken = res.data.nextPageToken;
@@ -200,25 +200,25 @@ const getSongObjects = async (message, searchTerm) => {
             reject(err);
           });
         }
-        resolve(songsToAdd);
+        resolve(tracksToAdd);
       }, err => {
         err.message = `Unable to get playlist information from link! ${err.message}`;
         reject(err);
       }).then(() => {
-        resolve(songsToAdd);
+        resolve(tracksToAdd);
       });
     } else if (searchTerm[0].includes('spotify.com')) {
-      spotifyHandler.getSpotifyMetadata(message, searchTerm).then(songArray => { // is in array form
-        resolve(songArray);
+      spotifyHandler.getSpotifyMetadata(message, searchTerm).then(trackArray => { // is in array form
+        resolve(trackArray);
       }, err => {
         reject(err);
       });
     } else {
-      ytSearch(searchTerm.join(' '), message).then(song => {
-        if (!song) resolve(null);
+      ytSearch(searchTerm.join(' '), message).then(track => {
+        if (!track) resolve(null);
         else {
-          songsToAdd.push(song);
-          resolve(songsToAdd);
+          tracksToAdd.push(track);
+          resolve(tracksToAdd);
         }
       }, err => {
         reject(err);
@@ -234,7 +234,7 @@ async function ytSearch (searchTerm, message) {
       try {
         ytkey = fs.readFileSync('.yttoken', 'utf8');
       } catch (err) {
-        reject(Error('SEVERE: Cannot read YouTube key!'));
+        return reject(Error('SEVERE: Cannot read YouTube key!'));
       }
     } else {
       ytkey = process.env.YTTOKEN;
@@ -253,7 +253,7 @@ async function ytSearch (searchTerm, message) {
       const resArr = [];
 
       for (let i = 0; i < res.data.items.length; i++) {
-        resArr.push(new am.Song(res.data.items[i].id.videoId,
+        resArr.push(new am.Track(res.data.items[i].id.videoId,
           res.data.items[i].snippet.channelTitle,
           res.data.items[i].snippet.title,
           res.data.items[i].snippet.description,
@@ -286,16 +286,16 @@ function userSelect (results, message) {
       results.length = reactionList.length;
     }
 
-    const songSelection = new Discord.MessageEmbed()
+    const trackSelection = new Discord.MessageEmbed()
       .setTitle('Please make a selection: ')
       .setColor('#ff0000');
 
     for (let i = 0; i < results.length; i++) {
-      songSelection.addField(`${i + 1} - ${results[i].title},
+      trackSelection.addField(`${i + 1} - ${results[i].title},
             Channel: ${results[i].author}`, `https://www.youtube.com/watch?v=${results[i].videoID}`);
     }
 
-    message.channel.send(songSelection).then(msg => {
+    message.channel.send(trackSelection).then(msg => {
       const reactionTime = 30 * 1000;
       const waitTime = 5000;
       const options = { max: 1, time: reactionTime };
@@ -340,4 +340,4 @@ function userSelect (results, message) {
   });
 }
 
-module.exports.getSongObjects = getSongObjects;
+module.exports.getTrackObjects = getTrackObjects;

@@ -6,8 +6,8 @@ const l = require('../log.js');
 module.exports = {
   name: 'remove',
   alisases: ['r'],
-  description: 'Gets rid of a song in the queue',
-  usage: '<song position>',
+  description: 'Gets rid of a track in the queue',
+  usage: '<track position>',
   args: true,
   guildOnly: true,
   voiceConnection: true,
@@ -19,7 +19,7 @@ module.exports = {
     currentQueue.remove(parseInt(args[0]) - 1).then(msg => {
       message.channel.send(msg);
     }, err => {
-      message.channel.send('Error removing track! Is song position in range? ');
+      message.channel.send('Error removing track! Is track position in range? ');
       err.message = `WARNING: Error removing track ${err.message}`;
       l.logError(err);
     });

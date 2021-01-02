@@ -26,7 +26,7 @@ function ConvertSecToFormat (duration) {
   if (hours > 0) return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
   if (minutes > 0) return `${pad(minutes)}:${pad(seconds)}`;
   if (seconds > 0) return `00:${pad(seconds)}`;
-  return 'LIVE';
+  return '00:00';
 }
 
 function ConvertIsoToSec (t) {
@@ -60,7 +60,7 @@ function getTTSLink (language, text) {
   return new URL(`https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=${language}&q=${text}`).href;
 }
 
-class Song {
+class Track {
   constructor (videoID, author, title, description, icon, requestedBy, startOffset, duration = undefined) {
     this.videoID = videoID;
     this.sourceLink = `https://www.youtube.com/watch?v=${videoID}`;
@@ -78,7 +78,7 @@ class Song {
         try {
           ytkey = fs.readFileSync('.yttoken', 'utf8');
         } catch (err) {
-          throw Error('Cannot read YouTube key!');
+          l.logError(Error('Cannot read YouTube key!'));
         }
       } else {
         ytkey = process.env.YTTOKEN;
@@ -111,14 +111,14 @@ class Queue {
     this.voiceChannel = undefined;
     this.connection = undefined;
 
-    this.songList = [];
+    this.trackList = [];
     this.queuePos = 0;
     this.playing = false;
     this.paused = false;
-    this.songDispatcher = undefined;
+    this.trackDispatcher = undefined;
     this.volume = DEFAULT_VOLUME;
     this.seekTime = 0;
-    this.loopSong = false;
+    this.loopTrack = false;
     this.loopQueue = false;
 
     this.accentDispatcher = undefined;
@@ -150,10 +150,10 @@ class Queue {
 
     return new Promise((resolve, reject) => {
       this.playing = true;
-      const begin = seconds !== 0 ? `${seconds}s` : `${this.songList[this.queuePos].startOffset}s`;
-      if (this.queuePos > this.songList.length - 1) return reject(Error('queuePos out of range'));
-      this.songDispatcher = this.connection.play(
-        ytdl(this.songList[this.queuePos].sourceLink, {
+      const begin = seconds !== 0 ? `${seconds}s` : `${this.trackList[this.queuePos].startOffset}s`;
+      if (this.queuePos > this.trackList.length - 1) return reject(Error('queuePos out of range'));
+      this.trackDispatcher = this.connection.play(
+        ytdl(this.trackList[this.queuePos].sourceLink, {
           filter: 'audioonly',
           quality: 'highestaudio',
           highWaterMark: 1 << 25
@@ -163,13 +163,13 @@ class Queue {
           seek: begin
         })
         .on('finish', () => {
-          if (!this.loopSong) this.queuePos++;
+          if (!this.loopTrack) this.queuePos++;
           this.seekTime = 0;
 
-          if (this.queuePos >= this.songList.length) {
+          if (this.queuePos >= this.trackList.length) {
             if (!this.loopQueue) {
               this.playing = false;
-              this.songDispatcher.destroy();
+              this.trackDispatcher.destroy();
               this.voiceChannel.leave();
               return;
             } else {
@@ -201,7 +201,7 @@ class Queue {
         .on('error', err => {
           repeated = repeated || 0;
           if (repeated > 4) {
-            err.message = `Unable to play song after five attempts! ${err.message}`;
+            err.message = `Unable to play track after five attempts! ${err.message}`;
             l.logError(err);
             this.textChannel.send('Unable to play that! Skipping...');
             this.skip().then(msg => {
@@ -213,22 +213,22 @@ class Queue {
             return reject(err);
           }
 
-          if (repeated === 0) l.log(`Error playing song, trying again! ${err.message}`);
+          if (repeated === 0) l.log(`Error playing track, trying again! ${err.message}`);
           this.play(this.timestamp, isSeek, ++repeated); // test the use of return
           return reject(err);
         });
 
-      this.songDispatcher.setVolume(this.volume);
-      if (!isSeek && repeated === 0) return resolve(`Now playing **${this.songList[this.queuePos].title}** [${ConvertSecToFormat(this.songList[this.queuePos].duration)}], requested by **${this.songList[this.queuePos].requestedBy}** at ${this.songList[this.queuePos].requestTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`);
+      this.trackDispatcher.setVolume(this.volume);
+      if (!isSeek && repeated === 0) return resolve(`Now playing **${this.trackList[this.queuePos].title}** [${ConvertSecToFormat(this.trackList[this.queuePos].duration)}], requested by **${this.trackList[this.queuePos].requestedBy}** at ${this.trackList[this.queuePos].requestTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`);
       else resolve();
     });
   }
 
-  async add (song, playlist, playingNext) {
+  async add (track, playlist, playingNext) {
     return new Promise((resolve, reject) => {
       const oldQueueLength = this.queueDuration;
 
-      this.songList.splice(playingNext ? this.queuePos + 1 : this.songList.length, 0, song);
+      this.trackList.splice(playingNext ? this.queuePos + 1 : this.trackList.length, 0, track);
       if (!this.playing) {
         this.play().then(msg => {
           resolve(msg);
@@ -236,19 +236,19 @@ class Queue {
           reject(err);
         });
       } else if (!playlist) {
-        return resolve(`${song.title} [${ConvertSecToFormat(song.duration)}], playing in ${playingNext ? ConvertSecToFormat(this.currentSong.duration - this.timestamp) /* this.currentSong exits because playing bool is true */ : ConvertSecToFormat(oldQueueLength)} has been added to the queue by ${song.requestedBy}`);
+        return resolve(`${track.title} [${ConvertSecToFormat(track.duration)}], playing in ${playingNext ? ConvertSecToFormat(this.currentTrack.duration - this.timestamp) /* this.currentTrack exits because playing bool is true */ : ConvertSecToFormat(oldQueueLength)} has been added to the queue by ${track.requestedBy}`);
       } else return resolve();
     });
   }
 
   async getQueueMessage () {
     return new Promise(resolve => {
-      if (this.songList.length === 0) return resolve(['Queue is empty!']);
+      if (this.trackList.length === 0) return resolve(['Queue is empty!']);
 
       const pastTracks = [''];
 
       for (let i = 0, i2 = 0; i < this.queuePos; i++) {
-        const trackAppend = `\nTrack ${i + 1}: [${this.songList[i].title}](${this.songList[i].sourceLink}) [${ConvertSecToFormat(this.songList[i].duration)}], requested by ${this.songList[i].requestedBy}.`;
+        const trackAppend = `\nTrack ${i + 1}: [${this.trackList[i].title}](${this.trackList[i].sourceLink}) [${ConvertSecToFormat(this.trackList[i].duration)}], requested by ${this.trackList[i].requestedBy}.`;
         if (pastTracks[i2].length + trackAppend.length < 1024) pastTracks[i2] += trackAppend;
         else {
           i2++;
@@ -258,16 +258,16 @@ class Queue {
 
       const currentTrack = [''];
 
-      if (this.songList.length > this.queuePos) {
-        const trackDuration = this.songList[this.queuePos].duration;
-        currentTrack[0] = `\nTrack ${this.queuePos + 1}: [${this.songList[this.queuePos].title}](${this.songList[this.queuePos].sourceLink}) [${ConvertSecToFormat(trackDuration)}], requested by ${this.songList[this.queuePos].requestedBy}.`;
+      if (this.trackList.length > this.queuePos) {
+        const trackDuration = this.trackList[this.queuePos].duration;
+        currentTrack[0] = `\nTrack ${this.queuePos + 1}: [${this.trackList[this.queuePos].title}](${this.trackList[this.queuePos].sourceLink}) [${ConvertSecToFormat(trackDuration)}], requested by ${this.trackList[this.queuePos].requestedBy}.`;
       }
 
       const nextTracks = [''];
 
-      for (let i = this.queuePos + 1, i2 = 0; i < this.songList.length; i++) {
-        const trackDuration = this.songList[i].duration;
-        const trackAppend = `\nTrack ${i + 1}: [${this.songList[i].title}](${this.songList[i].sourceLink}) [${ConvertSecToFormat(trackDuration)}], requested by ${this.songList[i].requestedBy}.`;
+      for (let i = this.queuePos + 1, i2 = 0; i < this.trackList.length; i++) {
+        const trackDuration = this.trackList[i].duration;
+        const trackAppend = `\nTrack ${i + 1}: [${this.trackList[i].title}](${this.trackList[i].sourceLink}) [${ConvertSecToFormat(trackDuration)}], requested by ${this.trackList[i].requestedBy}.`;
         if (nextTracks[i2].length + trackAppend.length < 1024) nextTracks[i2] += trackAppend;
         else {
           i2++;
@@ -278,7 +278,7 @@ class Queue {
       const queueEmbeds = [new Discord.MessageEmbed()
         .setColor('#0000ff')
         .setTitle(`Queue [${this.queueDuration !== 0 ? ConvertSecToFormat(this.queueDuration) : ' no upcoming tracks '}]`)
-        .setDescription(`Looping: ${this.loopSong ? 'Song' : this.loopQueue ? 'Queue' : 'Disabled'}`)
+        .setDescription(`Looping: ${this.loopTrack ? 'Track' : this.loopQueue ? 'Queue' : 'Disabled'}`)
         .setAuthor('Bomborastclaat', this.textChannel.client.user.displayAvatarURL())];
 
       let i2 = 0;
@@ -300,11 +300,11 @@ class Queue {
           queueEmbeds.push(new Discord.MessageEmbed().setColor('#0000ff'));
           queueEmbeds[++i2].addField(fieldToAdd.name, fieldToAdd.value);
         }
-        queueEmbeds[i2].setThumbnail(this.songList[this.queuePos].icon);
+        queueEmbeds[i2].setThumbnail(this.trackList[this.queuePos].icon);
       }
       if (nextTracks[0] !== '') {
         for (let i = 0; i < nextTracks.length; i++) {
-          const fieldToAdd = { name: i === 0 ? `Upcoming Track${this.queuePos < this.songList.length - 2 ? 's' : ''}:` : 'continued...', value: nextTracks[i] };
+          const fieldToAdd = { name: i === 0 ? `Upcoming Track${this.queuePos < this.trackList.length - 2 ? 's' : ''}:` : 'continued...', value: nextTracks[i] };
           if (queueEmbeds[i2].length + (queueEmbeds[i2].author ? queueEmbeds[i2].author.name.length : 0) + fieldToAdd.name.length + fieldToAdd.value.length < 6000) queueEmbeds[i2].addField(fieldToAdd.name, fieldToAdd.value);
           else {
             queueEmbeds.push(new Discord.MessageEmbed().setColor('#0000ff'));
@@ -318,14 +318,14 @@ class Queue {
 
   async skip () {
     return new Promise((resolve, reject) => {
-      if (this.songList.length === 0) return resolve('No track to skip!');
-      if (this.queuePos >= this.songList.length - 1) { // -1 becuase the last track is being played
+      if (this.trackList.length === 0) return resolve('No track to skip!');
+      if (this.queuePos >= this.trackList.length - 1) { // -1 becuase the last track is being played
         if (!this.loopQueue) {
           this.playing = false;
-          this.songDispatcher.destroy();
+          this.trackDispatcher.destroy();
           this.voiceChannel.leave();
           this.queuePos++;
-          return resolve(`Skipping final track: ${this.songList[this.queuePos - 1].title} and disconnecting.`);
+          return resolve(`Skipping final track: ${this.trackList[this.queuePos - 1].title} and disconnecting.`);
         } else {
           this.queuePos = 0;
           this.play().then(msg => {
@@ -338,26 +338,26 @@ class Queue {
 
       this.queuePos++;
       this.play().then(msg => {
-        resolve(`Skipping ${this.songList[this.queuePos - 1].title}.\n${msg}`);
+        resolve(`Skipping ${this.trackList[this.queuePos - 1].title}.\n${msg}`);
       }, err => {
         reject(err);
       });
     });
   }
 
-  get currentSong () { // keep sync as function return an object
-    if (this.playing) return this.songList[this.queuePos];
+  get currentTrack () { // keep sync as function return an object
+    if (this.playing) return this.trackList[this.queuePos];
     else return null;
   }
 
   get timestamp () {
-    return Math.round((this.seekTime !== 0 ? this.seekTime : this.songList[this.queuePos].startOffset) + (this.songDispatcher.streamTime / 1000));
+    return Math.round((this.seekTime !== 0 ? this.seekTime : this.trackList[this.queuePos].startOffset) + (this.trackDispatcher.streamTime / 1000));
   }
 
   get queueDuration () {
     let duration = 0;
-    for (let i = this.queuePos + 1; i < this.songList.length; i++) duration += this.songList[i].duration;
-    duration += this.currentSong ? this.currentSong.duration - this.timestamp : 0;
+    for (let i = this.queuePos + 1; i < this.trackList.length; i++) duration += this.trackList[i].duration;
+    duration += this.currentTrack ? this.currentTrack.duration - this.timestamp : 0;
 
     return duration;
   }
@@ -367,7 +367,7 @@ class Queue {
     if (this.paused) return this.textChannel.send('Cannot Pause: Player is already paused!');
 
     this.paused = true;
-    this.songDispatcher.pause();
+    this.trackDispatcher.pause();
   }
 
   async unpause () {
@@ -375,21 +375,21 @@ class Queue {
     if (!this.paused) return this.textChannel.send('Cannot Unpause: Player is not paused!');
 
     this.paused = false;
-    this.songDispatcher.setVolume(this.volume);
-    this.songDispatcher.resume();
+    this.trackDispatcher.setVolume(this.volume);
+    this.trackDispatcher.resume();
   }
 
   async setVolume (volumeAmount) {
     if (!this.playing) return this.textChannel.send('Cannot set Volume: Nothing playing!');
 
     this.volume = volumeAmount * DEFAULT_VOLUME;
-    this.songDispatcher.setVolume(this.volume);
+    this.trackDispatcher.setVolume(this.volume);
   }
 
   async seek (seconds) {
     if (!this.playing) throw Error('Nothing playing!');
     if (this.paused) throw Error('Player is paused!');
-    if (seconds < this.songList[this.queuePos].duration) {
+    if (seconds < this.trackList[this.queuePos].duration) {
       this.seekTime = parseInt(seconds);
       this.play(seconds, true);
     } else {
@@ -399,18 +399,18 @@ class Queue {
 
   async remove (index) {
     return new Promise((resolve, reject) => {
-      if (index >= this.songList.length) return reject(Error('Cannot remove: index out of range!'));
-      const removedSong = this.songList[index];
-      this.songList.splice(index, 1);
+      if (index >= this.trackList.length) return reject(Error('Cannot remove: index out of range!'));
+      const removedTrack = this.trackList[index];
+      this.trackList.splice(index, 1);
       if (this.queuePos > index) this.queuePos--;
-      return resolve(`Removed Track ${index + 1}: ${removedSong.title} [${ConvertSecToFormat(removedSong.duration)}]`);
+      return resolve(`Removed Track ${index + 1}: ${removedTrack.title} [${ConvertSecToFormat(removedTrack.duration)}]`);
     });
   }
 
   async move (index1, index2) {
     return new Promise((resolve, reject) => {
-      if (index1 >= this.songList.length || index2 >= this.songList.length) return reject(Error('Cannot move: At least one of indices is out of range!'));
-      [this.songList[index1], this.songList[index2]] = [this.songList[index2], this.songList[index1]];
+      if (index1 >= this.trackList.length || index2 >= this.trackList.length) return reject(Error('Cannot move: At least one of indices is out of range!'));
+      [this.trackList[index1], this.trackList[index2]] = [this.trackList[index2], this.trackList[index1]];
       if (index2 === this.queuePos) {
         this.play().then(msg => {
           resolve(`Moving track ${index1 + 1} to position ${index2 + 1}\n${msg}`);
@@ -424,26 +424,26 @@ class Queue {
   }
 
   async clear () {
-    if (this.currentSong) this.songList = [this.currentSong];
-    else this.songList = [];
+    if (this.currentTrack) this.trackList = [this.currentTrack];
+    else this.trackList = [];
     this.queuePos = 0;
   }
 
   async infoEmbed (pos = this.queuePos) {
-    if (pos >= this.songList.length) throw Error('Song number out of range!');
+    if (pos >= this.trackList.length) throw Error('Track number out of range!');
 
     const PROGRESS_BAR_LENGTH = 25;
 
     const infoEmbed = new Discord.MessageEmbed()
       .setColor('#ff0000')
-      .setTitle('Song Information')
-      .addField('Song Title', `[${this.songList[pos].title}](${this.songList[pos].sourceLink}) [${ConvertSecToFormat(this.songList[pos].duration)}]`);
+      .setTitle('Track Information')
+      .addField('Track Title', `[${this.trackList[pos].title}](${this.trackList[pos].sourceLink}) [${ConvertSecToFormat(this.trackList[pos].duration)}]`);
 
     try {
       if (pos === this.queuePos) {
         let progressBar = '>';
         let i = 0;
-        for (; i < Math.round((this.timestamp / this.currentSong.duration) * PROGRESS_BAR_LENGTH); i++) {
+        for (; i < Math.round((this.timestamp / this.currentTrack.duration) * PROGRESS_BAR_LENGTH); i++) {
           progressBar += '█';
         }
         for (; i < PROGRESS_BAR_LENGTH; i++) {
@@ -451,16 +451,16 @@ class Queue {
         }
         progressBar += '<';
 
-        infoEmbed.addField('Song Progress', `${progressBar} \u0009 [${ConvertSecToFormat(Math.round(this.timestamp))} / ${ConvertSecToFormat(this.currentSong.duration)}]`);
+        infoEmbed.addField('Track Progress', `${progressBar} \u0009 [${ConvertSecToFormat(Math.round(this.timestamp))} / ${ConvertSecToFormat(this.currentTrack.duration)}]`);
       } else if (pos > this.queuePos) {
         let cumulativeSeconds = 0;
-        for (let i = 1; i < pos - this.queuePos; i++) cumulativeSeconds += this.songList[pos + i].duration;
-        infoEmbed.addField('Time to Play', `${ConvertSecToFormat(this.currentSong.duration - this.timestamp + cumulativeSeconds)}`);
+        for (let i = 1; i < pos - this.queuePos; i++) cumulativeSeconds += this.trackList[pos + i].duration;
+        infoEmbed.addField('Time to Play', `${ConvertSecToFormat(this.currentTrack.duration - this.timestamp + cumulativeSeconds)}`);
       }
 
-      infoEmbed.addFields({ name: 'Author', value: this.songList[pos].author },
-        { name: 'Requested by:', value: this.songList[pos].requestedBy })
-        .setImage(this.songList[pos].icon)
+      infoEmbed.addFields({ name: 'Author', value: this.trackList[pos].author },
+        { name: 'Requested by:', value: this.trackList[pos].requestedBy })
+        .setImage(this.trackList[pos].icon)
         .setTimestamp();
       return infoEmbed;
     } catch (err) {
@@ -469,8 +469,8 @@ class Queue {
     }
   }
 
-  async toggleSongLoop () {
-    this.loopSong = !this.loopSong;
+  async toggleTrackLoop () {
+    this.loopTrack = !this.loopTrack;
   }
 
   async toggleQueueLoop () {
@@ -521,9 +521,9 @@ class Queue {
       this.accentTimeoutID = null;
     }
 
-    if (this.songDispatcher && !this.songDispatcher.paused && this.playing) {
+    if (this.trackDispatcher && !this.trackDispatcher.paused && this.playing) {
       this.stopTimestamp = this.timestamp;
-      this.songDispatcher.pause();
+      this.trackDispatcher.pause();
     }
 
     try {
@@ -534,7 +534,6 @@ class Queue {
 
     return new Promise((resolve, reject) => {
       this.playingAccent = true;
-      // console.log(this.songDispatcher.destroyed);
       this.accentDispatcher = this.connection.play(getTTSLink(this.accentList[0].language, this.accentList[0].text))
         .on('finish', () => {
           this.accentList.splice(0, 1);
@@ -570,7 +569,7 @@ class Queue {
   }
 
   clean () {
-    if (this.songDispatcher) this.songDispatcher.destroy();
+    if (this.trackDispatcher) this.trackDispatcher.destroy();
     if (this.accentDispatcher) this.accentDispatcher.destroy();
     this.connection = undefined;
   }
@@ -578,6 +577,6 @@ class Queue {
 
 exports.getQueue = getQueue;
 exports.deleteQueue = deleteQueue;
-exports.Song = Song;
+exports.Track = Track;
 exports.ConvertSecToFormat = ConvertSecToFormat;
 exports.queueMap = queueMap;
