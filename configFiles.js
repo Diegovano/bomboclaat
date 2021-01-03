@@ -60,7 +60,7 @@ class Config {
         if (eventType === 'change') {
           setTimeout(() => {
             this.refreshConfig().catch(err => {
-              err.message = `Unable to automatically refresh config.json! ${err.message}`;
+              err.message = `WARNING: Unable to automatically refresh config.json! ${err.message}`;
               l.logError(err);
             });
           }, 500);

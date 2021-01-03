@@ -200,12 +200,10 @@ const getTrackObjects = async (message, searchTerm) => {
             reject(err);
           });
         }
-        resolve(tracksToAdd);
+        return resolve(tracksToAdd);
       }, err => {
         err.message = `Unable to get playlist information from link! ${err.message}`;
         reject(err);
-      }).then(() => {
-        resolve(tracksToAdd);
       });
     } else if (searchTerm[0].includes('spotify.com')) {
       spotifyHandler.getSpotifyMetadata(message, searchTerm).then(trackArray => { // is in array form

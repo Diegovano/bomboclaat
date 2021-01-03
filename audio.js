@@ -210,12 +210,10 @@ class Queue {
               err.message = `WARNING: Cannot play track after an unavailable one! ${err.message}`;
               l.logError(err);
             });
-            return reject(err);
           }
 
           if (repeated === 0) l.log(`Error playing track, trying again! ${err.message}`);
           this.play(this.timestamp, isSeek, ++repeated); // test the use of return
-          return reject(err);
         });
 
       this.trackDispatcher.setVolume(this.volume);
@@ -571,6 +569,7 @@ class Queue {
   clean () {
     if (this.trackDispatcher) this.trackDispatcher.destroy();
     if (this.accentDispatcher) this.accentDispatcher.destroy();
+    this.voiceChannel.leave();
     this.connection = undefined;
   }
 }

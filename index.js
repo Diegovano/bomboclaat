@@ -177,11 +177,21 @@ function exitHandler (code = undefined) {
   if (code) process.exitCode = code;
   setTimeout(() => {
     console.log('Forced Exit!');
+    process.exitCode = 1;
     process.exit();
   }, 10 * 1000).unref();
 }
 
-process.on('SIGINT', () => exitHandler(0));
+let INT = false;
+
+process.on('SIGINT', () => {
+  if (!INT) {
+    INT = true;
+    exitHandler(0);
+  } else {
+    l.log('Interruption signal received, awaiting shutdown!');
+  }
+});
 
 process.on('multipleResolves', (type, promise, reason) =>
   l.log(`Multiple promise resolutions! ${type} ${promise} with message ${reason}`));
