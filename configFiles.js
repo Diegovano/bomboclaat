@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const l = require('./log.js');
+const chokidar = require('chokidar');
 
 const configFolderPath = path.join('.', 'config');
 const configFilePath = path.join(configFolderPath, 'config.json');
@@ -56,16 +57,15 @@ class Config {
 
     try {
       this.configObject = JSON.parse(data);
-      fs.watch(configFilePath, { persistent: false }, (eventType, _filename) => {
-        if (eventType === 'change') {
+      chokidar.watch(configFilePath, { persistent: false })
+        .on('change', path => {
           setTimeout(() => {
             this.refreshConfig().catch(err => {
               err.message = `WARNING: Unable to automatically refresh config.json! ${err.message}`;
               l.logError(err);
             });
           }, 500);
-        }
-      });
+        });
     } catch (err) {
       err.message = `WARNING: Cannot parse JSON info while creating config object! ${err.message}`;
       l.logError(err);

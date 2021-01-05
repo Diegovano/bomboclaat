@@ -569,7 +569,7 @@ class Queue {
   clean () {
     if (this.trackDispatcher) this.trackDispatcher.destroy();
     if (this.accentDispatcher) this.accentDispatcher.destroy();
-    this.voiceChannel.leave();
+    if (this.voiceChannel) this.voiceChannel.leave();
     this.connection = undefined;
   }
 }
