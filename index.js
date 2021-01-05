@@ -79,7 +79,7 @@ client.on('message', async message => {
             if (guildConfig) {
               if (Object.keys(guildConfig.botChannels).length !== 0 && !guildConfig.botChannels[message.channel.id]) {
                 if (message.content.split(' ')[0].toLowerCase().slice(prefix.length).trim() === 'togglebotchannel') return resolve();
-                return message.channel.send(`Please use a bot channel to interact with me, such as ${Object.values(guildConfig.botChannels)[0].name}`).then(msg => {
+                message.channel.send(`Please use a bot channel to interact with me, such as ${Object.values(guildConfig.botChannels)[0].name}`).then(msg => {
                   setTimeout(() => {
                     try {
                       msg.delete();
@@ -90,8 +90,11 @@ client.on('message', async message => {
                     }
                   }, 10000);
                 });
+                isCommand = false; // to skip execution
+                return resolve();
               } else if (!currentQueue.textChannel) {
                 currentQueue.textChannel = message.channel;
+                return resolve();
               }
             }
           }
@@ -113,7 +116,6 @@ client.on('message', async message => {
               client.commands.get('accent').execute(message, args);
             }
           }
-
           resolve();
         });
       })
@@ -170,16 +172,23 @@ client.on('message', async message => {
   }
 });
 
+let exiting = false;
+
 function exitHandler (code = undefined) {
-  for (const queue of am.queueMap) queue[1].clean();
-  client.destroy();
-  l.log(`Shutting down bot after ${am.ConvertSecToFormat(client.uptime / 1000)}s of operation!`);
-  if (code) process.exitCode = code;
-  setTimeout(() => {
-    console.log('Forced Exit!');
-    process.exitCode = 1;
-    process.exit();
-  }, 10 * 1000).unref();
+  if (!exiting) {
+    exiting = true;
+    for (const queue of am.queueMap) queue[1].clean();
+    client.destroy();
+    l.log(`Shutting down bot after ${am.ConvertSecToFormat(client.uptime / 1000)}s of operation!`);
+    if (code) process.exitCode = code;
+    setTimeout(() => {
+      console.log('Forced Exit!');
+      process.exitCode = 1;
+      process.exit();
+    }, 10 * 1000).unref();
+  } else {
+    l.log('Shutdown already initiated! Ignoring further calls!');
+  }
 }
 
 let INT = false;
