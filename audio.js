@@ -69,7 +69,7 @@ class Track {
     this.description = replaceUnicode(description);
     this.icon = icon;
     this.requestedBy = requestedBy;
-    this.startOffset = this.startOffset ? startOffset : 0;
+    this.startOffset = this.startOffset ? 0 : startOffset;
     this.requestTime = new Date();
 
     if (!duration) {
