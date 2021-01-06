@@ -69,7 +69,7 @@ class Track {
     this.description = replaceUnicode(description);
     this.icon = icon;
     this.requestedBy = requestedBy;
-    this.startOffset = this.startOffset ? 0 : startOffset;
+    this.startOffset = startOffset || 0;
     this.requestTime = new Date();
 
     if (!duration) {
@@ -320,7 +320,7 @@ class Queue {
       if (this.queuePos >= this.trackList.length - 1) { // -1 becuase the last track is being played
         if (!this.loopQueue) {
           this.playing = false;
-          this.trackDispatcher.destroy();
+          if (this.trackDispatcher) this.trackDispatcher.destroy();
           this.voiceChannel.leave();
           this.queuePos++;
           return resolve(`Skipping final track: ${this.trackList[this.queuePos - 1].title} and disconnecting.`);
