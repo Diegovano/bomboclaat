@@ -4,6 +4,7 @@ module.exports = {
   name: 'pp',
   aliases: ['dick', 'penis', 'hector'],
   description: 'Reveals the true size of people\'s ╭∩╮',
+  dmCompatible: true,
   async execute (message, _args) {
     if (message.author.username === 'Terminator00702' || message.author.username === 'Bobnotarobot') {
       return message.channel.send(`${message.author.username}'s cock size is:\n8¬ 1 inch! WOW`);

@@ -6,6 +6,7 @@ const l = require('../log.js');
 module.exports = {
   name: 'insult',
   description: 'Provide the user with a searing insult.',
+  dmCompatible: true,
   async execute (message, _args) {
     let insults;
     try {

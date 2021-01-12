@@ -9,7 +9,6 @@ module.exports = {
   description: 'earrape',
   args: true,
   usage: '<volume level>',
-  guildOnly: true,
   voiceConnection: true,
   async execute (message, args) {
     if (Number(args[0]) !== parseFloat(args[0])) return message.channel.send('Please provide a number!');

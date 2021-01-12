@@ -6,7 +6,6 @@ module.exports = {
   name: 'leave', // If this name is changed, change the function call in the clear.js command file.
   aliases: ['quit', 'bye'],
   description: 'Tells the bot to disconnect from the voice channel.',
-  guildOnly: true,
   voiceConnection: true,
   async execute (message, args) {
     const currentQueue = am.getQueue(message);

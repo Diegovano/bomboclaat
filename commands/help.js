@@ -8,6 +8,7 @@ module.exports = {
   aliases: ['h', 'commands'],
   description: 'List all commands or more info about a specific command.',
   usage: '[command name]',
+  dmCompatible: true,
   async execute (message, args) {
     const { commands } = message.client;
 

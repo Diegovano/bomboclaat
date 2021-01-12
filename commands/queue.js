@@ -7,7 +7,6 @@ module.exports = {
   name: 'queue',
   aliases: ['q', 'list', 'next', 'playlist'],
   description: 'Print a list of the track added to the queue since the bot joined the voice channel.',
-  guildOnly: true,
   voiceConnection: true,
   async execute (message, _args) {
     const currentQueue = am.getQueue(message);

@@ -9,7 +9,6 @@ module.exports = {
   aliases: ['info', 'songinfo'],
   usage: '[track number]',
   args: true,
-  guildOnly: true,
   voiceConnection: true,
   async execute (message, args) {
     const currentQueue = am.getQueue(message);

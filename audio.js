@@ -571,6 +571,7 @@ class Queue {
     if (this.accentDispatcher) this.accentDispatcher.destroy();
     if (this.voiceChannel) this.voiceChannel.leave();
     this.connection = undefined;
+    queueMap.delete(this.guildID);
   }
 }
 

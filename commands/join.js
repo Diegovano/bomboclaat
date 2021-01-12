@@ -7,7 +7,6 @@ module.exports = {
   name: 'join',
   aliases: ['j', 'hello', 'hi'],
   description: 'Tell the bot to join your voice channel.',
-  guildOnly: true,
   voiceConnection: true,
   async execute (message, _args) {
     const currentQueue = am.getQueue(message);

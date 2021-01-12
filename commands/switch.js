@@ -5,7 +5,6 @@ const am = require('../audio.js');
 module.exports = {
   name: 'switch',
   description: 'The bot will join the voice channel of the requestor.',
-  guildOnly: true,
   voiceConnection: true,
   async execute (message, _args) {
     const currentQueue = am.getQueue(message);

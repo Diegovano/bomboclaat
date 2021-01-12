@@ -21,7 +21,7 @@
     "utf-8-validate": "^5.0.3",
     "uuid": "^8.3.1",
     "yt-search": "^2.5.1",
-    "ytdl-core": "^4.4.0"
+    "ytdl-core": "^4.4.3"
   },
   "devDependencies": {
     "eslint": "^7.17.0",

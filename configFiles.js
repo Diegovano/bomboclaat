@@ -109,7 +109,7 @@ class Config {
       // const index = this.configObject.guilds.findIndex(element => element.id === message.guild.id);
       if (this.configObject[message.guild.id] === undefined) {
         // this.configObject.guilds.push({ id: message.guild.id, accents: [ ], prefix: `|`, botChannels: [ ]});
-        this.configObject[message.guild.id] = { autoAccent: false, prefix: '|', accents: { }, botChannels: [] };
+        this.configObject[message.guild.id] = { autoAccent: false, prefix: '|', accents: { }, botChannels: { } };
         return this.writeToJSON().then(() => resolve(), err => reject(err));
       } else {
         if (this.configObject[message.guild.id]) return resolve();

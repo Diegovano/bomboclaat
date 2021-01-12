@@ -7,7 +7,6 @@ module.exports = {
   aliases: ['a'],
   description: 'Fuck diegos descriptions',
   usage: '<language> <text>',
-  guildOnly: true,
   args: 2,
   voiceConnection: true,
   async execute (message, args) {

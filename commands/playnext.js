@@ -8,7 +8,6 @@ module.exports = {
   name: 'playnext',
   aliases: ['pn', 'next'],
   description: 'Add a track to the queue that will play after the current one.',
-  guildOnly: true,
   args: true,
   usage: '<track name>',
   voiceConnection: true,

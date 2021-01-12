@@ -6,7 +6,6 @@ module.exports = {
   name: 'personinfo',
   aliases: ['person', 'pinfo'],
   description: 'Gives critical information about the person.',
-  guildOnly: true,
   async execute (message, _args) {
     let sexuality = 'Straight';
     switch (message.author.username) {

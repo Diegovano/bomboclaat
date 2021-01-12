@@ -6,7 +6,6 @@ module.exports = {
   name: 'nowplaying',
   description: 'shows the banger currently playing',
   aliases: ['np', 'current', 'playing'],
-  guildOnly: true,
   voiceConnection: true,
   async execute (message, _args) {
     const currentQueue = am.getQueue(message);

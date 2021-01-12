@@ -8,7 +8,6 @@ module.exports = {
   description: 'Change the bot\'s prefix for this server',
   args: true,
   usage: '<new prefix>',
-  guildOnly: true,
   execute (message, args) {
     const objectHandle = conf.config.configObject[message.guild.id];
     const prevPrefix = objectHandle.prefix;

@@ -4,9 +4,8 @@ const am = require('../audio.js');
 
 module.exports = {
   name: 'clear',
-  aliases: ['empty', 'reset'],
+  aliases: ['empty'],
   description: 'Clear all tracks from the current queue except the current track.',
-  guildOnly: true,
   voiceConnection: true,
   async execute (message, _args) {
     const currentQueue = am.getQueue(message);

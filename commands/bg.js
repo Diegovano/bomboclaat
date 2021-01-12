@@ -3,6 +3,7 @@
 module.exports = {
   name: 'bg',
   description: 'Self encouragement!',
+  dmCompatible: true,
   async execute (message, _args) {
     switch (message.author.id) {
       case '620196939572576258': return message.channel.send('We don\'t care about your opinion Hugo.'); // PBS
