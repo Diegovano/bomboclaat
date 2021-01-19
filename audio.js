@@ -332,14 +332,14 @@ class Queue {
             reject(err);
           });
         }
+      } else {
+        this.queuePos++;
+        this.play().then(msg => {
+          resolve(`Skipping ${this.trackList[this.queuePos - 1].title}.\n${msg}`);
+        }, err => {
+          reject(err);
+        });
       }
-
-      this.queuePos++;
-      this.play().then(msg => {
-        resolve(`Skipping ${this.trackList[this.queuePos - 1].title}.\n${msg}`);
-      }, err => {
-        reject(err);
-      });
     });
   }
 

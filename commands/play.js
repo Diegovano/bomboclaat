@@ -319,9 +319,9 @@ function userSelect (results, message) {
         collectors[i].on('collect', () => {
           if (collected) return;
           collected = true;
-          embedDeleted = true;
           message.client.setTimeout(() => {
             if (!embedDeleted) {
+              embedDeleted = true;
               msg.delete();
             }
           }, waitTime);
