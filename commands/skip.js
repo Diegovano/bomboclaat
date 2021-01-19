@@ -8,10 +8,10 @@ module.exports = {
   aliases: ['s', 'next'],
   description: 'Skip the current track.',
   voiceConnection: true,
+  textBound: true,
   async execute (message, _args) {
     const currentQueue = am.getQueue(message);
 
-    if (message && message.channel.id !== currentQueue.textChannel.id) { return message.channel.send(`Bot is bound to ${currentQueue.textChannel.name}, please use this channel to skip!`); }
     currentQueue.skip().then(msg => {
       if (msg) message.channel.send(msg);
     }, err => {

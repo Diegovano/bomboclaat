@@ -10,10 +10,9 @@ module.exports = {
   usage: '<track position>',
   args: true,
   voiceConnection: true,
+  textBound: true,
   async execute (message, args) {
     const currentQueue = am.getQueue(message);
-
-    if (message.channel.id !== currentQueue.textChannel.id) { return message.channel.send(`Bot is bound to ${currentQueue.textChannel.name}, please use this channel to remove tracks!`); }
 
     currentQueue.remove(parseInt(args[0]) - 1).then(msg => {
       message.channel.send(msg);

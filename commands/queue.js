@@ -8,11 +8,8 @@ module.exports = {
   aliases: ['q', 'list', 'next', 'playlist'],
   description: 'Print a list of the track added to the queue since the bot joined the voice channel.',
   voiceConnection: true,
+  textBound: true,
   async execute (message, _args) {
-    const currentQueue = am.getQueue(message);
-
-    if (message.channel.id !== currentQueue.textChannel.id) { return message.channel.send(`Bot is bound to ${currentQueue.textChannel.name}, please use this channel to see the queue!`); }
-
     am.getQueue(message).getQueueMessage().then(messageContent => {
       for (let i = 0; i < messageContent.length; i++) {
         message.channel.send(messageContent[i]).catch(err => {

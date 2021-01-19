@@ -14,13 +14,10 @@ module.exports = {
   description: 'If paused, unpause, otherwise add track to queue.',
   usage: '[track name]',
   guidOnly: true,
+  textBound: true,
   voiceConnection: true,
   async execute (message, args) {
     const currentQueue = am.getQueue(message);
-
-    if (message.channel.id !== currentQueue.textChannel.id) {
-      return message.channel.send(`Bot is bound to ${currentQueue.textChannel.name}, please use this channel to queue!`);
-    }
 
     currentQueue.voiceChannel = message.member.voice.channel;
 
@@ -322,15 +319,21 @@ function userSelect (results, message) {
         collectors[i].on('collect', () => {
           if (collected) return;
           collected = true;
+          embedDeleted = true;
           message.client.setTimeout(() => {
-            if (!embedDeleted) msg.delete().then(() => (embedDeleted = true));
+            if (!embedDeleted) {
+              msg.delete();
+            }
           }, waitTime);
           resolve(results[i]);
         });
       }
 
       message.client.setTimeout(() => {
-        if (!embedDeleted) msg.delete().then(() => (embedDeleted = true));
+        if (!embedDeleted) {
+          embedDeleted = true;
+          msg.delete();
+        }
       }, reactionTime);
     }, err => {
       reject(err);

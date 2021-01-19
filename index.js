@@ -146,6 +146,19 @@ client.on('message', async message => {
     return;
   }
 
+  if (command.textBound && message.channel.id !== am.getQueue(message).textChannel.id) {
+    message.channel.send(`Bot is bound to ${am.getQueue(message).textChannel.name}, please use this channel to queue!`).then(botMsg => {
+      setTimeout(() => {
+        try {
+          botMsg.delete();
+          message.delete();
+        } catch (err) {
+          l.log('Unable to delete a text channel-bound command request...');
+        }
+      }, 10 * 1000);
+    });
+  }
+
   if (!command.dmCompatible && message.channel.type === 'dm') {
     return message.reply('I can\'t execute that command inside DMs!');
   }
@@ -219,6 +232,11 @@ process.on('unhandledRejection', (reason, _promise) => {
     l.logError('FATAL: Unhandled Promise Rejection!');
   }
   exitHandler(1);
+});
+
+client.on('error', err => {
+  err.message = `WARNING: DiscordJS Client Error!: ${err.message}`;
+  l.logError(err);
 });
 
 if (token) {

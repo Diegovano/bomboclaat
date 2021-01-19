@@ -11,10 +11,9 @@ module.exports = {
   args: true,
   usage: '<track name>',
   voiceConnection: true,
+  textBound: true,
   async execute (message, args) {
     const currentQueue = am.getQueue(message);
-
-    if (message.channel.id !== currentQueue.textChannel.id) { return message.channel.send(`Bot is bound to ${currentQueue.textChannel.name}, please use this channel to see the queue!`); }
 
     currentQueue.voiceChannel = message.member.voice.channel;
 
