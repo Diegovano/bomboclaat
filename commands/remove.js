@@ -1,7 +1,6 @@
 'use strict';
 
 const am = require('../audio.js');
-const l = require('../log.js');
 
 module.exports = {
   name: 'remove',
@@ -17,9 +16,9 @@ module.exports = {
     currentQueue.remove(parseInt(args[0]) - 1).then(msg => {
       message.channel.send(msg);
     }, err => {
-      message.channel.send('Error removing track! Is track position in range? ');
-      err.message = `WARNING: Error removing track ${err.message}`;
-      l.logError(err);
+      message.channel.send(`Error removing track! ${err.message}`);
+      // err.message = `WARNING: Error removing track ${err.message}`;
+      // l.logError(err);
     });
   }
 };

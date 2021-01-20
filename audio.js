@@ -258,7 +258,7 @@ class Queue {
 
       if (this.trackList.length > this.queuePos) {
         const trackDuration = this.trackList[this.queuePos].duration;
-        currentTrack[0] = `\nTrack ${this.queuePos + 1}: [${this.trackList[this.queuePos].title}](${this.trackList[this.queuePos].sourceLink}) [${ConvertSecToFormat(trackDuration)}], requested by ${this.trackList[this.queuePos].requestedBy}.`;
+        currentTrack[0] = `\nTrack ${this.queuePos + 1}: [${this.trackList[this.queuePos].title}](${this.trackList[this.queuePos].sourceLink}&t=${Math.floor(this.timestamp)}) [${ConvertSecToFormat(trackDuration)}], requested by ${this.trackList[this.queuePos].requestedBy}.`;
       }
 
       const nextTracks = [''];
@@ -395,9 +395,11 @@ class Queue {
     }
   }
 
-  async remove (index) {
+  async remove (index) { // CHECK INDEX IS A NUMBER!!!
     return new Promise((resolve, reject) => {
+      if (isNaN(index)) return reject(Error('Expected a number!'));
       if (index >= this.trackList.length) return reject(Error('Cannot remove: index out of range!'));
+      index = Math.floor(index);
       const removedTrack = this.trackList[index];
       this.trackList.splice(index, 1);
       if (this.queuePos > index) this.queuePos--;
@@ -432,10 +434,12 @@ class Queue {
 
     const PROGRESS_BAR_LENGTH = 25;
 
+    const timestampLitteral = pos === this.queuePos ? `&t=${Math.floor(this.timestamp)}` : '';
+
     const infoEmbed = new Discord.MessageEmbed()
       .setColor('#ff0000')
       .setTitle('Track Information')
-      .addField('Track Title', `[${this.trackList[pos].title}](${this.trackList[pos].sourceLink}) [${ConvertSecToFormat(this.trackList[pos].duration)}]`);
+      .addField('Track Title', `[${this.trackList[pos].title}](${this.trackList[pos].sourceLink}${timestampLitteral}) [${ConvertSecToFormat(this.trackList[pos].duration)}]`);
 
     try {
       if (pos === this.queuePos) {
