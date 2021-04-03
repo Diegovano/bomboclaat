@@ -316,8 +316,8 @@ class Queue {
 
   async skip () {
     return new Promise((resolve, reject) => {
-      if (this.trackList.length === 0) return resolve('No track to skip!');
-      if (this.queuePos >= this.trackList.length - 1) { // -1 becuase the last track is being played
+      if (this.trackList.length === 0 || this.queuePos > this.trackList.length - 1) return resolve('No track to skip!');
+      if (this.queuePos > this.trackList.length - 2) { // -2 becuase the last track is being played
         if (!this.loopQueue) {
           this.playing = false;
           if (this.trackDispatcher) this.trackDispatcher.destroy();
