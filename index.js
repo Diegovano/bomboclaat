@@ -215,6 +215,8 @@ process.on('SIGINT', () => {
   }
 });
 
+process.on('SIGTERM', () => exitHandler(0));
+
 process.on('multipleResolves', (type, promise, reason) =>
   l.log(`Multiple promise resolutions! ${type} ${promise} with message ${reason}`));
 
