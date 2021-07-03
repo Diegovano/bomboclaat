@@ -7,11 +7,11 @@ const path = require('path');
 const conf = require('./configFiles.js');
 const am = require('./audio.js');
 
-const prefix = '|';
+// const prefix = '|';
 
 function checkNodeVersion () {
-  if (parseInt(process.versions.node.split('.')[0]) < 12) {
-    l.logError(Error('Use Node version 12 or greater!'));
+  if (parseInt(process.versions.node.split('.')[0]) < 13) {
+    l.logError(Error('Use Node version 13 or greater!'));
     exitHandler(-1);
   }
   l.log(`You're running node.js ${process.version}`);
@@ -66,10 +66,11 @@ client.on('message', async message => {
         });
       })
       .then(msg => {
+        const prefix = conf.config.configObject[message.guild.id].prefix;
         return new Promise((resolve, reject) => {
           if (msg) message.channel.send(msg);
 
-          if (message.content.startsWith(conf.config.configObject[message.guild.id].prefix)) isCommand = true;
+          if (message.content.startsWith(prefix)) isCommand = true;
 
           const currentQueue = am.getQueue(message);
 
@@ -129,7 +130,7 @@ client.on('message', async message => {
 
   if (!isCommand) return;
 
-  const args = message.content.slice(prefix.length).trim().split(/ +/);
+  const args = message.content.slice(conf.config.configObject[message.guild.id].prefix.length).trim().split(/ +/);
   const commandName = args.shift().toLowerCase();
 
   let command;
@@ -167,7 +168,7 @@ client.on('message', async message => {
     let reply = `You didn't provide correct arguments, ${message.author}!`;
 
     if (command.usage) { // If command specifies which arguments are required and their usage
-      reply += `\nThe proper usage would be: \`${prefix}${command.name} ${command.usage}\``;
+      reply += `\nThe proper usage would be: \`${conf.config.configObject[message.guild.id].prefix}${command.name} ${command.usage}\``;
     }
     return message.channel.send(reply);
   }
