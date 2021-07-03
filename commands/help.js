@@ -1,7 +1,8 @@
 'use strict';
 
 const Discord = require('discord.js');
-const prefix = '|'; // static prefix for now
+const conf = require('../configFiles.js');
+// const prefix = '|'; // static prefix for now
 
 module.exports = {
   name: 'help',
@@ -11,6 +12,7 @@ module.exports = {
   dmCompatible: true,
   async execute (message, args) {
     const { commands } = message.client;
+    const prefix = conf.config.configObject[message.guild.id].prefix;
 
     if (!args.length) { // Show help for all commands
       const helpEmbed = new Discord.MessageEmbed()

@@ -94,7 +94,7 @@ class Config {
           this.configObject = JSON.parse(data);
         } catch (err) {
           if (data !== '') err.message += `\n\nRead data was:\n${data}`; // temporary debugging code
-	  else err.message += 'No data read!';
+          else err.message += 'No data read!';
           reject(err);
         }
 
