@@ -7,8 +7,6 @@ const path = require('path');
 const conf = require('./configFiles.js');
 const am = require('./audio.js');
 
-// const prefix = '|';
-
 function checkNodeVersion () {
   if (parseInt(process.versions.node.split('.')[0]) < 13) {
     l.logError(Error('Use Node version 13 or greater!'));
@@ -20,6 +18,8 @@ function checkNodeVersion () {
 checkNodeVersion();
 
 const client = new Discord.Client();
+
+const defaultPrefix = [];
 
 let token;
 if (process.env.TOKEN) {
@@ -66,7 +66,8 @@ client.on('message', async message => {
         });
       })
       .then(msg => {
-        const prefix = conf.config.configObject[message.guild.id].prefix;
+        // const prefix = conf.config.configObject[message.guild.id].prefix;
+        const prefix = 't';
         return new Promise((resolve, reject) => {
           if (msg) message.channel.send(msg);
 
@@ -99,22 +100,53 @@ client.on('message', async message => {
               }
             }
           }
-
-          // auto-accent
-          if (!isCommand && conf.config.configObject[message.guild.id].autoAccent && conf.config.configObject[message.guild.id].accents[message.author.id].accent !== 'none') {
-            if (!currentQueue.voiceChannel && message.member.voice.channel) {
-              currentQueue.setVoiceChannel(message.member.voice.channel);
+          if (!isCommand) {
+            if (message.content === 'prefix' && !defaultPrefix.includes(message.author.id)) {
+              if (conf.config.configObject[message.guild.id].prefix === '|') {
+                message.reply('The current prefix is: "|".');
+              } else {
+                defaultPrefix.push(message.author.id);
+                message.reply(`The current prefix is: "${conf.config.configObject[message.guild.id].prefix}". Would you like me to reset it back to the default ("|")?\nIf so please type yes.`).then(botMsg => {
+                  setTimeout(() => {
+                    try {
+                      for (let i = 0; i < defaultPrefix.length; i++) {
+                        if (defaultPrefix[i] === message.author.id) {
+                          defaultPrefix.splice(i, 1);
+                          break;
+                        }
+                      }
+                      botMsg.delete();
+                    } catch (err) {
+                      l.log('Unable to delete a text channel-bound prefix request...');
+                    }
+                  }, 10 * 1000);
+                });
+              }
+            } else if (message.content === 'yes' && defaultPrefix.includes(message.author.id)) {
+              client.commands.get('prefix').execute(message, ['|']);
+              for (let i = 0; i < defaultPrefix.length; i++) {
+                if (defaultPrefix[i] === message.author.id) {
+                  defaultPrefix.splice(i, 1);
+                  break;
+                }
+              }
             }
-
-            if (currentQueue.voiceChannel && currentQueue.voiceChannel.members.has(message.author.id)) {
-              if (!currentQueue.voiceChannel.permissionsFor(message.client.user).has(['CONNECT', 'SPEAK'])) {
-                message.channel.send('I need permissions to join and speak in your voice channel!');
-                return reject(Error('Insufficient Permissions'));
+            // auto-accent
+            if (conf.config.configObject[message.guild.id].autoAccent && conf.config.configObject[message.guild.id].accents[message.author.id].accent !== 'none') {
+              if (!currentQueue.voiceChannel && message.member.voice.channel) {
+                currentQueue.setVoiceChannel(message.member.voice.channel);
               }
 
-              const args = [conf.config.configObject[message.guild.id].accents[message.author.id].accent, message.content];
-              // @ts-ignore
-              client.commands.get('accent').execute(message, args);
+              if (currentQueue.voiceChannel && currentQueue.voiceChannel.members.has(message.author.id)) {
+                if (!currentQueue.voiceChannel.permissionsFor(message.client.user).has(['CONNECT', 'SPEAK'])) {
+                  message.channel.send('I need permissions to join and speak in your voice channel!');
+                  return reject(Error('Insufficient Permissions'));
+                }
+
+                const args = [conf.config.configObject[message.guild.id].accents[message.author.id].accent, message.content];
+                // @ts-ignore
+                client.commands.get('accent').execute(message, args);
+              }
             }
           }
           resolve();
@@ -135,16 +167,17 @@ client.on('message', async message => {
 
   let command;
 
-  try {
-    // @ts-ignore
+  if (commandName === '') {
+    command = client.commands.get('help');
+  } else {
     command = client.commands.get(commandName) ||
-              // @ts-ignore
-              client.commands.find(cmd => cmd.aliases && cmd.aliases.includes(commandName));
-    if (!command) throw Error();
-  } catch (_err) { // Catches the exception that could be thrown should the try block not find the command
-    l.log(`Command "${commandName}" doesn't exist!`);
-    message.reply('sorry, unable to find command...');
-    return;
+      // @ts-ignore
+      client.commands.find(cmd => cmd.aliases && cmd.aliases.includes(commandName));
+    if (!command) {
+      l.log(`Command "${commandName}" doesn't exist!`);
+      message.reply('sorry, unable to find command...');
+      return;
+    }
   }
 
   if (command.textBound && message.channel.id !== am.getQueue(message).textChannel.id) {
