@@ -66,8 +66,7 @@ client.on('message', async message => {
         });
       })
       .then(msg => {
-        // const prefix = conf.config.configObject[message.guild.id].prefix;
-        const prefix = 't';
+        const prefix = conf.config.configObject[message.guild.id].prefix;
         return new Promise((resolve, reject) => {
           if (msg) message.channel.send(msg);
 
