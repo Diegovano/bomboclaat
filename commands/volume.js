@@ -3,6 +3,8 @@
 const am = require('../audio.js');
 const l = require('../log.js');
 
+const DEFAULT_VOLUME = 0.025;
+
 module.exports = {
   name: 'volume',
   aliases: ['v', 'vol'],
@@ -16,7 +18,7 @@ module.exports = {
     const currentQueue = am.getQueue(message);
 
     try {
-      currentQueue.setVolume(args[0]);
+      currentQueue.setVolume(args[0] * DEFAULT_VOLUME);
     } catch (error) {
       error.message = `What u trying to change the volume of idiot? ${error.message}`;
       l.logError(error);

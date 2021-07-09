@@ -7,7 +7,8 @@ const ytdl = require('ytdl-core');
 const youtube = google.youtube('v3');
 const Discord = require('discord.js');
 
-const DEFAULT_VOLUME = 0.25;
+const DEFAULT_VOLUME = 0.025;
+// const DEFAULT_VOLUME_DB = 0.1;
 const DISABLE_ACCENT_QUEUE = true;
 
 const queueMap = new Map();
@@ -216,7 +217,7 @@ class Queue {
           this.play(this.timestamp, isSeek, ++repeated); // test the use of return
         });
 
-      this.trackDispatcher.setVolume(this.volume);
+      this.setVolume(this.volume);
       if (!isSeek && repeated === 0) return resolve(`Now playing **${this.trackList[this.queuePos].title}** [${ConvertSecToFormat(this.trackList[this.queuePos].duration)}], requested by **${this.trackList[this.queuePos].requestedBy}** at ${this.trackList[this.queuePos].requestTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`);
       else resolve();
     });
@@ -373,14 +374,12 @@ class Queue {
     if (!this.paused) return this.textChannel.send('Cannot Unpause: Player is not paused!');
 
     this.paused = false;
-    this.trackDispatcher.setVolume(this.volume);
+    this.setVolume(this.volume);
     this.trackDispatcher.resume();
   }
 
   async setVolume (volumeAmount) {
-    if (!this.playing) return this.textChannel.send('Cannot set Volume: Nothing playing!');
-
-    this.volume = volumeAmount * DEFAULT_VOLUME;
+    this.volume = volumeAmount;
     this.trackDispatcher.setVolume(this.volume);
   }
 
