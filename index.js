@@ -130,6 +130,28 @@ client.on('message', async message => {
                 }
               }
             }
+            if (/youtu(?:\.be|be\.com)\/(?:|watch\?v=|v\/)([a-zA-Z0-9_-]{11})(?:[?&]t=)?([0-9]{1,3}h)?([0-9]{1,5}m)?([0-9]{1,7}s)?/g.test(message.content) || /youtu(?:\.be|be\.com)\/(?:playlist\?|[a-zA-Z0-9_-]{11}&|watch\?v=[a-zA-Z0-9_-]{11}&|v\/[a-zA-Z0-9_-]{11}&)list=([a-zA-Z0-9_-]{34})/g.test(message.content)) {
+              message.react('▶');
+              let cachedReaction;
+              const filter = (reaction, user) => {
+                cachedReaction = reaction;
+                return reaction.emoji.name === '▶' && user.id === message.author.id;
+              };
+              const collector = message.createReactionCollector(filter, { max: 1, time: 10000 });
+              collector.on('collect', (_, __) => {
+                const voiceChannel = message.member.voice.channel;
+                if (!voiceChannel) {
+                  message.reply('please join a voice channel to perform this action!');
+                } else if (!voiceChannel.permissionsFor(message.client.user).has(['CONNECT', 'SPEAK'])) {
+                  message.channel.send('I need permissions to join and speak in your voice channel!');
+                } else (client.commands.get('play').execute(message, message.content.split(/ +/)));
+              });
+              collector.on('end', _ => {
+                cachedReaction.remove().catch(error => {
+                  l.logError(Error(`WARNING: Unable to remove reaction from message! Has the message been deleted? ${error}`));
+                });
+              });
+            }
             // auto-accent
             if (conf.config.configObject[message.guild.id].autoAccent && conf.config.configObject[message.guild.id].accents[message.author.id].accent !== 'none') {
               if (!currentQueue.voiceChannel && message.member.voice.channel) {

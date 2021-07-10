@@ -8,6 +8,18 @@ const l = require('../log.js');
 const youtube = google.youtube('v3');
 const spotifyHandler = require('../spotifyHandler.js');
 
+let cannotReadToken = false;
+let ytkey;
+if (!process.env.YTTOKEN) { // Check if running github actions or just locally
+  try {
+    ytkey = fs.readFileSync('.yttoken', 'utf8');
+  } catch (err) {
+    cannotReadToken = true;
+  }
+} else {
+  ytkey = process.env.YTTOKEN;
+}
+
 module.exports = {
   name: 'play',
   aliases: ['p'],
@@ -23,7 +35,7 @@ module.exports = {
 
     if (!args[0]) {
       try {
-        currentQueue.unpause();
+        return currentQueue.unpause();
       } catch (error) {
         message.channel.send(`Unable to unpause the player! Is anything in queue? ${error}`);
       }
@@ -32,6 +44,7 @@ module.exports = {
 
     getTrackObjects(message, args).then(async tracks => {
       /* message.channel.send(`No tracks added!`); */ // if no tracks returned i.e. no search results
+      tracks = tracks.filter(Boolean); // Removes all empty elements
       if (tracks && tracks.length === 1) {
         currentQueue.add(tracks[0], false, false).then(msg => {
           if (msg) message.channel.send(msg);
@@ -59,111 +72,18 @@ module.exports = {
       message.channel.send('Unable to add track to queue!');
     });
   }
-
 };
 
 const getTrackObjects = async (message, searchTerm) => {
   return new Promise((resolve, reject) => {
     const tracksToAdd = [];
+    const match = searchTerm[0].match(/youtu(?:\.be|be\.com)\/(?:playlist\?|[a-zA-Z0-9_-]{11}&|watch\?v=[a-zA-Z0-9_-]{11}&|v\/[a-zA-Z0-9_-]{11}&)list=([a-zA-Z0-9_-]{34})/g);
+    const promises = [];
+    if (match) {
+      const playlistId = match[1];
 
-    if (searchTerm[0].match(/(?:youtu)(?:.*?)(?:^|\/|v=)([a-z0-9_-]{11})(?:.*)/i)) {
-      const videoID = searchTerm[0].match(/(?:.*?)(?:^|\/|v=)([a-z0-9_-]{11})(?:.*)/i)[1];
-
-      let timestamp;
-      if (searchTerm[0].match(/[?&]t=/i)) {
-        timestamp = searchTerm[0].match(/(?:[?&]t=)(.*?)(?:&|$)/i)[1];
-
-        let seconds = 0;
-        if (timestamp.includes('h')) {
-          let i = 0;
-          while (timestamp[i] !== 'h') i++;
-
-          for (let i2 = 0; i2 < i; i2++) {
-            seconds += timestamp[i - i2 - 1] * 10 ** (i2) * 3600;
-          }
-
-          try {
-            timestamp[0].shift(i);
-          } catch (error) {
-            reject(error);
-          }
-        }
-
-        if (timestamp.includes('m')) {
-          let i = 0;
-          while (timestamp[i] !== 'h') i++;
-
-          for (let i2 = 0; i2 < i; i2++) {
-            seconds += timestamp[i - i2 - 1] * 10 ** (i2) * 60;
-          }
-
-          try {
-            timestamp[0].shift(i);
-          } catch (error) {
-            reject(error);
-          }
-        }
-
-        if (timestamp.includes('s')) {
-          let i = 0;
-          while (timestamp[i] !== 's') i++;
-
-          for (let i2 = 0; i2 < i; i2++) {
-            seconds += timestamp[i - i2 - 1] * 10 ** (i2);
-          }
-        }
-
-        if (!timestamp.includes('h') && !timestamp.includes('m') && !timestamp.includes('s')) {
-          for (let i = 0; i < timestamp.length; i++) {
-            seconds += timestamp[timestamp.length - i - 1] * 10 ** (i);
-          }
-        }
-
-        timestamp = timestamp ? seconds : 0;
-      }
-
-      let ytkey;
-
-      if (!process.env.YTTOKEN) { // Check if running github actions or just locally
-        try {
-          ytkey = fs.readFileSync('.yttoken', 'utf8');
-        } catch (err) {
-          return reject(Error('Cannot read YouTube key!'));
-        }
-      } else {
-        ytkey = process.env.YTTOKEN;
-      }
-
-      const opts =
-                    {
-                      part: ['snippet', 'contentDetails'], // IMPORTANT: CONTENT DETAILS PART REQUIRED!
-                      id: videoID,
-                      key: ytkey
-                    };
-
-      return youtube.videos.list(opts).then(res => {
-        const track = new am.Track(res.data.items[0].id, res.data.items[0].snippet.channelTitle,
-          res.data.items[0].snippet.localized.title, res.data.items[0].snippet.localized.description,
-          res.data.items[0].snippet.thumbnails.high.url || '', message.member.displayName,
-          timestamp, res.data.items[0].contentDetails.duration);
-        tracksToAdd.push(track);
-        resolve(tracksToAdd);
-      }, err => {
-        err.message = `Unable to get video information from link! ${err.message}`;
-        return reject(err);
-      });
-    } else if (searchTerm[0].match(/(?<=[&?]list=)(.*?)(?=(&|$))/i)) {
-      const playlistId = searchTerm[0].match(/(?<=[&?]list=)(.*?)(?=(&|$))/i)[1];
-
-      let ytkey;
-      if (!process.env.YTTOKEN) { // Check if running github actions or just locally
-        try {
-          ytkey = fs.readFileSync('.yttoken', 'utf8');
-        } catch (err) {
-          return reject(Error('Cannot read YouTube key!'));
-        }
-      } else {
-        ytkey = process.env.YTTOKEN;
+      if (cannotReadToken) {
+        return reject(Error('SEVERE: Cannot read YouTube key!'));
       }
 
       const nextPage = '';
@@ -171,20 +91,20 @@ const getTrackObjects = async (message, searchTerm) => {
       const MAX_TRACKS_PER_PLAYLIST = 100; // multiples of 50
 
       const opts =
-                {
-                  part: ['snippet', 'status'],
-                  playlistId: playlistId,
-                  maxResults: 50,
-                  pageToken: nextPage,
-                  key: ytkey
-                };
+        {
+          part: ['snippet', 'status'],
+          playlistId: playlistId,
+          maxResults: 50,
+          pageToken: nextPage,
+          key: ytkey
+        };
 
       youtube.playlistItems.list(opts).then(async res => {
         for (let i = 0; i < MAX_TRACKS_PER_PLAYLIST / res.data.pageInfo.resultsPerPage && i < Math.ceil(res.data.pageInfo.totalResults / res.data.pageInfo.resultsPerPage); i++) {
           await youtube.playlistItems.list(opts).then(async res => {
             for (let i2 = 0; i2 < res.data.items.length; i2++) {
               if (res.data.items[i2].status.privacyStatus === 'public' ||
-                                         res.data.items[i2].status.privacyStatus === 'unlisted') {
+                res.data.items[i2].status.privacyStatus === 'unlisted') {
                 const track = new am.Track(res.data.items[i2].snippet.resourceId.videoId, res.data.items[i2].snippet.channelTitle,
                   res.data.items[i2].snippet.title, res.data.items[i2].snippet.description,
                   res.data.items[i2].snippet.thumbnails.high.url || '', message.member.displayName, 0);
@@ -202,6 +122,44 @@ const getTrackObjects = async (message, searchTerm) => {
         err.message = `Unable to get playlist information from link! ${err.message}`;
         reject(err);
       });
+    } else {
+      const matches = searchTerm.join(' ').matchAll(/youtu(?:\.be|be\.com)\/(?:|watch\?v=|v\/)([a-zA-Z0-9_-]{11})(?:[?&]t=)?([0-9]{1,3}h)?([0-9]{1,5}m)?([0-9]{1,7}s)?/g);
+      // The regex matches all youtube links it finds with [1] being the videoID, [2] hours and etc...
+      for (const match of matches) {
+        let timestamp = 0;
+        if (match[2]) {
+          timestamp += 3600 * parseInt(match[2].substring(0, match[2].length - 1));
+        }
+        if (match[3]) {
+          timestamp += 60 * parseInt(match[3].substring(0, match[3].length - 1));
+        }
+        if (match[4]) {
+          timestamp += parseInt(match[4].substring(0, match[4].length - 1));
+        }
+        if (cannotReadToken) {
+          return reject(Error('SEVERE: Cannot read YouTube key!'));
+        }
+
+        const opts = {
+          part: ['snippet', 'contentDetails'], // IMPORTANT: CONTENT DETAILS PART REQUIRED!
+          id: match[1],
+          key: ytkey
+        };
+        promises.push(new Promise((resolve, reject) => youtube.videos.list(opts).then(res => {
+          const track = new am.Track(res.data.items[0].id, res.data.items[0].snippet.channelTitle,
+            res.data.items[0].snippet.localized.title, res.data.items[0].snippet.localized.description,
+            res.data.items[0].snippet.thumbnails.high.url || '', message.member.displayName,
+            timestamp, res.data.items[0].contentDetails.duration);
+          return resolve(track);
+        }, err => {
+          err.message = `Unable to get video information from link! ${err.message}`;
+          return reject(err);
+        }
+        )));
+      }
+    }
+    if (promises.length > 0) {
+      return resolve(Promise.all(promises));
     } else if (searchTerm[0].includes('spotify.com')) {
       spotifyHandler.getSpotifyMetadata(message, searchTerm).then(trackArray => { // is in array form
         resolve(trackArray);
@@ -224,25 +182,17 @@ const getTrackObjects = async (message, searchTerm) => {
 
 async function ytSearch (searchTerm, message) {
   return new Promise((resolve, reject) => {
-    let ytkey;
-    if (!process.env.YTTOKEN) { // Check if running github actions or just locally
-      try {
-        ytkey = fs.readFileSync('.yttoken', 'utf8');
-      } catch (err) {
-        return reject(Error('SEVERE: Cannot read YouTube key!'));
-      }
-    } else {
-      ytkey = process.env.YTTOKEN;
+    if (cannotReadToken) {
+      return reject(Error('SEVERE: Cannot read YouTube key!'));
     }
-
     const opts =
-    {
-      q: searchTerm,
-      part: ['snippet'],
-      maxResults: 5,
-      type: ['video'],
-      key: ytkey
-    };
+      {
+        q: searchTerm,
+        part: ['snippet'],
+        maxResults: 5,
+        type: ['video'],
+        key: ytkey
+      };
 
     youtube.search.list(opts).then(res => {
       const resArr = [];

@@ -33,8 +33,7 @@ function ConvertSecToFormat (duration) {
 function ConvertIsoToSec (t) {
   const regex = /P((([0-9]*\.?[0-9]*)Y)?(([0-9]*\.?[0-9]*)M)?(([0-9]*\.?[0-9]*)W)?(([0-9]*\.?[0-9]*)D)?)?(T(([0-9]*\.?[0-9]*)H)?(([0-9]*\.?[0-9]*)M)?(([0-9]*\.?[0-9]*)S)?)?/; // Thanks regex101.com
   const matches = t.match(regex);
-  const sum = parseInt(matches[16] || 0) + parseInt(matches[14] || 0) * 60 + parseInt(matches[12] || 0) * 3600 + parseInt(matches[9] || 0) * 86400; // || to remove undefined
-  return sum; // Doing up to a day
+  return parseInt(matches[16] || 0) + parseInt(matches[14] || 0) * 60 + parseInt(matches[12] || 0) * 3600 + parseInt(matches[9] || 0) * 86400; // || to remove undefined
 }
 
 function replaceUnicode (origStr) { // and escape markdown
@@ -42,8 +41,8 @@ function replaceUnicode (origStr) { // and escape markdown
     .replace(/&#39;/gi, '\'')
     .replace(/&quot;/gi, '"');
 
-  const unescaped = origStr.replace(/\\(\*|_|`|\||~|\\)/g, '$1');
-  return unescaped.replace(/(\*|_|`|~|\\)/g, '\\$1');
+  const unescaped = origStr.replace(/\\([*_`|~\\])/g, '$1');
+  return unescaped.replace(/([*_`~\\])/g, '\\$1');
 }
 
 function getQueue (message) {
