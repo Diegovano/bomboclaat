@@ -1,6 +1,6 @@
 {
   "name": "bomboclaat",
-  "version": "2.2.3",
+  "version": "2.3.0",
   "description": "A Discord bot using discord.js",
   "main": "index.js",
   "dependencies": {
