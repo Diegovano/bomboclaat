@@ -245,8 +245,6 @@ let exiting = false;
 function exitHandler (code = undefined) {
   if (!exiting) {
     exiting = true;
-    for (const queue of am.queueMap) queue[1].clean();
-    client.destroy();
     l.log(`Shutting down bot after ${am.ConvertSecToFormat(client.uptime / 1000)}s of operation!`);
     if (code) process.exitCode = code;
     setTimeout(() => {
@@ -254,6 +252,10 @@ function exitHandler (code = undefined) {
       process.exitCode = 1;
       process.exit();
     }, 10 * 1000).unref();
+    clearInterval(conf.config.configUpdater);
+    conf.config.writeToJSON(); // Try to save any unsaved changes.
+    for (const queue of am.queueMap) queue[1].clean();
+    client.destroy();
   } else {
     l.log('Shutdown already initiated! Ignoring further calls!');
   }

@@ -1,24 +1,11 @@
 'use strict';
 
-const fs = require('fs');
 const am = require('../audio.js');
 const { google } = require('googleapis');
 const Discord = require('discord.js');
 const l = require('../log.js');
 const youtube = google.youtube('v3');
 const spotifyHandler = require('../spotifyHandler.js');
-
-let cannotReadToken = false;
-let ytkey;
-if (!process.env.YTTOKEN) { // Check if running github actions or just locally
-  try {
-    ytkey = fs.readFileSync('.yttoken', 'utf8');
-  } catch (err) {
-    cannotReadToken = true;
-  }
-} else {
-  ytkey = process.env.YTTOKEN;
-}
 
 module.exports = {
   name: 'play',
@@ -82,7 +69,7 @@ const getTrackObjects = async (message, searchTerm) => {
     if (match) {
       const playlistId = match[1];
 
-      if (cannotReadToken) {
+      if (am.cannotReadYTToken) {
         return reject(Error('SEVERE: Cannot read YouTube key!'));
       }
 
@@ -96,7 +83,7 @@ const getTrackObjects = async (message, searchTerm) => {
           playlistId: playlistId,
           maxResults: 50,
           pageToken: nextPage,
-          key: ytkey
+          key: am.ytKey
         };
 
       youtube.playlistItems.list(opts).then(async res => {
@@ -136,14 +123,14 @@ const getTrackObjects = async (message, searchTerm) => {
         if (match[4]) {
           timestamp += parseInt(match[4].substring(0, match[4].length - 1));
         }
-        if (cannotReadToken) {
+        if (am.cannotReadYTToken) {
           return reject(Error('SEVERE: Cannot read YouTube key!'));
         }
 
         const opts = {
           part: ['snippet', 'contentDetails'], // IMPORTANT: CONTENT DETAILS PART REQUIRED!
           id: match[1],
-          key: ytkey
+          key: am.ytKey
         };
         promises.push(new Promise((resolve, reject) => youtube.videos.list(opts).then(res => {
           const track = new am.Track(res.data.items[0].id, res.data.items[0].snippet.channelTitle,
@@ -182,7 +169,7 @@ const getTrackObjects = async (message, searchTerm) => {
 
 async function ytSearch (searchTerm, message) {
   return new Promise((resolve, reject) => {
-    if (cannotReadToken) {
+    if (am.cannotReadYTToken) {
       return reject(Error('SEVERE: Cannot read YouTube key!'));
     }
     const opts =
@@ -191,7 +178,7 @@ async function ytSearch (searchTerm, message) {
         part: ['snippet'],
         maxResults: 5,
         type: ['video'],
-        key: ytkey
+        key: am.ytKey
       };
 
     youtube.search.list(opts).then(res => {

@@ -3,7 +3,6 @@
 const fs = require('fs');
 const path = require('path');
 const l = require('./log.js');
-const chokidar = require('chokidar');
 
 const configFolderPath = path.join('.', 'config');
 const configFilePath = path.join(configFolderPath, 'config.json');
@@ -16,6 +15,15 @@ const configTemplate =
 class Config {
   constructor () {
     this.configObject = null;
+    this.configChanged = false;
+    this.configUpdater = setInterval(
+      (function (self) {
+        return function () {
+          self.writeToJSON(); // Allows function to be called from Config context.
+        };
+      })(this),
+      300000
+    ); // Update the "RAM" version of the config to file.
     const configTemplateString = JSON.stringify(configTemplate, null, 4);
 
     let data;
@@ -57,50 +65,23 @@ class Config {
 
     try {
       this.configObject = JSON.parse(data);
-      chokidar.watch(configFilePath, { persistent: false })
-        .on('change', path => {
-          setTimeout(() => {
-            this.refreshConfig().catch(err => {
-              err.message = `WARNING: Unable to automatically refresh config.json! ${err.message}`;
-              l.logError(err);
-            });
-          }, 500);
-        });
     } catch (err) {
       err.message = `WARNING: Cannot parse JSON info while creating config object! ${err.message}`;
       l.logError(err);
     }
   }
 
-  async writeToJSON () {
-    return new Promise((resolve, reject) => {
-      if (JSON.stringify(this.configObject, null, 4) === '') throw Error('INVESTIGATE'); // shouldnt write empty
+  writeToJSON () {
+    if (this.configChanged === true) {
+      if (JSON.stringify(this.configObject, null, 4) === '') throw Error('INVESTIGATE'); // shouldn't write empty
       fs.writeFile(configFilePath, JSON.stringify(this.configObject, null, 4), (err) => {
         if (err) {
           err.message = `WARNING: Unable to update config file! ${err.message}`;
           l.logError(err);
-          return reject(err);
         }
-
-        resolve();
       });
-    });
-  }
-
-  async refreshConfig () {
-    return new Promise((resolve, reject) => {
-      readConfig((data) => {
-        try {
-          this.configObject = JSON.parse(data);
-        } catch (err) {
-          if (data !== '') err.message += `\n\nRead data was:\n${data}`; // temporary debugging code
-          else err.message += 'No data read!';
-          reject(err);
-        }
-
-        resolve();
-      });
-    });
+      this.configChanged = false;
+    }
   }
 
   async initGuild (message) {
@@ -112,7 +93,7 @@ class Config {
       if (this.configObject[message.guild.id] === undefined) {
         // this.configObject.guilds.push({ id: message.guild.id, accents: [ ], prefix: `|`, botChannels: [ ]});
         this.configObject[message.guild.id] = { autoAccent: false, prefix: '|', accents: { }, botChannels: { } };
-        return this.writeToJSON().then(() => resolve(), err => reject(err));
+        this.configChanged = true;
       } else {
         if (this.configObject[message.guild.id]) return resolve();
         else reject(Error('Guild id doesn\'t match user\'s guild id!'));
@@ -120,7 +101,7 @@ class Config {
     });
   }
 
-  async accentUser (message, accent, overwrite = true) {
+  async accentUser (message, accent, broadcastAction = true) {
     return new Promise((resolve, reject) => {
       const objectHandle = this.configObject[message.guild.id];
       if (message.channel.type !== 'text') return reject(Error('Cannot accent non-guild user!'));
@@ -128,62 +109,18 @@ class Config {
       if (objectHandle === undefined) return reject(Error('Guild is not initialised!'));
 
       const username = `${message.author.username}#${message.author.discriminator}`;
-      let prevAccent;
 
-      if (objectHandle.accents[message.author.id] === undefined) objectHandle.accents[message.author.id] = { user: username, accent: accent };
-      else {
-        prevAccent = objectHandle.accents[message.author.id].accent;
-        if (!objectHandle.accents[message.author.id] || overwrite) objectHandle.accents[message.author.id].accent = accent;
+      if (objectHandle.accents[message.author.id] === undefined) {
+        objectHandle.accents[message.author.id] = { user: username, accent: accent };
+        this.configChanged = true;
+      } else if (!objectHandle.accents[message.author.id] || broadcastAction) {
+        objectHandle.accents[message.author.id].accent = accent;
+        this.configChanged = true;
       }
-
-      this.writeToJSON().then(() => {
-        if (overwrite) return resolve(`Changed accent to ${accent}!`);
-        else return resolve();
-      }, err => {
-        objectHandle.accents[message.author.id].accent = prevAccent;
-        return reject(err);
-      });
+      if (broadcastAction) return resolve(`Changed accent to ${accent}!`);
+      else return resolve();
     });
   }
-}
-
-async function createConfigDir (callback) {
-  fs.mkdir(configFolderPath, (err) => {
-    if (err && err.code !== 'EEXIST') {
-      return callback(err);
-    }
-
-    if (JSON.stringify(configTemplate, null, 4) === '') throw Error('INVESTIGATE');
-    fs.writeFile(configFilePath, JSON.stringify(configTemplate, null, 4), { flag: 'wx' }, (err) => {
-      if (err) {
-        return callback(err);
-      }
-
-      fs.access(configFilePath, fs.constants.R_OK | fs.constants.W_OK, (err) => {
-        if (err) return callback(err);
-        // else {
-        //   return callback(false);
-        // }
-      });
-    });
-  }); // Callback hell-ish
-}
-
-async function readConfig (callback) {
-  fs.readFile(configFilePath, 'utf8', (err, data) => {
-    if (err) {
-      createConfigDir((err) => {
-        if (err) {
-          err.message = `WARNING: Unable to create config files! ${err.message}`;
-          return l.logError(err);
-        }
-
-        readConfig(callback);
-      });
-    } else {
-      callback(data);
-    }
-  });
 }
 
 exports.config = new Config();

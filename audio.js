@@ -11,6 +11,19 @@ const DEFAULT_VOLUME = 0.025;
 // const DEFAULT_VOLUME_DB = 0.1;
 const DISABLE_ACCENT_QUEUE = true;
 
+let ytKey;
+let cannotReadYTToken = false;
+if (!process.env.YTTOKEN) { // Check if running github actions or just locally
+  try {
+    ytKey = fs.readFileSync('.yttoken', 'utf8');
+  } catch (err) {
+    l.logError(Error('Cannot read YouTube key!'));
+    cannotReadYTToken = true;
+  }
+} else {
+  ytKey = process.env.YTTOKEN;
+}
+
 const queueMap = new Map();
 
 function pad (num) {
@@ -73,23 +86,12 @@ class Track {
     this.requestTime = new Date();
 
     if (!duration) {
-      let ytkey;
-      if (!process.env.YTTOKEN) { // Check if running github actions or just locally
-        try {
-          ytkey = fs.readFileSync('.yttoken', 'utf8');
-        } catch (err) {
-          l.logError(Error('Cannot read YouTube key!'));
-        }
-      } else {
-        ytkey = process.env.YTTOKEN;
-      }
-
       const opts =
-          {
-            part: ['contentDetails'],
-            id: videoID,
-            key: ytkey
-          };
+        {
+          part: ['contentDetails'],
+          id: videoID,
+          key: ytKey
+        };
       youtube.videos.list(opts).then(res => {
         this.duration = ConvertIsoToSec(res.data.items[0].contentDetails.duration);
       }, reason => {
@@ -127,6 +129,23 @@ class Queue {
     this.playingAccent = false;
     this.accentTimeoutID = null;
     this.stopTimestamp = null;
+  }
+
+  get currentTrack () { // keep sync as function return an object
+    if (this.playing) return this.trackList[this.queuePos];
+    else return null;
+  }
+
+  get timestamp () {
+    return Math.round((this.seekTime !== 0 ? this.seekTime : this.trackList[this.queuePos].startOffset) + (this.trackDispatcher.streamTime / 1000));
+  }
+
+  get queueDuration () {
+    let duration = 0;
+    for (let i = this.queuePos + 1; i < this.trackList.length; i++) duration += this.trackList[i].duration;
+    duration += this.currentTrack ? this.currentTrack.duration - this.timestamp : 0;
+
+    return duration;
   }
 
   setVoiceChannel (voiceChannel) {
@@ -217,8 +236,12 @@ class Queue {
         });
 
       this.setVolume(this.volume);
-      if (!isSeek && repeated === 0) return resolve(`Now playing **${this.trackList[this.queuePos].title}** [${ConvertSecToFormat(this.trackList[this.queuePos].duration)}], requested by **${this.trackList[this.queuePos].requestedBy}** at ${this.trackList[this.queuePos].requestTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`);
-      else resolve();
+      if (!isSeek && repeated === 0) {
+        return resolve(`Now playing **${this.trackList[this.queuePos].title}** [${ConvertSecToFormat(this.trackList[this.queuePos].duration)}], requested by **${this.trackList[this.queuePos].requestedBy}** at ${this.trackList[this.queuePos].requestTime.toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit'
+      })}`);
+      } else resolve();
     });
   }
 
@@ -282,7 +305,10 @@ class Queue {
       let i2 = 0;
       if (pastTracks[0] !== '') {
         for (let i = 0; i < pastTracks.length; i++) {
-          const fieldToAdd = { name: i === 0 ? `Past Track${this.queuePos > 1 ? 's' : ''}:` : 'continued...', value: pastTracks[i] };
+          const fieldToAdd = {
+            name: i === 0 ? `Past Track${this.queuePos > 1 ? 's' : ''}:` : 'continued...',
+            value: pastTracks[i]
+          };
           if (queueEmbeds[i2].length + (queueEmbeds[i2].author ? queueEmbeds[i2].author.name.length : 0) + fieldToAdd.name.length + fieldToAdd.value.length < 6000) queueEmbeds[i2].addField(fieldToAdd.name, fieldToAdd.value);
           else {
             queueEmbeds.push(new Discord.MessageEmbed().setColor('#0000ff'));
@@ -302,7 +328,10 @@ class Queue {
       }
       if (nextTracks[0] !== '') {
         for (let i = 0; i < nextTracks.length; i++) {
-          const fieldToAdd = { name: i === 0 ? `Upcoming Track${this.queuePos < this.trackList.length - 2 ? 's' : ''}:` : 'continued...', value: nextTracks[i] };
+          const fieldToAdd = {
+            name: i === 0 ? `Upcoming Track${this.queuePos < this.trackList.length - 2 ? 's' : ''}:` : 'continued...',
+            value: nextTracks[i]
+          };
           if (queueEmbeds[i2].length + (queueEmbeds[i2].author ? queueEmbeds[i2].author.name.length : 0) + fieldToAdd.name.length + fieldToAdd.value.length < 6000) queueEmbeds[i2].addField(fieldToAdd.name, fieldToAdd.value);
           else {
             queueEmbeds.push(new Discord.MessageEmbed().setColor('#0000ff'));
@@ -341,23 +370,6 @@ class Queue {
         });
       }
     });
-  }
-
-  get currentTrack () { // keep sync as function return an object
-    if (this.playing) return this.trackList[this.queuePos];
-    else return null;
-  }
-
-  get timestamp () {
-    return Math.round((this.seekTime !== 0 ? this.seekTime : this.trackList[this.queuePos].startOffset) + (this.trackDispatcher.streamTime / 1000));
-  }
-
-  get queueDuration () {
-    let duration = 0;
-    for (let i = this.queuePos + 1; i < this.trackList.length; i++) duration += this.trackList[i].duration;
-    duration += this.currentTrack ? this.currentTrack.duration - this.timestamp : 0;
-
-    return duration;
   }
 
   async pause () {
@@ -582,3 +594,5 @@ exports.deleteQueue = deleteQueue;
 exports.Track = Track;
 exports.ConvertSecToFormat = ConvertSecToFormat;
 exports.queueMap = queueMap;
+exports.ytKey = ytKey;
+exports.cannotReadYTToken = cannotReadYTToken;
