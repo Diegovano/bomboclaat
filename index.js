@@ -33,6 +33,8 @@ if (process.env.TOKEN) {
   }
 }
 
+const LastMessageTime = {};
+
 // @ts-ignore
 client.commands = new Discord.Collection(); // Holds all commands
 
@@ -58,7 +60,15 @@ client.on('message', async message => {
     await conf.config.initGuild(message) // setup guild in config file
       .then(() => {
         return new Promise((resolve, reject) => {
-          conf.config.accentUser(message, 'none', false).then(msg => {
+          conf.config.initUser(message).then(msg => {
+            const currentDate = new Date();
+            const LastAuthorTime = LastMessageTime[message.author.id];
+            if (LastAuthorTime === undefined || LastAuthorTime + 2 * 60000 < currentDate) {
+              const objectHandle = conf.config.configObject[message.guild.id];
+              objectHandle.accents[message.author.id].xp += Math.floor((Math.random() * 11) + 15);
+              conf.config.configChanged = true;
+            }
+            LastMessageTime[message.author.id] = currentDate;
             resolve(msg);
           }, err => {
             reject(err);

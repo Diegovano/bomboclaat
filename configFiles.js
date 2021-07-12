@@ -8,9 +8,7 @@ const configFolderPath = path.join('.', 'config');
 const configFilePath = path.join(configFolderPath, 'config.json');
 
 const configTemplate =
-{
-
-};
+  {};
 
 class Config {
   constructor () {
@@ -92,33 +90,33 @@ class Config {
       // const index = this.configObject.guilds.findIndex(element => element.id === message.guild.id);
       if (this.configObject[message.guild.id] === undefined) {
         // this.configObject.guilds.push({ id: message.guild.id, accents: [ ], prefix: `|`, botChannels: [ ]});
-        this.configObject[message.guild.id] = { autoAccent: false, prefix: '|', accents: { }, botChannels: { } };
+        this.configObject[message.guild.id] = { autoAccent: false, prefix: '|', accents: {}, botChannels: {} };
         this.configChanged = true;
+        return resolve();
       } else {
         if (this.configObject[message.guild.id]) return resolve();
-        else reject(Error('Guild id doesn\'t match user\'s guild id!'));
+        else return reject(Error('Guild id doesn\'t match user\'s guild id!'));
       }
     });
   }
 
-  async accentUser (message, accent, broadcastAction = true) {
+  async initUser (message) {
     return new Promise((resolve, reject) => {
       const objectHandle = this.configObject[message.guild.id];
-      if (message.channel.type !== 'text') return reject(Error('Cannot accent non-guild user!'));
+      if (message.channel.type !== 'text') return reject(Error('Cannot init non-guild user!'));
       if (this.configObject === null) return reject(Error('configObject invalid!'));
       if (objectHandle === undefined) return reject(Error('Guild is not initialised!'));
 
       const username = `${message.author.username}#${message.author.discriminator}`;
-
       if (objectHandle.accents[message.author.id] === undefined) {
-        objectHandle.accents[message.author.id] = { user: username, accent: accent };
+        objectHandle.accents[message.author.id] = { user: username, accent: 'none', xp: 0 };
         this.configChanged = true;
-      } else if (!objectHandle.accents[message.author.id] || broadcastAction) {
-        objectHandle.accents[message.author.id].accent = accent;
+      } else if (objectHandle.accents[message.author.id].xp === undefined) {
+        // Update to new config version.
+        objectHandle.accents[message.author.id].xp = 0;
         this.configChanged = true;
       }
-      if (broadcastAction) return resolve(`Changed accent to ${accent}!`);
-      else return resolve();
+      return resolve();
     });
   }
 }
