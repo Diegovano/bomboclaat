@@ -66,6 +66,14 @@ client.on('message', async message => {
             if (LastAuthorTime === undefined || LastAuthorTime + 2 * 60000 < currentDate) {
               const objectHandle = conf.config.configObject[message.guild.id];
               objectHandle.accents[message.author.id].xp += Math.floor((Math.random() * 11) + 15);
+              const lvl = objectHandle.accents[message.author.id].level;
+              const xpRequired = 5 * (lvl ^ 2) + (50 * lvl) + 100;
+              if (objectHandle.accents[message.author.id].xp >= xpRequired) {
+                objectHandle.accents[message.author.id].level += 1;
+                objectHandle.accents[message.author.id].xp -= xpRequired;
+                if (objectHandle.accents[message.author.id].level === 1) message.reply(`:arrow_right:      your pp is now ${objectHandle.accents[message.author.id].level} inch long! <:sharky:709340259279831101>   :arrow_left:`);
+                else message.reply(`:arrow_right:      your pp is now ${objectHandle.accents[message.author.id].level} inches long! <:sharky:709340259279831101>   :arrow_left:`);
+              }
               conf.config.configChanged = true;
             }
             LastMessageTime[message.author.id] = currentDate;

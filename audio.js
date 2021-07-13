@@ -300,7 +300,7 @@ class Queue {
         .setColor('#0000ff')
         .setTitle(`Queue [${this.queueDuration !== 0 ? ConvertSecToFormat(this.queueDuration) : ' no upcoming tracks '}]`)
         .setDescription(`Looping: ${this.loopTrack ? 'Track' : this.loopQueue ? 'Queue' : 'Disabled'}`)
-        .setAuthor('Bomborastclaat', this.textChannel.client.user.displayAvatarURL())];
+        .setAuthor(this.textChannel.guild.me.nickname, this.textChannel.client.user.displayAvatarURL())];
 
       let i2 = 0;
       if (pastTracks[0] !== '') {

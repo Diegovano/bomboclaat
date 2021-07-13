@@ -10,6 +10,7 @@ const configFilePath = path.join(configFolderPath, 'config.json');
 const configTemplate =
   {};
 
+// noinspection ExceptionCaughtLocallyJS
 class Config {
   constructor () {
     this.configObject = null;
@@ -109,11 +110,12 @@ class Config {
 
       const username = `${message.author.username}#${message.author.discriminator}`;
       if (objectHandle.accents[message.author.id] === undefined) {
-        objectHandle.accents[message.author.id] = { user: username, accent: 'none', xp: 0 };
+        objectHandle.accents[message.author.id] = { user: username, accent: 'none', xp: 0, level: 0 };
         this.configChanged = true;
       } else if (objectHandle.accents[message.author.id].xp === undefined) {
         // Update to new config version.
         objectHandle.accents[message.author.id].xp = 0;
+        objectHandle.accents[message.author.id].level = 0;
         this.configChanged = true;
       }
       return resolve();
