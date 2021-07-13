@@ -1,6 +1,7 @@
 'use strict';
 
 const conf = require('../configFiles.js');
+const Discord = require('discord.js');
 
 module.exports = {
   name: 'xp',
@@ -11,7 +12,6 @@ module.exports = {
     const objectHandle = conf.config.configObject[message.guild.id].accents;
     const lvl = objectHandle[message.author.id].level;
     const xpRequired = 5 * (lvl ^ 2) + (50 * lvl) + 100;
-    message.reply(` you are on level ${lvl || 0} and have ${objectHandle[message.author.id].xp || 0} / ${xpRequired} XP`);
     const ranking = [];
     for (const userID in objectHandle) {
       const userData = objectHandle[userID];
@@ -19,7 +19,18 @@ module.exports = {
         ranking.splice(sortedIndex(ranking, userData.level, userData.xp), 0, [userData.user, userData.level, userData.xp]);
       }
     }
-    console.log(ranking);
+    const embed = new Discord.MessageEmbed()
+      .setColor('#0000ff')
+      .setTitle('Rankings')
+      .setDescription(`${message.author.username}#${message.author.discriminator}: level ${lvl}   (${objectHandle[message.author.id].xp || 0} / ${xpRequired} XP)`)
+      .setAuthor(message.guild.me.nickname, message.client.user.displayAvatarURL());
+    let i = 1;
+    for (const rank in ranking) {
+      embed.addField(`#${i} ${ranking[rank][0]}: level ${ranking[rank][1]}`, `(${ranking[rank][2]} / ${5 * (ranking[rank][1] ^ 2) + (50 * ranking[rank][1]) + 100} XP)`);
+      if (i === 25) break; // Can only have 25 fields on a single embed
+      i++;
+    }
+    message.channel.send(embed);
   }
 };
 
