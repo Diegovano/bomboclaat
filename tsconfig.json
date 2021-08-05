@@ -1,0 +1,21 @@
+{
+    "compilerOptions": {
+        "module": "commonjs",
+        "target": "ES2015",
+        "jsx": "preserve",
+        "allowJs": false,
+        "strictFunctionTypes": true,
+        "sourceMap": true,
+        "strict": true,
+        "outDir": "./built",
+        "resolveJsonModule": true
+    },
+    // "exclude": [
+    //     "node_modules",
+    //     "**/node_modules/*",
+    //     "./built/**/*"
+    // ],
+    "include": [
+        "./src/**/*"
+    ]
+}
