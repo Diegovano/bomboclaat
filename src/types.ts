@@ -7,8 +7,9 @@ import * as Discord from 'discord.js';
 export class Message extends Discord.Message {
   // eslint-disable-next-line no-use-before-define
   client: Client;
-  constructor (client: Client, data: unknown, channel: Discord.TextChannel | Discord.DMChannel | Discord.NewsChannel | Discord.ThreadChannel) {
-    super(client, data, channel);
+  // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types, @typescript-eslint/no-explicit-any
+  constructor (client: Client, data: any) { // cannot access APIMessage type
+    super(client, data);
     this.client = client;
   }
 }

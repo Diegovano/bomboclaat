@@ -335,22 +335,22 @@ async function userSelect (results: Track[], message: Discord.Message) {
         collectors[i].on('collect', () => {
           if (collected) return;
           collected = true;
-          message.client.setTimeout(() => {
+          setTimeout(() => {
             if (!embedDeleted) {
               embedDeleted = true;
               msg.delete();
             }
-          }, waitTime);
+          }, waitTime).unref();
           resolve(results[i]);
         });
       }
 
-      message.client.setTimeout(() => {
+      setTimeout(() => {
         if (!embedDeleted) {
           embedDeleted = true;
           msg.delete();
         }
-      }, reactionTime);
+      }, reactionTime).unref();
     }, err => {
       reject(err);
     });

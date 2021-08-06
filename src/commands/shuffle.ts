@@ -1,6 +1,6 @@
 'use strict';
 
-import { getQueue, Track } from '../audio';
+import { getQueue } from '../audio';
 import { bomboModule } from '../types';
 
 export const module: bomboModule = {
@@ -15,25 +15,6 @@ export const module: bomboModule = {
     if (!message.guild) return;
     const currentQueue = getQueue(message.guild);
 
-    function shuffle (array: Track[]) {
-      let currentIndex = array.length; let temporaryValue; let randomIndex;
-
-      while (currentIndex !== 0) {
-        randomIndex = Math.floor(Math.random() * currentIndex);
-        currentIndex -= 1;
-
-        temporaryValue = array[currentIndex];
-        array[currentIndex] = array[randomIndex];
-        array[randomIndex] = temporaryValue;
-      }
-
-      return array;
-    }
-
-    const maybe = shuffle(currentQueue.trackList.slice(currentQueue.queuePos));
-
-    for (let i = 0; i < maybe.length + 1; i++) {
-      currentQueue.trackList[currentQueue.trackList.length - i] = maybe[maybe.length - i];
-    }
+    currentQueue.shuffle().then(response => message.channel.send(response));
   }
 };

@@ -12,28 +12,21 @@ export const module: bomboModule = {
   dmCompatible: false,
   voiceConnection: true,
   textBound: true,
-  async execute (message, args) {
+  async execute (message, _args) {
     if (!message.guild || !message.member) return;
     const currentQueue = getQueue(message.guild);
 
-    const clientVoiceConnection = currentQueue.connection;
+    const queueVoiceChannel = await currentQueue.activeVoiceChannel;
     const userVoiceChannel = message.member.voice.channel;
 
     // If the bot isn't in a voiceChannel, don't execute any other code
-    if (!clientVoiceConnection) {
-      if (args[0] !== 'silent') message.reply("I'm not in a voice channel, why are you trying to make me leave?");
-      return;
-    }
-
+    if (!queueVoiceChannel) return;
 
     // Compare the voiceChannels
-    if (userVoiceChannel === clientVoiceConnection.channel) {
-      // am.deleteQueue(message, true);
-      userVoiceChannel.leave();
-      currentQueue.pause();
-      message.channel.send('Bye! Bye!');
+    if (userVoiceChannel === queueVoiceChannel) {
+      currentQueue.disconnect();
     } else {
-      message.reply('We are not in the same voice channel stoopid!');
+      message.reply('Connect to the same voice channel as me to get me to leave!');
     }
   }
 };

@@ -131,7 +131,7 @@ client.on('messageCreate', async (message: Message) => {
               isCommand = false; // to skip execution
               return resolve(guildConfig);
             } else if (!queue.textChannel) {
-              if (!(message.channel instanceof Discord.DMChannel)) queue.textChannel = message.channel; // as queue is defined message channel is guild type
+              if (message.channel instanceof Discord.BaseGuildTextChannel) queue.textChannel = message.channel; // as queue is defined message channel is guild type
               return resolve(guildConfig);
             }
           }

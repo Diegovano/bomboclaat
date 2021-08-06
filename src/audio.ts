@@ -5,7 +5,7 @@ import * as Voice from '@discordjs/voice';
 import { google, youtube_v3 as youtubev3 } from 'googleapis';
 import { readFileSync } from 'fs';
 import { log, logError } from './log';
-import ytdl = require('ytdl-core');
+import ytdl = require('discord-ytdl-core');
 
 const youtube = google.youtube('v3');
 
@@ -200,7 +200,7 @@ export class Track {
   /**
    * The duration of the track in seconds.
    */
-  duration?: number;
+  duration: number;
   constructor (videoID: string, author: string, title: string,
     description: string, icon: string, requestedBy: Discord.GuildMember,
     startOffset: number, duration?: number) {
@@ -250,16 +250,16 @@ export class Track {
 /**
  * Class for queues
  */
-class Queue {
+export class Queue {
   /**
    * ID of the guild to which this queue is assigned.
    */
-  guildID: `${bigint}`;
+  private guildId: string;
 
   /**
    * A handle to the bot client.
    */
-  client: Discord.Client;
+  private client: Discord.Client;
 
   /**
    * The text channel that the queue is bound to in the guild.
@@ -274,12 +274,12 @@ class Queue {
   /**
    * The connection to a voice channel of the guild.
    */
-  connection: Voice.VoiceConnection | null;
+  private connection: Voice.VoiceConnection | null;
 
   /**
    * The array containing tracks played, current and upcoming.
    */
-  trackList: Track[];
+  private trackList: Track[];
 
   /**
    * The position of the current track in the track list.
@@ -299,17 +299,22 @@ class Queue {
   /**
    * The player that is responsible for track playback.
    */
-  trackAudioPlayer: Voice.AudioPlayer;
+  private trackAudioPlayer: Voice.AudioPlayer;
+
+  /**
+   * The subscription to an audio player.
+   */
+  private subscription?: Voice.PlayerSubscription;
 
   /**
    * The volume for tracks.
    */
-  volume: number;
+  private volume: number;
 
   /**
    * The number of senconds to seek to.
    */
-  seekTime: number;
+  private seekTime: number;
 
   /**
    * Whether or not the current track is looping.
@@ -324,7 +329,7 @@ class Queue {
   /**
    * The audio player responsible for playing accents and text to speech.
    */
-  accentAudioPlayer: Voice.AudioPlayer;
+  private accentAudioPlayer: Voice.AudioPlayer;
 
   /**
    * The array containing the list of accents.
@@ -345,18 +350,18 @@ class Queue {
    * The timeout to disconnect the bot after an accent operation.
    */
   // eslint-disable-next-line no-undef
-  accentTimeoutID?: NodeJS.Timeout;
+  accentTimeoutId?: NodeJS.Timeout;
 
   /**
    * The timestamp at which track playback was stopped for an accent to be played. Necessary to resume playback at the right moment.
    */
-  stopTimestamp: number | null;
+  private stopTimestamp: number | null;
 
   constructor (guild: Discord.Guild) {
-    this.guildID = guild.id;
+    this.guildId = guild.id;
     this.client = guild.client;
 
-    queueMap.set(this.guildID, this);
+    queueMap.set(this.guildId, this);
     this.voiceChannel = null;
     this.connection = null;
 
@@ -374,18 +379,18 @@ class Queue {
     this.languages = ['fr', 'de', 'ru', 'ja', 'zh', 'en', 'it', 'es', 'ko', 'pt', 'sw', 'nl', 'en_nz', 'en_au', 'fr_ca', 'hi', 'en_us'];
     this.accentList = [];
     this.playingAccent = false;
-    this.accentTimeoutID = undefined;
+    this.accentTimeoutId = undefined;
     this.stopTimestamp = null;
   }
 
   /**
-   * Assign a certain voice channel to the guild and check the bot has connect and speak permissions. Then join that channel.
+   * Assign a certain voice channel to the queue and check the bot has connect and speak permissions. Then join that channel.
    * @param voiceChannel The voice channel to join
    * @returns A voice promise that will resolve once a connection has successfully been established.
    */
-  async setVoiceChannel (voiceChannel: Discord.VoiceChannel | Discord.StageChannel) {
+  async setVoiceChannel (voiceChannel: Discord.VoiceChannel | Discord.StageChannel) : Promise<void> {
     return new Promise<void>((resolve, reject) => {
-      this.client.guilds.fetch(this.guildID).then(async function getClientGuildMember (guild) {
+      this.client.guilds.fetch(this.guildId).then(async function getClientGuildMember (guild) {
         const clientGuildMem = guild.client.user ? await guild.members.fetch(guild.client.user?.id).catch(err => reject(err)) : null;
         if (clientGuildMem && voiceChannel.permissionsFor(clientGuildMem).has(['CONNECT', 'SPEAK'])) {
           getQueue(guild).voiceChannel = voiceChannel;
@@ -403,10 +408,10 @@ class Queue {
    * @param repeated the number of attemps to play that have taken place
    * @returns {Promise<string | void>} the string represents the message to be sent describing the operation, for example "now playing x", or void if no message
    */
-  async play (seconds = 0, isSeek = false, repeated = 0) {
-    if (this.accentTimeoutID) {
-      this.client.clearTimeout(this.accentTimeoutID);
-      this.accentTimeoutID = undefined;
+  async play (seconds = 0, isSeek = false, repeated = 0) : Promise<string | void> {
+    if (this.accentTimeoutId) {
+      clearTimeout(this.accentTimeoutId);
+      this.accentTimeoutId = undefined;
     }
 
     try {
@@ -418,55 +423,58 @@ class Queue {
 
     return new Promise<string | void>((resolve, reject) => {
       this.playing = true;
+      this.subscription = this.connection?.subscribe(this.trackAudioPlayer);
       const begin = seconds !== 0 ? `${seconds}s` : `${this.trackList[this.queuePos].startOffset}s`;
       if (this.queuePos > this.trackList.length - 1) return reject(Error('queuePos out of range'));
-      this.trackAudioPlayer = this.connection.play(
-        ytdl(this.trackList[this.queuePos].sourceLink, {
-          filter: 'audioonly',
-          quality: 'highestaudio',
-          highWaterMark: 1 << 25
-        }),
-        {
-          highWaterMark: 1,
-          seek: begin
-        })
-        .on('finish', () => {
-          if (!this.loopTrack) this.queuePos++;
-          this.seekTime = 0;
 
-          if (this.queuePos >= this.trackList.length) {
-            if (!this.loopQueue) {
-              this.playing = false;
-              this.trackAudioPlayer.destroy();
-              this.voiceChannel?.leave();
-              return;
-            } else {
-              this.queuePos = 0;
-              this.play().then(msg => {
-                if (msg) this.textChannel?.send(msg);
-              }, err => {
-                err.message = `WARNING: Cannot play track! ${err.message}`;
-                logError(err);
-                this.skip().catch(err1 => {
-                  err1.message = `WARNING: Cannot skip track! ${err.message}`;
-                  logError(err1);
+      const trackAudioResource = Voice.createAudioResource(ytdl(this.trackList[this.queuePos].sourceLink, {
+        seek: parseInt(begin),
+        filter: 'audioonly',
+        quality: 'highestaudio',
+        highWaterMark: 1 << 25
+      }));
+      this.trackAudioPlayer.play(trackAudioResource);
+      this.trackAudioPlayer
+        .on('stateChange', (oldState, newState) => {
+          if (oldState.status === Voice.AudioPlayerStatus.Playing && newState.status === Voice.AudioPlayerStatus.Idle) {
+            if (!this.loopTrack) this.queuePos++;
+            this.seekTime = 0;
+
+            if (this.queuePos >= this.trackList.length) {
+              if (!this.loopQueue) {
+                this.playing = false;
+                this.subscription?.unsubscribe();
+                this.subscription = undefined;
+                this.connection?.disconnect();
+                return;
+              } else {
+                this.queuePos = 0;
+                this.play().then(msg => {
+                  if (msg) this.textChannel?.send(msg);
+                }, err => {
+                  err.message = `WARNING: Cannot play track! ${err.message}`;
+                  logError(err);
+                  this.skip().catch(err1 => {
+                    err1.message = `WARNING: Cannot skip track! ${err.message}`;
+                    logError(err1);
+                  });
                 });
-              });
+              }
             }
-          }
 
-          this.play().then(msg => {
-            if (msg) this.textChannel?.send(msg);
-          }, err => {
-            err.message = `WARNING: Cannot play track! ${err.message}`;
-            logError(err);
-            this.skip().catch(err1 => {
-              err1.message = `WARNING: Cannot skip track! ${err.message}`;
-              logError(err1);
+            this.play().then(msg => {
+              if (msg) this.textChannel?.send(msg);
+            }, err => {
+              err.message = `WARNING: Cannot play track! ${err.message}`;
+              logError(err);
+              this.skip().catch(err1 => {
+                err1.message = `WARNING: Cannot skip track! ${err.message}`;
+                logError(err1);
+              });
             });
-          });
+          }
         })
-        .on('error', (err: Error) => {
+        .on('error', err => {
           repeated = repeated || 0;
           if (repeated > 4) {
             err.message = `Unable to play track after five attempts! ${err.message}`;
@@ -485,7 +493,7 @@ class Queue {
         });
 
       this.setVolume(this.volume);
-      if (!isSeek && repeated === 0) return resolve(`Now playing **${this.trackList[this.queuePos].title}** [${ConvertSecToFormat(this.trackList[this.queuePos].duration)}], requested by **${this.trackList[this.queuePos].requestedBy}** at ${this.trackList[this.queuePos].requestTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`);
+      if (!isSeek && repeated === 0) return resolve(`Now playing **${this.trackList[this.queuePos].title}** [${ConvertSecToFormat(this.trackList[this.queuePos]?.duration)}], requested by **${this.trackList[this.queuePos].requestedBy}** at ${this.trackList[this.queuePos].requestTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`);
       else resolve();
     });
   }
@@ -497,7 +505,7 @@ class Queue {
    * @param playingNext Whether or not to put track in the next position in the queue.
    * @returns A promise that can resolve to a `string` (this is the confirmation message that can be sent to the text channel) or `null`
    */
-  async add (track: Track, playlist: boolean, playingNext: boolean) {
+  async add (track: Track, playlist: boolean, playingNext: boolean) : Promise<string | void> {
     return new Promise<string | void>((resolve, reject) => {
       const oldQueueLength = this.queueDuration;
 
@@ -509,7 +517,7 @@ class Queue {
           reject(err);
         });
       } else if (!playlist) {
-        return resolve(`${track.title} [${ConvertSecToFormat(track.duration)}], playing in ${playingNext ? ConvertSecToFormat(this.currentTrack?.duration ?? this.timestamp - this.timestamp) /* this.currentTrack exits because playing bool is true */ : ConvertSecToFormat(oldQueueLength)} has been added to the queue by ${track.requestedBy}`);
+        return resolve(`${track.title} [${ConvertSecToFormat(track.duration)}], playing in ${playingNext ? ConvertSecToFormat(this.currentTrack?.duration ?? 0) /* this.currentTrack exits because playing bool is true */ : ConvertSecToFormat(oldQueueLength)} has been added to the queue by ${track.requestedBy}`);
       } else return resolve();
     });
   }
@@ -518,7 +526,7 @@ class Queue {
    * Get embeds containing the full queue, past, current, and upcoming tracks.
    * @returns A promise that resolves to the array of embeds containing the queue or the message "Queue is empty!"
    */
-  async getQueueMessage () {
+  async getQueueMessage () : Promise<Discord.MessageEmbed[] | string> {
     return new Promise<Discord.MessageEmbed[] | string>(resolve => {
       if (this.trackList.length === 0) return resolve('Queue is empty!');
 
@@ -601,14 +609,15 @@ class Queue {
    * Skip the current track in the queue and start playing the next.
    * @returns A promise that resolves to a confirmation message
    */
-  async skip () {
+  async skip () : Promise<string> {
     return new Promise<string>((resolve, reject) => {
       if (this.trackList.length === 0 || this.queuePos > this.trackList.length - 1) return resolve('No track to skip!');
       if (this.queuePos > this.trackList.length - 2) { // -2 becuase the last track is being played
         if (!this.loopQueue) {
           this.playing = false;
-          if (this.trackAudioPlayer) this.trackAudioPlayer.destroy();
-          this.voiceChannel?.leave();
+          this.subscription?.unsubscribe();
+          this.subscription = undefined;
+          this.connection?.disconnect();
           this.queuePos++;
           return resolve(`Skipping final track: ${this.trackList[this.queuePos - 1].title} and disconnecting.`);
         } else {
@@ -631,9 +640,49 @@ class Queue {
   }
 
   /**
+   * Shuffle the upcoming tracks.
+   */
+  async shuffle () : Promise<string> {
+    return new Promise<string>(resolve => {
+      const upcomingTracks = this.trackList.slice(this.queuePos);
+
+      for (let currentIndex = upcomingTracks.length; currentIndex > 0;) {
+        const randomIndex = Math.floor(Math.random() * currentIndex--);
+
+        const tempValue = upcomingTracks[currentIndex];
+        upcomingTracks[currentIndex] = upcomingTracks[randomIndex];
+        upcomingTracks[randomIndex] = tempValue;
+      }
+
+      for (let i = 0; i < upcomingTracks.length + 1; i++) this.trackList[this.trackList.length - i] = upcomingTracks[upcomingTracks.length - i];
+
+      resolve(`Shuffled ${upcomingTracks.length} tracks!`);
+    });
+  }
+
+  /**
+   * Stop the queue and disconnect from the voice channel.
+   */
+  async disconnect () : Promise<void> {
+    this.trackAudioPlayer.pause();
+    this.accentAudioPlayer.stop();
+    this.subscription?.unsubscribe();
+
+    this.connection?.disconnect();
+  }
+
+  /**
+   * Get the voice channel to which the client is connected, if any.
+   */
+  get activeVoiceChannel () : Promise<Discord.Channel | null> | null {
+    if (this.connection?.joinConfig.channelId) return this.client.channels.fetch(this.connection.joinConfig.channelId);
+    else return null;
+  }
+
+  /**
    * Get the current track
    */
-  get currentTrack () { // keep sync as function return an object
+  get currentTrack () : Track | null { // keep sync as function return an object
     if (this.playing) return this.trackList[this.queuePos];
     else return null;
   }
@@ -641,14 +690,14 @@ class Queue {
   /**
    * Get the current timestamp.
    */
-  get timestamp () {
-    return Math.round((this.seekTime !== 0 ? this.seekTime : this.trackList[this.queuePos].startOffset) + (this.trackAudioPlayer.streamTime / 1000));
+  get timestamp () : number {
+    return Math.round((this.seekTime !== 0 ? this.seekTime : this.trackList[this.queuePos].startOffset) + (this.trackAudioPlayer.state.status === Voice.AudioPlayerStatus.Playing ? (this.trackAudioPlayer.state.playbackDuration / 1000) : 0));
   }
 
   /**
    * Get the total duration of tracks left on the queue.
    */
-  get queueDuration () {
+  get queueDuration () : number {
     let duration = 0;
     for (let i = this.queuePos + 1; i < this.trackList.length; i++) duration += this.trackList[i].duration;
     duration += this.currentTrack ? this.currentTrack.duration - this.timestamp : 0;
@@ -660,7 +709,7 @@ class Queue {
    * Pause the player.
    * @returns A promise with a confirmation message
    */
-  async pause () {
+  async pause () : Promise<string> {
     return new Promise<string>(resolve => {
       if (!this.playing) return resolve('Cannot Pause: Nothing playing!');
       if (this.paused) return resolve('Cannot Pause: Player is already paused!');
@@ -674,14 +723,14 @@ class Queue {
    * Unpause the player.
    * @returns A promise with a confirmation message
    */
-  async unpause () {
+  async unpause () : Promise<string> {
     return new Promise<string>(resolve => {
       if (!this.playing) return resolve('Cannot Unpause: Nothing playing!');
       if (!this.paused) return resolve('Cannot Unpause: Player is not paused!');
 
       this.paused = false;
       this.setVolume(this.volume);
-      this.trackAudioPlayer.resume();
+      this.trackAudioPlayer.unpause();
     });
   }
 
@@ -689,9 +738,10 @@ class Queue {
    * Set the volume of the player.
    * @param volumeAmount A number to set volume relative to a default value.
    */
-  async setVolume (volumeAmount: number) {
-    this.volume = volumeAmount;
-    this.trackAudioPlayer.setVolume(this.volume);
+  async setVolume (_volumeAmount: number) : Promise<void> {
+    // not sure how to implement now
+    // this.volume = volumeAmount;
+    // this.trackAudioResource.volume(this.volume);
   }
 
   /**
@@ -699,15 +749,16 @@ class Queue {
    * @param seconds The number of seconds to seek to
    * @returns A promise which resolves to a confirmation message
    */
-  async seek (seconds: number) {
-    return new Promise<string>((resolve, reject) => {
+  async seek (seconds: number) : Promise<string | void> {
+    return new Promise<string | void>((resolve, reject) => {
       if (!this.playing) reject(Error('Nothing playing!'));
       if (this.paused) reject(Error('Player is paused!'));
-      if (seconds < (this.trackList[this.queuePos].duration ?? 0)) {
+      if (seconds < (this.trackList[this.queuePos].duration)) {
         this.seekTime = seconds;
         this.play(seconds, true);
+        return resolve();
       } else {
-        this.textChannel?.send('Can\'t seek this far its too long bitch');
+        return resolve('Can\'t seek this far its too long bitch');
       }
     });
   }
@@ -717,7 +768,7 @@ class Queue {
    * @param index Index of track to remove from the queue
    * @returns A promise which resolves to a confirmation messsage
    */
-  async remove (index: number) {
+  async remove (index: number) : Promise<string> {
     return new Promise<string>((resolve, reject) => {
       if (isNaN(index)) return reject(Error('Expected a number!'));
       if (index >= this.trackList.length) return reject(Error('Cannot remove: index out of range!'));
@@ -735,7 +786,7 @@ class Queue {
    * @param index2 Destination of track move
    * @returns A promise which resolves to a confirmation message
    */
-  async move (index1: number, index2: number) {
+  async move (index1: number, index2: number) : Promise<string> {
     return new Promise<string>((resolve, reject) => {
       if (index1 >= this.trackList.length || index2 >= this.trackList.length) return reject(Error('Cannot move: At least one of indices is out of range!'));
       [this.trackList[index1], this.trackList[index2]] = [this.trackList[index2], this.trackList[index1]];
@@ -754,7 +805,7 @@ class Queue {
   /**
    * Clear all contents of the queue, apart from current track.
    */
-  async clear () {
+  async clear () : Promise<void> {
     if (this.currentTrack) this.trackList = [this.currentTrack];
     else this.trackList = [];
     this.queuePos = 0;
@@ -765,7 +816,7 @@ class Queue {
    * @param pos The position of the track for which to retrieve information
    * @returns A promise which resolves to the embeds containing the information
    */
-  async infoEmbed (pos = this.queuePos) {
+  async infoEmbed (pos = this.queuePos) : Promise<Discord.MessageEmbed> {
     return new Promise<Discord.MessageEmbed>((resolve, reject) => {
       if (pos >= this.trackList.length) return reject(Error('Track number out of range!'));
 
@@ -782,7 +833,7 @@ class Queue {
         if (pos === this.queuePos && this.currentTrack) {
           let progressBar = '>';
           let i = 0;
-          for (; i < Math.round((this.timestamp / (this.currentTrack.duration ?? this.timestamp)) * PROGRESS_BAR_LENGTH); i++) { // if pos is queuepos there is a current track
+          for (; i < Math.round((this.timestamp / (this.currentTrack.duration)) * PROGRESS_BAR_LENGTH); i++) { // if pos is queuepos there is a current track
             progressBar += '█';
           }
           for (; i < PROGRESS_BAR_LENGTH; i++) {
@@ -790,11 +841,11 @@ class Queue {
           }
           progressBar += '<';
 
-          infoEmbed.addField('Track Progress', `${progressBar} \u0009 [${ConvertSecToFormat(Math.round(this.timestamp))} / ${ConvertSecToFormat(this.currentTrack.duration ?? 0)}]`);
+          infoEmbed.addField('Track Progress', `${progressBar} \u0009 [${ConvertSecToFormat(Math.round(this.timestamp))} / ${ConvertSecToFormat(this.currentTrack.duration)}]`);
         } else if (pos > this.queuePos && this.currentTrack) {
           let cumulativeSeconds = 0;
-          for (let i = 1; i < pos - this.queuePos; i++) cumulativeSeconds += this.trackList[pos + i].duration ?? 0;
-          infoEmbed.addField('Time to Play', `${ConvertSecToFormat((this.currentTrack.duration ?? this.timestamp) - this.timestamp + cumulativeSeconds)}`);
+          for (let i = 1; i < pos - this.queuePos; i++) cumulativeSeconds += this.trackList[pos + i].duration;
+          infoEmbed.addField('Time to Play', `${ConvertSecToFormat((this.currentTrack.duration) - this.timestamp + cumulativeSeconds)}`);
         }
 
         infoEmbed.addFields([{ name: 'Author', value: this.trackList[pos].author },
@@ -813,14 +864,14 @@ class Queue {
   /**
    * Toggle track looping
    */
-  async toggleTrackLoop () {
+  async toggleTrackLoop () : Promise<void> {
     this.loopTrack = !this.loopTrack;
   }
 
   /**
    * Toggle queue looping
    */
-  async toggleQueueLoop () {
+  async toggleQueueLoop () : Promise<void> {
     this.loopQueue = !this.loopQueue;
   }
 
@@ -830,7 +881,7 @@ class Queue {
    * @param text The text to read out
    * @returns A promise that resolves once accents are finished playing
    */
-  async queueAccent (language: string, text: string) {
+  async queueAccent (language: string, text: string) : Promise<void> {
     return new Promise<void>(resolve => {
       if (!this.languages.includes(language)) {
         language = 'es';
@@ -871,51 +922,56 @@ class Queue {
    * Play accents in the accents queue.
    * @returns A void promise
    */
-  async playAccents () {
+  async playAccents () : Promise<void> {
+    if (!this.voiceChannel) return Promise.reject(Error('Queue must be bound to a voice channel to play acccents!'));
     if (!this.playingAccent) this.stopTimestamp = null;
-    if (this.accentTimeoutID) {
-      clearTimeout(this.accentTimeoutID);
-      this.accentTimeoutID = undefined;
+    if (this.accentTimeoutId) {
+      clearTimeout(this.accentTimeoutId);
+      this.accentTimeoutId = undefined;
     }
 
-    if (this.trackAudioPlayer && !this.trackAudioPlayer.paused && this.playing) {
+    if (this.trackAudioPlayer && this.trackAudioPlayer.state.status !== Voice.AudioPlayerStatus.Paused && this.playing) {
       this.stopTimestamp = this.timestamp;
       this.trackAudioPlayer.pause();
     }
 
     try {
-      this.connection = await this.voiceChannel?.join();
+      this.connection = await connectVoice(this.voiceChannel);
     } catch (err) {
       return Promise.reject(err);
     }
 
     return new Promise<void>((resolve, reject) => {
       this.playingAccent = true;
-      this.accentAudioPlayer = this.connection.play(getTTSLink(this.accentList[0].language, this.accentList[0].text))
-        .on('finish', () => {
-          this.accentList.splice(0, 1);
-          if (this.accentList.length === 0) {
-            this.playingAccent = false;
-            if (this.stopTimestamp) {
-              this.play().then(() => {
-                this.seek(this.stopTimestamp ?? 0);
-              }).catch(err => {
-                err.message = `WARNING: Cannot resume track after accent! ${err.message}`;
-                logError(err);
-              });
-            } else {
-              this.accentTimeoutID = this.client.setTimeout(() => {
-                this.accentAudioPlayer.destroy();
-                this.voiceChannel?.leave();
-                this.connection = null;
-              }, 30 * 1000);
+      this.subscription = this.connection?.subscribe(this.accentAudioPlayer);
+      this.accentAudioPlayer.play(Voice.createAudioResource(getTTSLink(this.accentList[0].language, this.accentList[0].text)));
+      this.accentAudioPlayer
+        .on('stateChange', (oldState, newState) => {
+          if (oldState.status === Voice.AudioPlayerStatus.Playing && newState.status === Voice.AudioPlayerStatus.Idle) {
+            this.accentList.splice(0, 1);
+            if (this.accentList.length === 0) {
+              this.playingAccent = false;
+              if (this.stopTimestamp) {
+                this.play().then(() => {
+                  this.seek(this.stopTimestamp ?? 0);
+                }).catch(err => {
+                  err.message = `WARNING: Cannot resume track after accent! ${err.message}`;
+                  logError(err);
+                });
+              } else {
+                this.accentTimeoutId = setTimeout(() => {
+                  this.accentAudioPlayer.stop();
+                  this.connection?.disconnect();
+                  this.connection = null;
+                }, 30 * 1000).unref();
+              }
+              return resolve();
             }
-            return resolve();
+            this.playAccents().catch(err => {
+              err.message = `Cannot play accent! ${err.message}`;
+              return reject(err);
+            });
           }
-          this.playAccents().catch(err => {
-            err.message = `Cannot play accent! ${err.message}`;
-            return reject(err);
-          });
         })
         .on('error', (err: Error) => {
           err.message = `WARNING: Cannot play accent! ${err.message}`;
@@ -928,12 +984,13 @@ class Queue {
   /**
    * Delete all connections, close all players, then delete queue for this guild.
    */
-  clean () {
-    if (this.trackAudioPlayer) this.trackAudioPlayer.destroy();
-    if (this.accentAudioPlayer) this.accentAudioPlayer.destroy();
-    if (this.voiceChannel) this.voiceChannel.leave();
+  clean () : void {
+    this.trackAudioPlayer.stop();
+    this.subscription?.unsubscribe();
+    this.accentAudioPlayer.stop();
+    this.connection?.destroy();
     this.connection = null;
-    queueMap.delete(this.guildID);
+    queueMap.delete(this.guildId);
   }
 }
 

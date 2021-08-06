@@ -64,7 +64,7 @@ function reviver<K, V> (_key: K, value: { dataType: string, value: [K, V][] }) {
 /**
  * Handles all loading loading and access operations of configuration.
  */
-class Config {
+export class Config {
   private configObject: { createdAtVersion: string, configVersion: string, config: Map<string, configObjectType> };
   // private configObjectsMap: Map<string, configObjectType>;
   constructor () {
@@ -128,7 +128,7 @@ class Config {
     }
   }
 
-  async writeToJSON () {
+  async writeToJSON () : Promise<void> {
     return new Promise<void>((resolve, reject) => {
       const serialised = JSON.stringify(this.configObject, replacer, 2);
       if (serialised === '') throw emptyJSONError; // shouldnt write empty
@@ -142,7 +142,7 @@ class Config {
     });
   }
 
-  async refreshConfig () {
+  async refreshConfig () : Promise<void> {
     return new Promise<void>((resolve, reject) => {
       read().then((data) => {
         try {
@@ -163,7 +163,7 @@ class Config {
    * @param guild Guild whose config will be fetched
    */
 
-  async get (guild: Discord.Guild) {
+  async get (guild: Discord.Guild) : Promise<configObjectType | null> {
     return new Promise<configObjectType | null>((resolve, reject) => {
       if (this.configObject === null) return reject(Error('configObject invalid!'));
       // if (!this.configObjectsMap) return resolve(null);
@@ -190,7 +190,7 @@ class Config {
     });
   }
 
-  async accentUser (message: Discord.Message, accent: string, overwrite = true) {
+  async accentUser (message: Discord.Message, accent: string, overwrite = true) : Promise<string | null> {
     return new Promise<string | null>((resolve, reject) => {
       if (!message.guild) return reject(Error('Cannot accent non-guild user!'));
       const objectHandle = this.configObject.config.get(message.guild.id);

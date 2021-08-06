@@ -7,14 +7,15 @@
         "strictFunctionTypes": true,
         "sourceMap": true,
         "strict": true,
-        "outDir": "./built",
-        "resolveJsonModule": true
+        "outDir": "./build",
+        "resolveJsonModule": true,
+        "esModuleInterop": true
     },
-    // "exclude": [
-    //     "node_modules",
-    //     "**/node_modules/*",
-    //     "./built/**/*"
-    // ],
+    "exclude": [
+        "node_modules",
+        "**/node_modules/*",
+        "./build/**/*"
+    ],
     "include": [
         "./src/**/*"
     ]

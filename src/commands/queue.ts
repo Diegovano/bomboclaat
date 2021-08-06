@@ -11,7 +11,7 @@ export const module: bomboModule = {
   args: null,
   usage: null,
   dmCompatible: false,
-  voiceConnection: true,
+  voiceConnection: false,
   textBound: true,
   async execute (message, _args) {
     if (!message.guild) return;

@@ -6,7 +6,7 @@
   "dependencies": {
     "@discordjs/opus": "^0.3.3",
     "chokidar": "^3.5.2",
-    "discord.js": "^13.0.0-dev.t1627778678.74fc23b",
+    "discord.js": "^13.0.0-dev.t1628165339.3eb4140",
     "googleapis": "^66.0.0",
     "semistandard": "^16.0.1",
     "ytdl-core": "^4.8.3"
@@ -15,6 +15,7 @@
     "@discordjs/voice": "^0.5.5",
     "@typescript-eslint/eslint-plugin": "^4.28.5",
     "@typescript-eslint/parser": "^4.28.5",
+    "discord-ytdl-core": "^5.0.4",
     "eslint": "^7.30.0",
     "eslint-config-semistandard": "^15.0.1",
     "typedoc": "^0.21.5",

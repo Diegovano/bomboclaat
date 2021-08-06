@@ -1,6 +1,6 @@
 'use strict';
 
-import { DMChannel, ThreadChannel } from 'discord.js';
+import { BaseGuildTextChannel } from 'discord.js';
 import { config } from '../configFiles';
 import { logError } from '../log.js';
 import { bomboModule } from '../types';
@@ -14,7 +14,7 @@ export const module: bomboModule = {
   voiceConnection: false,
   textBound: false,
   async execute (message, _args) {
-    if (!message.guild || message.channel instanceof DMChannel || message.channel instanceof ThreadChannel) return;
+    if (!message.guild || !(message.channel instanceof BaseGuildTextChannel)) return;
     const objectHandle = await config.get(message.guild);
 
     if (!objectHandle) throw Error('Guild not initialised!');
@@ -29,7 +29,7 @@ export const module: bomboModule = {
 
       objectHandle.botChannels.set(message.channel.id, botChannelObject);
       config.writeToJSON().then(() => {
-        if (!message.guild || message.channel instanceof DMChannel || message.channel instanceof ThreadChannel) return;
+        if (!message.guild || !(message.channel instanceof BaseGuildTextChannel)) return;
         message.channel.send(`${message.channel.name} added to bot channels!`);
       }, err => {
         objectHandle.botChannels.delete(message.channel.id); // if unable to write reset
@@ -41,7 +41,7 @@ export const module: bomboModule = {
 
       objectHandle.botChannels.delete(message.channel.id);
       config.writeToJSON().then(() => {
-        if (!message.guild || message.channel instanceof DMChannel || message.channel instanceof ThreadChannel) return;
+        if (!message.guild || !(message.channel instanceof BaseGuildTextChannel)) return;
         message.channel.send(`${message.channel.name} was removed as a bot channel!`);
       }, err => {
         if (backupObject) objectHandle.botChannels.set(message.channel.id, backupObject); // if unable to write reset
