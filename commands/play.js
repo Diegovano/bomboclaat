@@ -64,7 +64,7 @@ module.exports = {
 const getTrackObjects = async (message, searchTerm) => {
   return new Promise((resolve, reject) => {
     const tracksToAdd = [];
-    const match = searchTerm[0].match(/youtu(?:\.be|be\.com)\/(?:playlist\?|[a-zA-Z0-9_-]{11}&|watch\?v=[a-zA-Z0-9_-]{11}&|v\/[a-zA-Z0-9_-]{11}&)list=([a-zA-Z0-9_-]{34})/g);
+    const match = searchTerm[0].match(/youtu(?:\.be|be\.com)\/(?:playlist\?|[a-zA-Z0-9_-]{11}&|watch\?v=[a-zA-Z0-9_-]{11}&|v\/[a-zA-Z0-9_-]{11}&)list=([a-zA-Z0-9_-]{34})/);
     const promises = [];
     if (match) {
       const playlistId = match[1];
@@ -88,21 +88,24 @@ const getTrackObjects = async (message, searchTerm) => {
 
       youtube.playlistItems.list(opts).then(async res => {
         for (let i = 0; i < MAX_TRACKS_PER_PLAYLIST / res.data.pageInfo.resultsPerPage && i < Math.ceil(res.data.pageInfo.totalResults / res.data.pageInfo.resultsPerPage); i++) {
-          await youtube.playlistItems.list(opts).then(async res => {
-            for (let i2 = 0; i2 < res.data.items.length; i2++) {
-              if (res.data.items[i2].status.privacyStatus === 'public' ||
+          for (let i2 = 0; i2 < res.data.items.length; i2++) {
+            if (res.data.items[i2].status.privacyStatus === 'public' ||
                 res.data.items[i2].status.privacyStatus === 'unlisted') {
-                const track = new am.Track(res.data.items[i2].snippet.resourceId.videoId, res.data.items[i2].snippet.channelTitle,
-                  res.data.items[i2].snippet.title, res.data.items[i2].snippet.description,
-                  res.data.items[i2].snippet.thumbnails.high.url || '', message.member.displayName, 0);
+              const track = new am.Track(res.data.items[i2].snippet.resourceId.videoId, res.data.items[i2].snippet.channelTitle,
+                res.data.items[i2].snippet.title, res.data.items[i2].snippet.description,
+                res.data.items[i2].snippet.thumbnails.high.url || '', message.member.displayName, 0);
 
-                tracksToAdd.push(track);
-              }
+              tracksToAdd.push(track);
             }
-            if (res.data.nextPageToken) opts.pageToken = res.data.nextPageToken;
-          }, err => {
-            reject(err);
-          });
+          }
+          if (res.data.nextPageToken) {
+            opts.pageToken = res.data.nextPageToken;
+            await youtube.playlistItems.list(opts).then(async result => {
+              res = result;
+            }, err => {
+              reject(err);
+            });
+          }
         }
         return resolve(tracksToAdd);
       }, err => {
@@ -144,25 +147,25 @@ const getTrackObjects = async (message, searchTerm) => {
         }
         )));
       }
-    }
-    if (promises.length > 0) {
-      return resolve(Promise.all(promises));
-    } else if (searchTerm[0].includes('spotify.com')) {
-      spotifyHandler.getSpotifyMetadata(message, searchTerm).then(trackArray => { // is in array form
-        resolve(trackArray);
-      }, err => {
-        reject(err);
-      });
-    } else {
-      ytSearch(searchTerm.join(' '), message).then(track => {
-        if (!track) resolve(null);
-        else {
-          tracksToAdd.push(track);
-          resolve(tracksToAdd);
-        }
-      }, err => {
-        reject(err);
-      });
+      if (promises.length > 0) {
+        return resolve(Promise.all(promises));
+      } else if (searchTerm[0].includes('spotify.com')) {
+        spotifyHandler.getSpotifyMetadata(message, searchTerm).then(trackArray => { // is in array form
+          resolve(trackArray);
+        }, err => {
+          reject(err);
+        });
+      } else {
+        ytSearch(searchTerm.join(' '), message).then(track => {
+          if (!track) resolve(null);
+          else {
+            tracksToAdd.push(track);
+            resolve(tracksToAdd);
+          }
+        }, err => {
+          reject(err);
+        });
+      }
     }
   });
 };

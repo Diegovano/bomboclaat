@@ -7,6 +7,8 @@ const path = require('path');
 const conf = require('./configFiles.js');
 const am = require('./audio.js');
 
+let exiting = false;
+
 function checkNodeVersion () {
   if (parseInt(process.versions.node.split('.')[0]) < 13) {
     l.logError(Error('Use Node version 13 or greater!'));
@@ -100,13 +102,14 @@ client.on('message', async message => {
                 if (message.content.split(' ')[0].toLowerCase().slice(prefix.length).trim() === 'togglebotchannel') return resolve();
                 message.channel.send(`Please use a bot channel to interact with me, such as ${Object.values(guildConfig.botChannels)[0].name}`).then(msg => {
                   setTimeout(() => {
-                    try {
-                      msg.delete();
-                      message.delete();
-                    } catch (err) {
-                      err.message = `WARNING: Unable to delete message! Has it already been deleted? ${err.message}`;
-                      l.logError(err);
-                    }
+                    msg.delete().catch((e) => {
+                      e.message = `WARNING: Unable to delete message! Has it already been deleted? ${e.message}`;
+                      l.logError(e);
+                    });
+                    message.delete().catch((e) => {
+                      e.message = `WARNING: Unable to delete message! Has it already been deleted? ${e.message}`;
+                      l.logError(e);
+                    });
                   }, 10000);
                 });
                 isCommand = false; // to skip execution
@@ -257,8 +260,6 @@ client.on('message', async message => {
     message.reply('there was an error trying to execute that command!');
   }
 });
-
-let exiting = false;
 
 function exitHandler (code = undefined) {
   if (!exiting) {
