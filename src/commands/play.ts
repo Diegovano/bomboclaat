@@ -5,7 +5,7 @@ import { readFileSync } from 'fs';
 import { google, youtube_v3 as youtubev3 } from 'googleapis';
 import { getQueue, Track } from '../audio';
 import { logError } from '../log';
-import { bomboModule } from '../types';
+import { bomboModule, wait } from '../types';
 
 const youtube = google.youtube('v3');
 
@@ -310,14 +310,16 @@ async function userSelect (results: Track[], message: Discord.Message) {
       const reactionTime = 30 * 1000;
       const waitTime = 5 * 1000;
       const options: Discord.ReactionCollectorOptions = { max: 1, time: reactionTime };
+      const reactionPromiseList: Promise<Discord.MessageReaction | void>[] = [];
       let embedDeleted = false;
       let collected = false;
 
       for (let i = 0; i < results.length && i < reactionList.length; i++) {
         if (!embedDeleted) {
-          msg.react(reactionList[i]).catch(reason => {
+          reactionPromiseList.push(msg.react(reactionList[i]).catch(reason => {
             logError(Error(`WARNING: Unable to add reaction to embed! Has message been deleted? ${reason}`));
-          });
+            return Promise.resolve();
+          }));
         }
         // most likely error is that embed has already been deleted before all reactions are added. No action necessary.
       }
@@ -335,12 +337,16 @@ async function userSelect (results: Track[], message: Discord.Message) {
         collectors[i].on('collect', () => {
           if (collected) return;
           collected = true;
-          setTimeout(() => {
-            if (!embedDeleted) {
-              embedDeleted = true;
-              msg.delete();
-            }
-          }, waitTime).unref();
+          const timer = wait(waitTime);
+          Promise.all([...reactionPromiseList, timer]).then(() => {
+            if (embedDeleted) return;
+            embedDeleted = true;
+            msg.delete();
+          }).catch(err => {
+            err.message = `WARNING: Cannot delete search result embed! ${err.message}`;
+            logError(err);
+            if (!msg.deleted) msg.delete();
+          });
           resolve(results[i]);
         });
       }

@@ -17,8 +17,9 @@ export const module: bomboModule = {
     if (!message.guild || !(message.member?.voice.channel)) return;
     const currentQueue = getQueue(message.guild);
 
-    currentQueue.setVoiceChannel(message.member.voice.channel).catch(_err => {
-      logError(Error('WARNING: Cannot join voice channel'));
+    currentQueue.setVoiceChannel(message.member.voice.channel).catch(err => {
+      err.message = `WARNING: Cannot join voice channel! ${err.message}`;
+      logError(err);
     });
   }
 };

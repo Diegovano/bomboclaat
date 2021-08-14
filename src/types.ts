@@ -83,3 +83,5 @@ export class Client extends Discord.Client {
       this.commands = new Discord.Collection();
     }
 }
+
+export const wait: (ms: number) => Promise<void> = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms).unref());

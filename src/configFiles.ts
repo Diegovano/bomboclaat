@@ -7,6 +7,7 @@ import { log, logError } from './log';
 import { watch } from 'chokidar';
 import { DEFAULT_PREFIX } from './index';
 import { version } from '../package.json';
+import { wait } from './types';
 
 const configFolderPath = join('.', 'config');
 const configFilePath = join(configFolderPath, 'config.json');
@@ -114,12 +115,10 @@ export class Config {
       else if (parseInt(this.configObject.configVersion) < parseInt(CONFIG_VERSION)) log('Old config version detected');
       watch(configFilePath, { persistent: false })
         .on('change', _path => {
-          setTimeout(() => {
-            this.refreshConfig().catch(err => {
-              err.message = `WARNING: Unable to automatically refresh config.json! ${err.message}`;
-              logError(err);
-            });
-          }, 500);
+          wait(500).then(() => this.refreshConfig()).catch(err => {
+            err.message = `WARNING: Unable to automatically refresh config.json! ${err.message}`;
+            logError(err);
+          });
         });
     } catch (err) {
       err.message = `WARNING: Cannot parse JSON info while creating config object! ${err.message}`;

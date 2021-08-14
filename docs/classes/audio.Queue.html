@@ -102,10 +102,12 @@
 								<li class="tsd-kind-property tsd-parent-kind-class tsd-is-private"><a href="audio.Queue.html#client" class="tsd-kind-icon">client</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-class tsd-is-private"><a href="audio.Queue.html#connection" class="tsd-kind-icon">connection</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-class tsd-is-private"><a href="audio.Queue.html#guildId" class="tsd-kind-icon">guild<wbr>Id</a></li>
+								<li class="tsd-kind-property tsd-parent-kind-class tsd-is-private"><a href="audio.Queue.html#isSeek" class="tsd-kind-icon">is<wbr>Seek</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-class"><a href="audio.Queue.html#languages" class="tsd-kind-icon">languages</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-class"><a href="audio.Queue.html#loopQueue" class="tsd-kind-icon">loop<wbr>Queue</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-class"><a href="audio.Queue.html#loopTrack" class="tsd-kind-icon">loop<wbr>Track</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-class"><a href="audio.Queue.html#paused" class="tsd-kind-icon">paused</a></li>
+								<li class="tsd-kind-property tsd-parent-kind-class tsd-is-private"><a href="audio.Queue.html#playAttempts" class="tsd-kind-icon">play<wbr>Attempts</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-class"><a href="audio.Queue.html#playing" class="tsd-kind-icon">playing</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-class"><a href="audio.Queue.html#playingAccent" class="tsd-kind-icon">playing<wbr>Accent</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-class"><a href="audio.Queue.html#queuePos" class="tsd-kind-icon">queue<wbr>Pos</a></li>
@@ -114,6 +116,7 @@
 								<li class="tsd-kind-property tsd-parent-kind-class tsd-is-private"><a href="audio.Queue.html#subscription" class="tsd-kind-icon">subscription</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-class"><a href="audio.Queue.html#textChannel" class="tsd-kind-icon">text<wbr>Channel</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-class tsd-is-private"><a href="audio.Queue.html#trackAudioPlayer" class="tsd-kind-icon">track<wbr>Audio<wbr>Player</a></li>
+								<li class="tsd-kind-property tsd-parent-kind-class tsd-is-private"><a href="audio.Queue.html#trackAudioResource" class="tsd-kind-icon">track<wbr>Audio<wbr>Resource</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-class tsd-is-private"><a href="audio.Queue.html#trackList" class="tsd-kind-icon">track<wbr>List</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-class"><a href="audio.Queue.html#voiceChannel" class="tsd-kind-icon">voice<wbr>Channel</a></li>
 								<li class="tsd-kind-property tsd-parent-kind-class tsd-is-private"><a href="audio.Queue.html#volume" class="tsd-kind-icon">volume</a></li>
@@ -168,7 +171,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/973205b0/src/audio.ts#L360">src/audio.ts:360</a></li>
+									<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/2b152d7a/src/audio.ts#L377">src/audio.ts:377</a></li>
 								</ul>
 							</aside>
 							<h4 class="tsd-parameters-title">Parameters</h4>
@@ -190,7 +193,7 @@
 					<div class="tsd-signature tsd-kind-icon">accent<wbr>Audio<wbr>Player<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">AudioPlayer</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/973205b0/src/audio.ts#L332">src/audio.ts:332</a></li>
+							<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/2b152d7a/src/audio.ts#L349">src/audio.ts:349</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -205,7 +208,7 @@
 					<div class="tsd-signature tsd-kind-icon">accent<wbr>List<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-symbol">{ </span>language<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">; </span>text<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> }</span><span class="tsd-signature-symbol">[]</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/973205b0/src/audio.ts#L342">src/audio.ts:342</a></li>
+							<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/2b152d7a/src/audio.ts#L359">src/audio.ts:359</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -220,7 +223,7 @@
 					<div class="tsd-signature tsd-kind-icon">accent<wbr>Timeout<wbr>Id<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Timeout</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/973205b0/src/audio.ts#L353">src/audio.ts:353</a></li>
+							<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/2b152d7a/src/audio.ts#L370">src/audio.ts:370</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -235,7 +238,7 @@
 					<div class="tsd-signature tsd-kind-icon">client<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">Client</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">boolean</span><span class="tsd-signature-symbol">&gt;</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/973205b0/src/audio.ts#L262">src/audio.ts:262</a></li>
+							<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/2b152d7a/src/audio.ts#L264">src/audio.ts:264</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -250,7 +253,7 @@
 					<div class="tsd-signature tsd-kind-icon">connection<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">null</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">VoiceConnection</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/973205b0/src/audio.ts#L277">src/audio.ts:277</a></li>
+							<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/2b152d7a/src/audio.ts#L279">src/audio.ts:279</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -265,12 +268,27 @@
 					<div class="tsd-signature tsd-kind-icon">guild<wbr>Id<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/973205b0/src/audio.ts#L257">src/audio.ts:257</a></li>
+							<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/2b152d7a/src/audio.ts#L259">src/audio.ts:259</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
 						<div class="lead">
 							<p>ID of the guild to which this queue is assigned.</p>
+						</div>
+					</div>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class tsd-is-private">
+					<a name="isSeek" class="tsd-anchor"></a>
+					<h3><span class="tsd-flag ts-flagPrivate">Private</span> is<wbr>Seek</h3>
+					<div class="tsd-signature tsd-kind-icon">is<wbr>Seek<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/2b152d7a/src/audio.ts#L309">src/audio.ts:309</a></li>
+						</ul>
+					</aside>
+					<div class="tsd-comment tsd-typography">
+						<div class="lead">
+							<p>Whether the play function should operate in seek mode in case of an error.</p>
 						</div>
 					</div>
 				</section>
@@ -280,7 +298,7 @@
 					<div class="tsd-signature tsd-kind-icon">languages<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">[]</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/973205b0/src/audio.ts#L337">src/audio.ts:337</a></li>
+							<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/2b152d7a/src/audio.ts#L354">src/audio.ts:354</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -295,7 +313,7 @@
 					<div class="tsd-signature tsd-kind-icon">loop<wbr>Queue<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/973205b0/src/audio.ts#L327">src/audio.ts:327</a></li>
+							<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/2b152d7a/src/audio.ts#L344">src/audio.ts:344</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -310,7 +328,7 @@
 					<div class="tsd-signature tsd-kind-icon">loop<wbr>Track<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/973205b0/src/audio.ts#L322">src/audio.ts:322</a></li>
+							<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/2b152d7a/src/audio.ts#L339">src/audio.ts:339</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -325,12 +343,27 @@
 					<div class="tsd-signature tsd-kind-icon">paused<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/973205b0/src/audio.ts#L297">src/audio.ts:297</a></li>
+							<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/2b152d7a/src/audio.ts#L299">src/audio.ts:299</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
 						<div class="lead">
 							<p>Whether or not the queue is paused.s</p>
+						</div>
+					</div>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class tsd-is-private">
+					<a name="playAttempts" class="tsd-anchor"></a>
+					<h3><span class="tsd-flag ts-flagPrivate">Private</span> play<wbr>Attempts</h3>
+					<div class="tsd-signature tsd-kind-icon">play<wbr>Attempts<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/2b152d7a/src/audio.ts#L304">src/audio.ts:304</a></li>
+						</ul>
+					</aside>
+					<div class="tsd-comment tsd-typography">
+						<div class="lead">
+							<p>The number of attemps to play that have taken place.</p>
 						</div>
 					</div>
 				</section>
@@ -340,7 +373,7 @@
 					<div class="tsd-signature tsd-kind-icon">playing<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/973205b0/src/audio.ts#L292">src/audio.ts:292</a></li>
+							<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/2b152d7a/src/audio.ts#L294">src/audio.ts:294</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -355,7 +388,7 @@
 					<div class="tsd-signature tsd-kind-icon">playing<wbr>Accent<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">boolean</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/973205b0/src/audio.ts#L347">src/audio.ts:347</a></li>
+							<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/2b152d7a/src/audio.ts#L364">src/audio.ts:364</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -370,7 +403,7 @@
 					<div class="tsd-signature tsd-kind-icon">queue<wbr>Pos<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/973205b0/src/audio.ts#L287">src/audio.ts:287</a></li>
+							<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/2b152d7a/src/audio.ts#L289">src/audio.ts:289</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -385,7 +418,7 @@
 					<div class="tsd-signature tsd-kind-icon">seek<wbr>Time<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/973205b0/src/audio.ts#L317">src/audio.ts:317</a></li>
+							<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/2b152d7a/src/audio.ts#L334">src/audio.ts:334</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -400,7 +433,7 @@
 					<div class="tsd-signature tsd-kind-icon">stop<wbr>Timestamp<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">null</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">number</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/973205b0/src/audio.ts#L358">src/audio.ts:358</a></li>
+							<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/2b152d7a/src/audio.ts#L375">src/audio.ts:375</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -415,7 +448,7 @@
 					<div class="tsd-signature tsd-kind-icon">subscription<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">PlayerSubscription</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/973205b0/src/audio.ts#L307">src/audio.ts:307</a></li>
+							<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/2b152d7a/src/audio.ts#L324">src/audio.ts:324</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -430,7 +463,7 @@
 					<div class="tsd-signature tsd-kind-icon">text<wbr>Channel<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">ThreadChannel</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">TextChannel</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">NewsChannel</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/973205b0/src/audio.ts#L267">src/audio.ts:267</a></li>
+							<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/2b152d7a/src/audio.ts#L269">src/audio.ts:269</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -445,7 +478,7 @@
 					<div class="tsd-signature tsd-kind-icon">track<wbr>Audio<wbr>Player<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">AudioPlayer</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/973205b0/src/audio.ts#L302">src/audio.ts:302</a></li>
+							<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/2b152d7a/src/audio.ts#L314">src/audio.ts:314</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -455,12 +488,27 @@
 					</div>
 				</section>
 				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class tsd-is-private">
+					<a name="trackAudioResource" class="tsd-anchor"></a>
+					<h3><span class="tsd-flag ts-flagPrivate">Private</span> <span class="tsd-flag ts-flagOptional">Optional</span> track<wbr>Audio<wbr>Resource</h3>
+					<div class="tsd-signature tsd-kind-icon">track<wbr>Audio<wbr>Resource<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">AudioResource</span><span class="tsd-signature-symbol">&lt;</span><a href="audio.Track.html" class="tsd-signature-type" data-tsd-kind="Class">Track</a><span class="tsd-signature-symbol">&gt;</span></div>
+					<aside class="tsd-sources">
+						<ul>
+							<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/2b152d7a/src/audio.ts#L319">src/audio.ts:319</a></li>
+						</ul>
+					</aside>
+					<div class="tsd-comment tsd-typography">
+						<div class="lead">
+							<p>The current or last audio resource</p>
+						</div>
+					</div>
+				</section>
+				<section class="tsd-panel tsd-member tsd-kind-property tsd-parent-kind-class tsd-is-private">
 					<a name="trackList" class="tsd-anchor"></a>
 					<h3><span class="tsd-flag ts-flagPrivate">Private</span> track<wbr>List</h3>
 					<div class="tsd-signature tsd-kind-icon">track<wbr>List<span class="tsd-signature-symbol">:</span> <a href="audio.Track.html" class="tsd-signature-type" data-tsd-kind="Class">Track</a><span class="tsd-signature-symbol">[]</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/973205b0/src/audio.ts#L282">src/audio.ts:282</a></li>
+							<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/2b152d7a/src/audio.ts#L284">src/audio.ts:284</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -475,7 +523,7 @@
 					<div class="tsd-signature tsd-kind-icon">voice<wbr>Channel<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">null</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">VoiceChannel</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">StageChannel</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/973205b0/src/audio.ts#L272">src/audio.ts:272</a></li>
+							<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/2b152d7a/src/audio.ts#L274">src/audio.ts:274</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -490,7 +538,7 @@
 					<div class="tsd-signature tsd-kind-icon">volume<span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">number</span></div>
 					<aside class="tsd-sources">
 						<ul>
-							<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/973205b0/src/audio.ts#L312">src/audio.ts:312</a></li>
+							<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/2b152d7a/src/audio.ts#L329">src/audio.ts:329</a></li>
 						</ul>
 					</aside>
 					<div class="tsd-comment tsd-typography">
@@ -512,7 +560,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/973205b0/src/audio.ts#L677">src/audio.ts:677</a></li>
+									<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/2b152d7a/src/audio.ts#L699">src/audio.ts:699</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -534,7 +582,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/973205b0/src/audio.ts#L685">src/audio.ts:685</a></li>
+									<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/2b152d7a/src/audio.ts#L707">src/audio.ts:707</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -556,7 +604,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/973205b0/src/audio.ts#L700">src/audio.ts:700</a></li>
+									<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/2b152d7a/src/audio.ts#L727">src/audio.ts:727</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -578,7 +626,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/973205b0/src/audio.ts#L693">src/audio.ts:693</a></li>
+									<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/2b152d7a/src/audio.ts#L715">src/audio.ts:715</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -603,7 +651,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/973205b0/src/audio.ts#L508">src/audio.ts:508</a></li>
+									<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/2b152d7a/src/audio.ts#L530">src/audio.ts:530</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -647,7 +695,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/973205b0/src/audio.ts#L987">src/audio.ts:987</a></li>
+									<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/2b152d7a/src/audio.ts#L1015">src/audio.ts:1015</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -669,7 +717,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/973205b0/src/audio.ts#L808">src/audio.ts:808</a></li>
+									<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/2b152d7a/src/audio.ts#L836">src/audio.ts:836</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -691,7 +739,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/973205b0/src/audio.ts#L666">src/audio.ts:666</a></li>
+									<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/2b152d7a/src/audio.ts#L688">src/audio.ts:688</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -713,7 +761,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/973205b0/src/audio.ts#L529">src/audio.ts:529</a></li>
+									<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/2b152d7a/src/audio.ts#L551">src/audio.ts:551</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -736,7 +784,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/973205b0/src/audio.ts#L819">src/audio.ts:819</a></li>
+									<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/2b152d7a/src/audio.ts#L847">src/audio.ts:847</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -768,7 +816,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/973205b0/src/audio.ts#L789">src/audio.ts:789</a></li>
+									<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/2b152d7a/src/audio.ts#L817">src/audio.ts:817</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -806,7 +854,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/973205b0/src/audio.ts#L712">src/audio.ts:712</a></li>
+									<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/2b152d7a/src/audio.ts#L739">src/audio.ts:739</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -829,7 +877,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/973205b0/src/audio.ts#L411">src/audio.ts:411</a></li>
+									<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/2b152d7a/src/audio.ts#L486">src/audio.ts:486</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -853,9 +901,6 @@
 								</li>
 								<li>
 									<h5>repeated: <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol"> = 0</span></h5>
-									<div class="tsd-comment tsd-typography">
-										<p>the number of attemps to play that have taken place</p>
-									</div>
 								</li>
 							</ul>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol"> | </span><span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">&gt;</span></h4>
@@ -873,7 +918,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/973205b0/src/audio.ts#L925">src/audio.ts:925</a></li>
+									<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/2b152d7a/src/audio.ts#L953">src/audio.ts:953</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -896,7 +941,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/973205b0/src/audio.ts#L884">src/audio.ts:884</a></li>
+									<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/2b152d7a/src/audio.ts#L912">src/audio.ts:912</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -934,7 +979,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/973205b0/src/audio.ts#L771">src/audio.ts:771</a></li>
+									<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/2b152d7a/src/audio.ts#L799">src/audio.ts:799</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -966,7 +1011,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/973205b0/src/audio.ts#L752">src/audio.ts:752</a></li>
+									<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/2b152d7a/src/audio.ts#L780">src/audio.ts:780</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -998,7 +1043,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/973205b0/src/audio.ts#L391">src/audio.ts:391</a></li>
+									<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/2b152d7a/src/audio.ts#L467">src/audio.ts:467</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1024,13 +1069,13 @@
 					<a name="setVolume" class="tsd-anchor"></a>
 					<h3>set<wbr>Volume</h3>
 					<ul class="tsd-signatures tsd-kind-method tsd-parent-kind-class">
-						<li class="tsd-signature tsd-kind-icon">set<wbr>Volume<span class="tsd-signature-symbol">(</span>_volumeAmount<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">&gt;</span></li>
+						<li class="tsd-signature tsd-kind-icon">set<wbr>Volume<span class="tsd-signature-symbol">(</span>volumeAmount<span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">: </span><span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">&gt;</span></li>
 					</ul>
 					<ul class="tsd-descriptions">
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/973205b0/src/audio.ts#L741">src/audio.ts:741</a></li>
+									<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/2b152d7a/src/audio.ts#L768">src/audio.ts:768</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1041,7 +1086,10 @@
 							<h4 class="tsd-parameters-title">Parameters</h4>
 							<ul class="tsd-parameters">
 								<li>
-									<h5>_volumeAmount: <span class="tsd-signature-type">number</span></h5>
+									<h5>volumeAmount: <span class="tsd-signature-type">number</span></h5>
+									<div class="tsd-comment tsd-typography">
+										<p>A number to set volume relative to a default value.</p>
+									</div>
 								</li>
 							</ul>
 							<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">Promise</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">void</span><span class="tsd-signature-symbol">&gt;</span></h4>
@@ -1058,7 +1106,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/973205b0/src/audio.ts#L645">src/audio.ts:645</a></li>
+									<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/2b152d7a/src/audio.ts#L667">src/audio.ts:667</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1080,7 +1128,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/973205b0/src/audio.ts#L612">src/audio.ts:612</a></li>
+									<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/2b152d7a/src/audio.ts#L634">src/audio.ts:634</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1103,7 +1151,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/973205b0/src/audio.ts#L874">src/audio.ts:874</a></li>
+									<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/2b152d7a/src/audio.ts#L902">src/audio.ts:902</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1125,7 +1173,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/973205b0/src/audio.ts#L867">src/audio.ts:867</a></li>
+									<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/2b152d7a/src/audio.ts#L895">src/audio.ts:895</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1147,7 +1195,7 @@
 						<li class="tsd-description">
 							<aside class="tsd-sources">
 								<ul>
-									<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/973205b0/src/audio.ts#L726">src/audio.ts:726</a></li>
+									<li>Defined in <a href="https://github.com/Diegovano/bomboclaat/blob/2b152d7a/src/audio.ts#L753">src/audio.ts:753</a></li>
 								</ul>
 							</aside>
 							<div class="tsd-comment tsd-typography">
@@ -1201,6 +1249,9 @@
 							<li class=" tsd-kind-property tsd-parent-kind-class tsd-is-private">
 								<a href="audio.Queue.html#guildId" class="tsd-kind-icon">guild<wbr>Id</a>
 							</li>
+							<li class=" tsd-kind-property tsd-parent-kind-class tsd-is-private">
+								<a href="audio.Queue.html#isSeek" class="tsd-kind-icon">is<wbr>Seek</a>
+							</li>
 							<li class=" tsd-kind-property tsd-parent-kind-class">
 								<a href="audio.Queue.html#languages" class="tsd-kind-icon">languages</a>
 							</li>
@@ -1212,6 +1263,9 @@
 							</li>
 							<li class=" tsd-kind-property tsd-parent-kind-class">
 								<a href="audio.Queue.html#paused" class="tsd-kind-icon">paused</a>
+							</li>
+							<li class=" tsd-kind-property tsd-parent-kind-class tsd-is-private">
+								<a href="audio.Queue.html#playAttempts" class="tsd-kind-icon">play<wbr>Attempts</a>
 							</li>
 							<li class=" tsd-kind-property tsd-parent-kind-class">
 								<a href="audio.Queue.html#playing" class="tsd-kind-icon">playing</a>
@@ -1236,6 +1290,9 @@
 							</li>
 							<li class=" tsd-kind-property tsd-parent-kind-class tsd-is-private">
 								<a href="audio.Queue.html#trackAudioPlayer" class="tsd-kind-icon">track<wbr>Audio<wbr>Player</a>
+							</li>
+							<li class=" tsd-kind-property tsd-parent-kind-class tsd-is-private">
+								<a href="audio.Queue.html#trackAudioResource" class="tsd-kind-icon">track<wbr>Audio<wbr>Resource</a>
 							</li>
 							<li class=" tsd-kind-property tsd-parent-kind-class tsd-is-private">
 								<a href="audio.Queue.html#trackList" class="tsd-kind-icon">track<wbr>List</a>

@@ -7,7 +7,7 @@ import { DEFAULT_PREFIX } from '../index';
 
 export const module: bomboModule = {
   name: 'help',
-  aliases: ['h', 'commands'],
+  aliases: ['h', 'commands', ''],
   description: 'List all commands or more info about a specific command.',
   args: null, // can be 0 or 1
   usage: '[command name]',

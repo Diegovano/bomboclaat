@@ -5,7 +5,8 @@ import * as Voice from '@discordjs/voice';
 import { google, youtube_v3 as youtubev3 } from 'googleapis';
 import { readFileSync } from 'fs';
 import { log, logError } from './log';
-import ytdl = require('discord-ytdl-core');
+import ytdl = require('ytdl-core');
+import { wait } from './types';
 
 const youtube = google.youtube('v3');
 
@@ -72,43 +73,44 @@ async function connectVoice (channel: Discord.VoiceChannel | Discord.StageChanne
     const connection = Voice.joinVoiceChannel({
       channelId: channel.id,
       guildId: channel.guild.id,
-      // @ts-expect-error InternalDiscordGatwayAdapterCreator and DiscordGatewayAdapterCreator seem to be comaptible...
       adapterCreator: channel.guild.voiceAdapterCreator
-    }).on('error', error => reject(error))
-      .on('stateChange', async (_, newState) => { // using code from discord.js/voice examples
-        if (newState.status === Voice.VoiceConnectionStatus.Ready) resolve(connection);
-        if (newState.status === Voice.VoiceConnectionStatus.Disconnected) {
-          if (newState.reason === Voice.VoiceConnectionDisconnectReason.WebSocketClose && newState.closeCode === 4014) {
-          /*
-            If the WebSocket closed with a 4014 code, this means that we should not manually attempt to reconnect,
-            but there is a chance the connection will recover itself if the reason of the disconnect was due to
-            switching voice channels. This is also the same code for the bot being kicked from the voice channel,
-            so we allow 5 seconds to figure out which scenario it is. If the bot has been kicked, we should destroy
-            the voice connection.
-            */
-            try {
-              await Voice.entersState(connection, Voice.VoiceConnectionStatus.Connecting, 5_000);
-              // Probably moved voice channel
-            } catch {
-              connection.destroy();
-              // return reject(Error('Unable to connect to voice channel!'));
-              // Probably removed from voice channel
-            }
-          } else if (connection.rejoinAttempts < 5) {
-            /*
-            The disconnect in this case is recoverable, and we also have <5 repeated attempts so we will reconnect.
-            */
-            setTimeout(() => {
-              connection.rejoin();
-            }, (connection.rejoinAttempts + 1) * 5_000);
-          } else {
-            /*
-              The disconnect in this case may be recoverable, but we have no more remaining attempts - destroy.
-            */
-            connection.destroy();
+    });
+
+    connection.on('stateChange', async (_oldState, newState) => { // using code from discord.js/voice examples
+      // if (newState.status === Voice.VoiceConnectionStatus.Ready) { log('connected!'); return resolve(connection); }
+      if (newState.status === Voice.VoiceConnectionStatus.Disconnected && newState.reason !== 3) {
+        if (newState.reason === Voice.VoiceConnectionDisconnectReason.WebSocketClose && newState.closeCode === 4014) {
+        /*
+          If the WebSocket closed with a 4014 code, this means that we should not manually attempt to reconnect,
+          but there is a chance the connection will recover itself if the reason of the disconnect was due to
+          switching voice channels. This is also the same code for the bot being kicked from the voice channel,
+          so we allow 5 seconds to figure out which scenario it is. If the bot has been kicked, we should destroy
+          the voice connection.
+          */
+          try {
+            await Voice.entersState(connection, Voice.VoiceConnectionStatus.Connecting, 5_000);
+            // Probably moved voice channel
+          } catch {
+            // connection.destroy();
+            // return reject(Error('Unable to connect to voice channel!'));
+            // Probably removed from voice channel
           }
+        } else if (connection.rejoinAttempts < 5) {
+          /*
+          The disconnect in this case is recoverable, and we also have <5 repeated attempts so we will reconnect.
+          */
+          wait((connection.rejoinAttempts + 1) * 5_000).then(() => connection.rejoin()).catch(err => logError(err));
+        } else {
+          /*
+            The disconnect in this case may be recoverable, but we have no more remaining attempts - destroy.
+          */
+          // connection.destroy();
         }
-      });
+      }
+    });
+    connection.on('error', error => logError(error));
+
+    return Voice.entersState(connection, Voice.VoiceConnectionStatus.Ready, 5_000).then(resolve, reject);
   });
 }
 
@@ -297,9 +299,24 @@ export class Queue {
   paused: boolean;
 
   /**
+   * The number of attemps to play that have taken place.
+   */
+  private playAttempts: number;
+
+  /**
+   * Whether the play function should operate in seek mode in case of an error.
+   */
+  private isSeek: boolean;
+
+  /**
    * The player that is responsible for track playback.
    */
   private trackAudioPlayer: Voice.AudioPlayer;
+
+  /**
+   * The current or last audio resource
+   */
+  private trackAudioResource?: Voice.AudioResource<Track>;
 
   /**
    * The subscription to an audio player.
@@ -369,7 +386,66 @@ export class Queue {
     this.queuePos = 0;
     this.playing = false;
     this.paused = false;
-    this.trackAudioPlayer = new Voice.AudioPlayer({ behaviors: { noSubscriber: Voice.NoSubscriberBehavior.Pause } });
+    this.playAttempts = 0;
+    this.isSeek = false;
+    this.trackAudioPlayer = new Voice.AudioPlayer({ behaviors: { noSubscriber: Voice.NoSubscriberBehavior.Pause } })
+      .on('stateChange', (oldState, newState) => {
+        if (newState.status === Voice.AudioPlayerStatus.Playing) this.playAttempts = 0;
+        if (oldState.status === Voice.AudioPlayerStatus.Playing && newState.status === Voice.AudioPlayerStatus.Idle) {
+          if (!this.loopTrack) this.queuePos++;
+          this.seekTime = 0;
+
+          if (this.queuePos >= this.trackList.length) {
+            if (!this.loopQueue) {
+              this.playing = false;
+              this.subscription?.unsubscribe();
+              this.subscription = undefined;
+              this.connection?.disconnect();
+              return;
+            } else {
+              this.queuePos = 0;
+              this.play().then(msg => {
+                if (msg) this.textChannel?.send(msg);
+              }, err => {
+                err.message = `WARNING: Cannot play track! ${err.message}`;
+                logError(err);
+                this.skip().catch(err1 => {
+                  err1.message = `WARNING: Cannot skip track! ${err.message}`;
+                  logError(err1);
+                });
+              });
+            }
+          }
+
+          this.play().then(msg => {
+            if (msg) this.textChannel?.send(msg);
+          }, err => {
+            err.message = `WARNING: Cannot play track! ${err.message}`;
+            logError(err);
+            this.skip().catch(err1 => {
+              err1.message = `WARNING: Cannot skip track! ${err.message}`;
+              logError(err1);
+            });
+          });
+        }
+      })
+      .on('error', err => {
+        if (this.playAttempts > 4) {
+          err.message = `Unable to play track after five attempts! ${err.message}`;
+          logError(err);
+          this.textChannel?.send('Unable to play that! Skipping...');
+          this.skip().then(msg => {
+            if (msg) this.textChannel?.send(msg);
+          }, err => {
+            err.message = `WARNING: Cannot play track after an unavailable one! ${err.message}`;
+            logError(err);
+          });
+        }
+
+        if (this.playAttempts === 0) log(`Error playing track, trying again! ${err.message}`);
+        this.play(this.timestamp, this.isSeek, ++this.playAttempts); // test the use of return
+      });
+
     this.volume = DEFAULT_VOLUME;
     this.seekTime = 0;
     this.loopTrack = false;
@@ -390,14 +466,14 @@ export class Queue {
    */
   async setVoiceChannel (voiceChannel: Discord.VoiceChannel | Discord.StageChannel) : Promise<void> {
     return new Promise<void>((resolve, reject) => {
-      this.client.guilds.fetch(this.guildId).then(async function getClientGuildMember (guild) {
+      this.client.guilds.fetch(this.guildId).then(async /* function getClientGuildMember */(guild) => {
         const clientGuildMem = guild.client.user ? await guild.members.fetch(guild.client.user?.id).catch(err => reject(err)) : null;
         if (clientGuildMem && voiceChannel.permissionsFor(clientGuildMem).has(['CONNECT', 'SPEAK'])) {
-          getQueue(guild).voiceChannel = voiceChannel;
-          getQueue(guild).connection = await connectVoice(voiceChannel);
+          this.voiceChannel = voiceChannel;
+          this.connection = await connectVoice(voiceChannel).catch(err => reject(err)) ?? null;
           return resolve();
         } else return reject(Error('Insufficent permissions in that voice channel!'));
-      });
+      }, err => reject(err));
     });
   }
 
@@ -405,7 +481,6 @@ export class Queue {
    * Connect to a voice channel, then current track in the queue.
    * @param seconds the number of seconds to start playing at
    * @param isSeek whether or not the current operation is a seek operation. If not then a confimation message will be sent to the bound text channel
-   * @param repeated the number of attemps to play that have taken place
    * @returns {Promise<string | void>} the string represents the message to be sent describing the operation, for example "now playing x", or void if no message
    */
   async play (seconds = 0, isSeek = false, repeated = 0) : Promise<string | void> {
@@ -416,7 +491,7 @@ export class Queue {
 
     try {
       if (!this.voiceChannel) throw Error('WARNING: No voice channel allocated to this queue!');
-      this.connection = await connectVoice(this.voiceChannel);
+      this.connection = await connectVoice(this.voiceChannel).catch(err => Promise.reject(err));
     } catch (err) {
       return Promise.reject(err);
     }
@@ -427,71 +502,18 @@ export class Queue {
       const begin = seconds !== 0 ? `${seconds}s` : `${this.trackList[this.queuePos].startOffset}s`;
       if (this.queuePos > this.trackList.length - 1) return reject(Error('queuePos out of range'));
 
-      const trackAudioResource = Voice.createAudioResource(ytdl(this.trackList[this.queuePos].sourceLink, {
-        seek: parseInt(begin),
-        filter: 'audioonly',
-        quality: 'highestaudio',
-        highWaterMark: 1 << 25
-      }));
-      this.trackAudioPlayer.play(trackAudioResource);
-      this.trackAudioPlayer
-        .on('stateChange', (oldState, newState) => {
-          if (oldState.status === Voice.AudioPlayerStatus.Playing && newState.status === Voice.AudioPlayerStatus.Idle) {
-            if (!this.loopTrack) this.queuePos++;
-            this.seekTime = 0;
+      this.trackAudioResource = Voice.createAudioResource(ytdl(this.trackList[this.queuePos].sourceLink, {
+        // seek: parseInt(begin.split('s')[0]),
+        begin: begin,
+        filter: 'audioonly'
+        // quality: 'highestaudio',
+        // highWaterMark: 1 << 25
+      }), {
+        metadata: this.trackList[this.queuePos],
+        inlineVolume: true
+      });
 
-            if (this.queuePos >= this.trackList.length) {
-              if (!this.loopQueue) {
-                this.playing = false;
-                this.subscription?.unsubscribe();
-                this.subscription = undefined;
-                this.connection?.disconnect();
-                return;
-              } else {
-                this.queuePos = 0;
-                this.play().then(msg => {
-                  if (msg) this.textChannel?.send(msg);
-                }, err => {
-                  err.message = `WARNING: Cannot play track! ${err.message}`;
-                  logError(err);
-                  this.skip().catch(err1 => {
-                    err1.message = `WARNING: Cannot skip track! ${err.message}`;
-                    logError(err1);
-                  });
-                });
-              }
-            }
-
-            this.play().then(msg => {
-              if (msg) this.textChannel?.send(msg);
-            }, err => {
-              err.message = `WARNING: Cannot play track! ${err.message}`;
-              logError(err);
-              this.skip().catch(err1 => {
-                err1.message = `WARNING: Cannot skip track! ${err.message}`;
-                logError(err1);
-              });
-            });
-          }
-        })
-        .on('error', err => {
-          repeated = repeated || 0;
-          if (repeated > 4) {
-            err.message = `Unable to play track after five attempts! ${err.message}`;
-            logError(err);
-            this.textChannel?.send('Unable to play that! Skipping...');
-            this.skip().then(msg => {
-              if (msg) this.textChannel?.send(msg);
-            }, err => {
-              err.message = `WARNING: Cannot play track after an unavailable one! ${err.message}`;
-              logError(err);
-            });
-          }
-
-          if (repeated === 0) log(`Error playing track, trying again! ${err.message}`);
-          this.play(this.timestamp, isSeek, ++repeated); // test the use of return
-        });
-
+      this.trackAudioPlayer.play(this.trackAudioResource);
       this.setVolume(this.volume);
       if (!isSeek && repeated === 0) return resolve(`Now playing **${this.trackList[this.queuePos].title}** [${ConvertSecToFormat(this.trackList[this.queuePos]?.duration)}], requested by **${this.trackList[this.queuePos].requestedBy}** at ${this.trackList[this.queuePos].requestTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`);
       else resolve();
@@ -691,7 +713,12 @@ export class Queue {
    * Get the current timestamp.
    */
   get timestamp () : number {
-    return Math.round((this.seekTime !== 0 ? this.seekTime : this.trackList[this.queuePos].startOffset) + (this.trackAudioPlayer.state.status === Voice.AudioPlayerStatus.Playing ? (this.trackAudioPlayer.state.playbackDuration / 1000) : 0));
+    return Math.round((this.seekTime !== 0
+      ? this.seekTime
+      : this.trackList[this.queuePos].startOffset) +
+      (this.trackAudioPlayer.state.status === Voice.AudioPlayerStatus.Playing && this.trackAudioResource
+        ? (this.trackAudioResource.playbackDuration / 1000)
+        : 0));
   }
 
   /**
@@ -738,10 +765,11 @@ export class Queue {
    * Set the volume of the player.
    * @param volumeAmount A number to set volume relative to a default value.
    */
-  async setVolume (_volumeAmount: number) : Promise<void> {
+  async setVolume (volumeAmount: number) : Promise<void> {
     // not sure how to implement now
-    // this.volume = volumeAmount;
-    // this.trackAudioResource.volume(this.volume);
+    if (!this.trackAudioResource?.volume) return;
+    this.volume = volumeAmount;
+    this.trackAudioResource.volume.setVolume(volumeAmount);
   }
 
   /**
@@ -936,7 +964,7 @@ export class Queue {
     }
 
     try {
-      this.connection = await connectVoice(this.voiceChannel);
+      this.connection = await connectVoice(this.voiceChannel).catch(err => Promise.reject(err));
     } catch (err) {
       return Promise.reject(err);
     }
@@ -989,7 +1017,7 @@ export class Queue {
     this.subscription?.unsubscribe();
     this.accentAudioPlayer.stop();
     this.connection?.destroy();
-    this.connection = null;
+    // this.connection = null;
     queueMap.delete(this.guildId);
   }
 }

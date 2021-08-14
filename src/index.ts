@@ -6,22 +6,22 @@ import { readdirSync, readFileSync } from 'fs';
 import { extname, join } from 'path';
 import { config, configObjectType } from './configFiles';
 import { log, logError } from './log';
-import { bomboModule, Message } from './types';
+import { bomboModule, Message, wait } from './types';
 
 export const DEFAULT_PREFIX = 'v3'; /////////// DEBUG VALUE
+
+let exiting = false;
+
+const NODE_REQ_MAJ = 16;
+const NODE_REQ_MIN = 6;
 
 /**
  * Ensure environement is running correct version of Node.JS for discord.js.
  */
-
-function checkNodeVersion () {
-  if (parseInt(process.versions.node.split('.')[0]) < 14) {
-    logError(Error('Use Node version 14.0.0 or greater!'));
-    exitHandler(-1);
-  } else log(`You're running node.js ${process.version}`);
-}
-
-checkNodeVersion();
+if (parseInt(process.versions.node.split('.')[0]) < NODE_REQ_MAJ || parseInt(process.versions.node.split('.')[1]) < NODE_REQ_MIN) {
+  logError(Error(`Use Node.js version v${NODE_REQ_MAJ}.${NODE_REQ_MIN}.0 or greater! You are running ${process.version}.`));
+  exitHandler(-1);
+} else log(`You're running Node.js ${process.version}`);
 
 /**
  * Extends base Discord Client clas by adding commands Collection. This allows all commands to be accessed .through the client.
@@ -38,7 +38,9 @@ class Client extends Discord.Client {
 }
 
 const client = new Client({
-  intents: ['GUILDS', 'GUILD_MESSAGES', 'GUILD_MESSAGE_REACTIONS', 'DIRECT_MESSAGES', 'DIRECT_MESSAGE_REACTIONS']
+  intents: [Discord.Intents.FLAGS.GUILDS, Discord.Intents.FLAGS.GUILD_MESSAGES,
+    Discord.Intents.FLAGS.GUILD_MESSAGE_REACTIONS, Discord.Intents.FLAGS.DIRECT_MESSAGES,
+    Discord.Intents.FLAGS.GUILD_VOICE_STATES]
   // disableMentions: 'all',
   // messageCacheLifetime: 120,
   // messageSweepInterval: 60
@@ -57,10 +59,10 @@ if (process.env.TOKEN) {
 }
 
 // Add commands to collection
-const commandFiles = readdirSync(`${join(process.cwd(), 'built', 'src', 'commands')}`).filter(file => extname(file) === '.js');
+const commandFiles = readdirSync(`${join(process.cwd(), 'build', 'src', 'commands')}`).filter(file => extname(file) === '.js');
 for (const file of commandFiles) {
   // const command = require(`${join(process.cwd(), 'src', 'commands', file)}`);
-  import(`${join(process.cwd(), 'built', 'src', 'commands', file)}`).then((command: { module: bomboModule }) => {
+  import(`${join(process.cwd(), 'build', 'src', 'commands', file)}`).then((command: { module: bomboModule }) => {
     client.commands.set(command.module.name, command.module);
   }, err => {
     err.message = `WARNING: Could not load ${file}! ${err.message}`;
@@ -118,7 +120,7 @@ client.on('messageCreate', async (message: Message) => {
             if (guildConfig.botChannels.size !== 0 && !guildConfig.botChannels.has(message.channel.id)) {
               if (message.content.split(' ')[0].toLowerCase().slice(prefix.length).trim() === 'togglebotchannel') return resolve(guildConfig);
               message.channel.send(`Please use a bot channel to interact with me, such as ${guildConfig.botChannels.values().next().value.name}`).then(reply => {
-                setTimeout(() => {
+                wait(10 * 1000).then(() => {
                   try {
                     reply.delete();
                     message.delete();
@@ -126,12 +128,12 @@ client.on('messageCreate', async (message: Message) => {
                     err.message = `WARNING: Unable to delete message! Has it already been deleted? ${err.message}`;
                     logError(err);
                   }
-                }, 10 * 1000);
+                }).catch(err => reject(err));
               });
               isCommand = false; // to skip execution
               return resolve(guildConfig);
             } else if (!queue.textChannel) {
-              if (message.channel instanceof Discord.BaseGuildTextChannel) queue.textChannel = message.channel; // as queue is defined message channel is guild type
+              if (message.channel instanceof Discord.TextChannel) queue.textChannel = message.channel; // as queue is defined message channel is guild type
               return resolve(guildConfig);
             }
           }
@@ -160,7 +162,7 @@ client.on('messageCreate', async (message: Message) => {
                     logError(moduleError);
                     // return reject(moduleError); // Harsh to reject when autoaccent doesn't work
                   }
-                });
+                }, err => reject(err));
               }
             }
           }
@@ -169,7 +171,7 @@ client.on('messageCreate', async (message: Message) => {
       })
       .catch(err => {
         if (err) {
-          isCommand = false;
+          // isCommand = false;
           err.message = `WARNING: Cannot update config file! ${err.message}`;
           logError(err);
         }
@@ -197,15 +199,15 @@ client.on('messageCreate', async (message: Message) => {
 
   if (command.textBound && queue && queue.textChannel && message.channel.id !== queue.textChannel.id) {
     message.channel.send(`Bot is bound to ${queue.textChannel.name}, please use this channel to queue!`).then(botMsg => {
-      setTimeout(() => {
+      wait(10 * 1000).then(() => {
         try {
           botMsg.delete();
           message.delete();
         } catch (err) {
           log('Unable to delete a text channel-bound command request...');
         }
-      }, 10 * 1000);
-    });
+      }).catch(err => logError(err));
+    }, err => { err.message = `WARNING: Cannot send message! ${err.message}`; logError(err); });
   }
 
   if (!command.dmCompatible && message.channel.type === 'DM') {
@@ -221,7 +223,7 @@ client.on('messageCreate', async (message: Message) => {
     return;
   }
 
-  const voiceChannel = member?.voice.channel;
+  const voiceChannel = message.member?.voice.channel;
   if (command.voiceConnection && !voiceChannel) {
     message.reply('please join a voice channel to perform this action!');
     return;
@@ -234,24 +236,23 @@ client.on('messageCreate', async (message: Message) => {
     message.channel.send('I need permissions to join and speak in your voice channel!');
     return;
   }
-  try {
-    command.execute(message, args);
-  } catch (err) { // If any exceptions are thrown during the execution of a command, stop running the command and run the following
+  command.execute(message, args).catch(err => { // If any exceptions are thrown during the execution of a command, stop running the command and run the following
     err.message = `SEVERE: Execution of "${commandName}" stopped! ${err.message}`;
     logError(err); // For example when running a guild-related query in a DM environment without setting guildOnly to true.
     message.reply('there was an error trying to execute that command!');
-  }
+  });
 });
-
-let exiting = false;
 
 /**
  * Gracefully shutdown: ensures client disconnection from voice channels and logs uptime.
  * @param code exit code
  */
-
 function exitHandler (code: number | undefined = undefined) {
-  if (!exiting) {
+  if (code === -1) { // incompatible node version
+    log('Shutting down bot!');
+    process.exitCode = -1;
+    process.exit();
+  } else if (!exiting) {
     exiting = true;
     for (const queue of queueMap) queue[1].clean();
     client.destroy();
@@ -280,8 +281,13 @@ process.on('SIGINT', () => {
 
 process.on('SIGTERM', () => exitHandler(0));
 
-process.on('multipleResolves', (type, promise, reason) =>
-  log(`Multiple promise resolutions! ${type} ${promise} with message ${reason}`));
+process.on('multipleResolves', (type, _promise, reason) => {
+  let errMessage;
+  if (reason instanceof Error) errMessage = `${reason.message} at ${reason.stack}`;
+  else errMessage = reason;
+
+  log(`Multiple promise resolutions! ${type} with message: ${errMessage}`);
+});
 
 process.on('uncaughtException', (err: Error) => {
   err.message = `FATAL: Uncaught Exception: ${err.message}`;

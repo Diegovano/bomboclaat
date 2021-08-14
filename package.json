@@ -2,24 +2,27 @@
   "name": "bomboclaat",
   "version": "3.0.0dev",
   "description": "A Discord bot using discord.js",
-  "main": "./built/src/index.js",
+  "main": "./build/src/index.js",
   "dependencies": {
-    "@discordjs/opus": "^0.3.3",
+    "@discordjs/opus": "^0.5.3",
+    "@discordjs/voice": "^0.5.6",
     "chokidar": "^3.5.2",
-    "discord.js": "^13.0.0-dev.t1628165339.3eb4140",
-    "googleapis": "^66.0.0",
-    "semistandard": "^16.0.1",
-    "ytdl-core": "^4.8.3"
+    "discord-ytdl-core": "^5.0.4",
+    "discord.js": "^13.0.1",
+    "ffmpeg-static": "^4.4.0",
+    "googleapis": "^84.0.0",
+    "tweetnacl": "^1.0.3",
+    "typescript": "^4.3.5",
+    "ytdl-core": "^4.9.1"
   },
   "devDependencies": {
-    "@discordjs/voice": "^0.5.5",
-    "@typescript-eslint/eslint-plugin": "^4.28.5",
-    "@typescript-eslint/parser": "^4.28.5",
-    "discord-ytdl-core": "^5.0.4",
-    "eslint": "^7.30.0",
-    "eslint-config-semistandard": "^15.0.1",
-    "typedoc": "^0.21.5",
-    "typescript": "^4.3.5"
+    "@typescript-eslint/eslint-plugin": "^4.29.1",
+    "@typescript-eslint/parser": "^4.29.1",
+    "eslint": "^7.32.0",
+    "eslint-config-semistandard": "^16.0.0",
+    "semistandard": "^16.0.1",
+    "source-map-support": "^0.5.19",
+    "typedoc": "^0.21.5"
   },
   "scripts": {
     "start": "tsc && node ./built/src/index.js",
