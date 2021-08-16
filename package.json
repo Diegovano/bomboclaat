@@ -2,11 +2,11 @@
   "name": "bomboclaat",
   "version": "3.0.0dev",
   "description": "A Discord bot using discord.js",
-  "main": "./built/src/index.js",
+  "main": "./build/src/index.js",
   "dependencies": {
     "@discordjs/opus": "^0.3.3",
     "chokidar": "^3.5.2",
-    "discord.js": "^13.0.0-dev.t1628165339.3eb4140",
+    "discord.js": "^13.1.0",
     "googleapis": "^66.0.0",
     "semistandard": "^16.0.1",
     "ytdl-core": "^4.8.3"
@@ -16,19 +16,19 @@
     "@typescript-eslint/eslint-plugin": "^4.28.5",
     "@typescript-eslint/parser": "^4.28.5",
     "discord-ytdl-core": "^5.0.4",
-    "eslint": "^7.30.0",
     "eslint-config-semistandard": "^15.0.1",
     "typedoc": "^0.21.5",
     "typescript": "^4.3.5"
   },
   "scripts": {
-    "start": "tsc && node ./built/src/index.js",
-    "test": "semistandard",
-    "run": "node ./built/src/index.js"
+    "start": "tsc && node ./build/src/index.js",
+    "test": "semistandard --parser @typescript-eslint/parser --plugin @typescript-eslint/eslint-plugin src/**/*.ts",
+    "test-fix": "semistandard --fix --parser @typescript-eslint/parser --plugin @typescript-eslint/eslint-plugin src/**/*.ts",
+    "run": "node ./build/src/index.js"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/hechawk/bomboclaat.git"
+    "url": "git+https://github.com/Diegovano/bomboclaat.git"
   },
   "keywords": [
     "bot",
@@ -37,7 +37,7 @@
   "author": "Hector, Gabriele, Diego, Alec",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/hechawk/bomboclaat/issues"
+    "url": "https://github.com/Diegovano/bomboclaat/issues"
   },
-  "homepage": "https://github.com/hechawk/bomboclaat#readme"
+  "homepage": "https://github.com/Diegovano/bomboclaat#readme"
 }

@@ -8,7 +8,7 @@ import { config, configObjectType } from './configFiles';
 import { log, logError } from './log';
 import { bomboModule, Message } from './types';
 
-export const DEFAULT_PREFIX = 'v3'; /////////// DEBUG VALUE
+export const DEFAULT_PREFIX = 'v3'; /// //////// DEBUG VALUE
 
 /**
  * Ensure environement is running correct version of Node.JS for discord.js.
@@ -24,7 +24,7 @@ function checkNodeVersion () {
 checkNodeVersion();
 
 /**
- * Extends base Discord Client clas by adding commands Collection. This allows all commands to be accessed .through the client.
+ * Extends base Discord Client class by adding commands Collection. This allows all commands to be accessed through the client.
  * @extends Discord.Client
  */
 
@@ -57,10 +57,10 @@ if (process.env.TOKEN) {
 }
 
 // Add commands to collection
-const commandFiles = readdirSync(`${join(process.cwd(), 'built', 'src', 'commands')}`).filter(file => extname(file) === '.js');
+const commandFiles = readdirSync(`${join(process.cwd(), 'build', 'src', 'commands')}`).filter(file => extname(file) === '.js');
 for (const file of commandFiles) {
   // const command = require(`${join(process.cwd(), 'src', 'commands', file)}`);
-  import(`${join(process.cwd(), 'built', 'src', 'commands', file)}`).then((command: { module: bomboModule }) => {
+  import(`${join(process.cwd(), 'build', 'src', 'commands', file)}`).then((command: { module: bomboModule }) => {
     client.commands.set(command.module.name, command.module);
   }, err => {
     err.message = `WARNING: Could not load ${file}! ${err.message}`;
@@ -131,7 +131,7 @@ client.on('messageCreate', async (message: Message) => {
               isCommand = false; // to skip execution
               return resolve(guildConfig);
             } else if (!queue.textChannel) {
-              if (message.channel instanceof Discord.BaseGuildTextChannel) queue.textChannel = message.channel; // as queue is defined message channel is guild type
+              if (message.channel instanceof Discord.TextChannel) queue.textChannel = message.channel; // as queue is defined message channel is guild type
               return resolve(guildConfig);
             }
           }
@@ -188,7 +188,11 @@ client.on('messageCreate', async (message: Message) => {
   try {
     command = client.commands.get(commandName) ||
               client.commands.find(cmd => cmd.aliases?.includes(commandName) ?? false);
-    if (!command) throw Error();
+    if (!command) {
+      log(`Command "${commandName}" doesn't exist!`);
+      message.reply('sorry, unable to find command...');
+      return;
+    }
   } catch (_err) { // Catches the exception that could be thrown should the try block not find the command
     log(`Command "${commandName}" doesn't exist!`);
     message.reply('sorry, unable to find command...');
