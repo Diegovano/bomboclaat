@@ -20,31 +20,20 @@ export class Message extends Discord.Message {
 export interface bomboModule {
 
   /**
-   * The name of the command, used to display in the help embed for example.
+   * The name of the command, used to display in the slash command tab.
    */
   readonly name: string;
 
   /**
-   * Array of aliases that can be used to reference this command. Caution, there is no check for duplicate aliases.
-   * If two commands have identical aliases unexpected behaviour could occur.
+   * Description of the command used for the slash command.
    */
-  readonly aliases?: string[];
+  readonly description: string;
 
   /**
-   * Description of the command used in the help embed.
+   * The individual arguments and choices for the slash command.
    */
-  readonly description?: string;
-
-  /**
-   * The number of arguments to check the user has entered. For no argument check, use `null`.
-   */
-  readonly args: number | null;
-
-  /**
-   * If args is not null, explain what each arg is, whether it is optional (using `[` and `]` around a description
-   * of the argument) for mandatory arguments use `<` and `>`.
-   */
-  readonly usage: string | null;
+  readonly slashCommand: unknown;
+  // SlashCommandBuilder
 
   /**
    * Whether or not the command can be used outside of guilds. Even with this property correctly set, an `if`
@@ -65,11 +54,15 @@ export interface bomboModule {
   readonly textBound: boolean;
 
   /**
-   * Run the bomboModule command asynchronously.
-   * @param message the message that invoked the command
-   * @param args the arguments that the user may or may not have given
+   * Will ignore bot channel and allow the command to be run anywhere.
    */
-  execute(message: Message, args: string[]): Promise<void>;
+  readonly ignoreBotChannel: boolean;
+
+  /**
+   * Run the bomboModule command asynchronously.
+   * @param interaction The Interaction that started the command.
+   */
+  execute(interaction: Discord.CommandInteraction): Promise<void>;
 }
 
 /**

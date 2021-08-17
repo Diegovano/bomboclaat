@@ -7,6 +7,8 @@ import { extname, join } from 'path';
 import { config, configObjectType } from './configFiles';
 import { log, logError } from './log';
 import { bomboModule, Message } from './types';
+import { REST } from '@discordjs/rest';
+import { Routes } from 'discord-api-types/v9';
 
 export const DEFAULT_PREFIX = 'v3'; /// //////// DEBUG VALUE
 
@@ -44,7 +46,7 @@ const client = new Client({
   // messageSweepInterval: 60
 });
 
-let token;
+let token: string| undefined;
 if (process.env.TOKEN) {
   token = process.env.TOKEN;
 } else {
@@ -58,16 +60,43 @@ if (process.env.TOKEN) {
 
 // Add commands to collection
 const commandFiles = readdirSync(`${join(process.cwd(), 'build', 'src', 'commands')}`).filter(file => extname(file) === '.js');
+const clientId = '697504121795641455';
+const guildId = '684842282926473287';
+const commands: JSON[] = [];
+const imports: Promise<void>[] = [];
 for (const file of commandFiles) {
   // const command = require(`${join(process.cwd(), 'src', 'commands', file)}`);
-  import(`${join(process.cwd(), 'build', 'src', 'commands', file)}`).then((command: { module: bomboModule }) => {
+
+  imports.push(import(`${join(process.cwd(), 'build', 'src', 'commands', file)}`).then((command: { module: bomboModule }) => {
     client.commands.set(command.module.name, command.module);
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    commands.push((command.module.slashCommand.setName(command.module.name).setDescription(command.module.description)).toJSON());
   }, err => {
     err.message = `WARNING: Could not load ${file}! ${err.message}`;
     logError(err);
-  });
+  }));
 }
 
+Promise.allSettled([imports]).then(() => {
+  if (token) {
+    const rest = new REST({ version: '9' }).setToken(token);
+
+    (async () => {
+      try {
+        console.log('Started refreshing application slash commands.');
+
+        await rest.put(
+          Routes.applicationGuildCommands(clientId, guildId), { body: commands }
+        );
+
+        console.log('Successfully reloaded application slash commands.');
+      } catch (error) {
+        console.error(error);
+      }
+    })();
+  }
+});
 async function initialiseGuildConfig (guildConfig: configObjectType | null, message: Discord.Message) {
   return new Promise<{ guildConfig: configObjectType | null, msg: string | null }>((resolve, reject) => {
     if (!guildConfig) return resolve({ guildConfig: null, msg: null });
@@ -85,16 +114,10 @@ client.once('ready', () => log('Ready!'));
 client.on('messageCreate', async (message: Message) => {
   if (message.author.bot) return;
 
-  let isCommand = false;
-
   const guild = message.guild;
   const member = message.member;
-  let guildConf: null | configObjectType = null;
-
-  if (message.channel.type !== 'GUILD_TEXT' || !guild || !member) {
-    if (!message.content.startsWith(DEFAULT_PREFIX)) return;
-  } else {
-    guildConf = await config.get(guild) // setup guild in config file
+  if ((message.channel instanceof Discord.TextChannel) && guild && member) {
+    return await config.get(guild) // setup guild in config file
       .then(async guildConfig => initialiseGuildConfig(guildConfig, message), err => {
         err.message = `WARNING: Unable to read guildConfig but attempting to continue! ${err.message}`;
         logError(err);
@@ -102,148 +125,93 @@ client.on('messageCreate', async (message: Message) => {
       })
       .then(async previous => {
         const guildConfig = previous.guildConfig;
-        const responseMessage = previous.msg;
+        // const responseMessage = previous.msg;
+        //
+        // const prefix = guildConfig ? guildConfig.prefix : DEFAULT_PREFIX;
+        // const queue = getQueue(guild);
+        // const clientGuildMem = message.client.user ? guild.members.fetch(message.client.user.id) : null;
 
-        const prefix = guildConfig ? guildConfig.prefix : DEFAULT_PREFIX;
-        const queue = getQueue(guild);
-        const clientGuildMem = message.client.user ? guild.members.fetch(message.client.user.id) : null;
-
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         return new Promise<configObjectType | null>((resolve, reject) => {
-          if (responseMessage) message.channel.send(responseMessage);
-
-          if (message.content.startsWith(prefix)) isCommand = true;
-
-          // check here if message is sent in bot channel if set-up
-          if (isCommand && guildConfig) {
-            if (guildConfig.botChannels.size !== 0 && !guildConfig.botChannels.has(message.channel.id)) {
-              if (message.content.split(' ')[0].toLowerCase().slice(prefix.length).trim() === 'togglebotchannel') return resolve(guildConfig);
-              message.channel.send(`Please use a bot channel to interact with me, such as ${guildConfig.botChannels.values().next().value.name}`).then(reply => {
-                setTimeout(() => {
-                  try {
-                    reply.delete();
-                    message.delete();
-                  } catch (err) {
-                    err.message = `WARNING: Unable to delete message! Has it already been deleted? ${err.message}`;
-                    logError(err);
-                  }
-                }, 10 * 1000);
-              });
-              isCommand = false; // to skip execution
-              return resolve(guildConfig);
-            } else if (!queue.textChannel) {
-              if (message.channel instanceof Discord.TextChannel) queue.textChannel = message.channel; // as queue is defined message channel is guild type
-              return resolve(guildConfig);
-            }
-          }
-
-          const userAccent = guildConfig?.accents.get(message.author.id) ?? { user: 'none', accent: 'none' }; // in case undefined, use no accent
-
-          // auto-accent
-          if (!isCommand && guildConfig?.autoAccent && userAccent.accent !== 'none') {
-            if (!queue.voiceChannel && member.voice.channel) {
-              queue.setVoiceChannel(member.voice.channel);
-            }
-
-            if (queue.voiceChannel && queue.voiceChannel.members.has(message.author.id)) {
-              if (clientGuildMem) {
-                clientGuildMem.then(member => {
-                  if (member && queue.voiceChannel && !queue.voiceChannel.permissionsFor(member).has(['CONNECT', 'SPEAK'])) {
-                    message.channel.send('I need permissions to join and speak in your voice channel!');
-                    return reject(Error('Insufficient Permissions'));
-                  }
-
-                  const args = [userAccent.accent, message.content];
-                  const accentFunc = client.commands.get('accent');
-                  if (accentFunc) accentFunc.execute(message, args);
-                  else {
-                    const moduleError = Error('WARNING: Cannot execute "accent" bombo module!');
-                    logError(moduleError);
-                    // return reject(moduleError); // Harsh to reject when autoaccent doesn't work
-                  }
-                });
-              }
-            }
-          }
+          // if (responseMessage) message.channel.send(responseMessage);
+          //
+          // if (message.content.startsWith(prefix)) isCommand = true;
+          //
+          // const userAccent = guildConfig?.accents.get(message.author.id) ?? { user: 'none', accent: 'none' }; // in case undefined, use no accent
+          //
+          // // auto-accent
+          // if (!isCommand && guildConfig?.autoAccent && userAccent.accent !== 'none') {
+          //   if (!queue.voiceChannel && member.voice.channel) {
+          //     queue.setVoiceChannel(member.voice.channel);
+          //   }
+          //
+          //   if (queue.voiceChannel && queue.voiceChannel.members.has(message.author.id)) {
+          //     if (clientGuildMem) {
+          //       clientGuildMem.then(member => {
+          //         if (member && queue.voiceChannel && !queue.voiceChannel.permissionsFor(member).has(['CONNECT', 'SPEAK'])) {
+          //           message.channel.send('I need permissions to join and speak in your voice channel!');
+          //           return reject(Error('Insufficient Permissions'));
+          //         }
+          //
+          //         const args = [userAccent.accent, message.content];
+          //         const accentFunc = client.commands.get('accent');
+          //         if (accentFunc) accentFunc.execute(message, args);
+          //         else {
+          //           const moduleError = Error('WARNING: Cannot execute "accent" bombo module!');
+          //           logError(moduleError);
+          //           // return reject(moduleError); // Harsh to reject when autoaccent doesn't work
+          //         }
+          //       });
+          //     }
+          //   }
+          // }
           return resolve(guildConfig);
         });
       })
       .catch(err => {
         if (err) {
-          isCommand = false;
           err.message = `WARNING: Cannot update config file! ${err.message}`;
           logError(err);
         }
       }) ?? null;
   }
+});
 
-  if (!isCommand) return;
-
-  const queue = guild ? getQueue(guild) : null;
-
-  const args = message.content.slice(guildConf?.prefix.length ?? DEFAULT_PREFIX.length).trim().split(/ +/);
-  const commandName = args.shift()?.toLowerCase() ?? '';
-
-  let command: bomboModule | undefined;
-
-  try {
-    command = client.commands.get(commandName) ||
-              client.commands.find(cmd => cmd.aliases?.includes(commandName) ?? false);
-    if (!command) {
-      log(`Command "${commandName}" doesn't exist!`);
-      message.reply('sorry, unable to find command...');
-      return;
-    }
-  } catch (_err) { // Catches the exception that could be thrown should the try block not find the command
-    log(`Command "${commandName}" doesn't exist!`);
-    message.reply('sorry, unable to find command...');
+client.on('interactionCreate', async interaction => {
+  if (!interaction.isCommand()) return;
+  const command: bomboModule | undefined = client.commands.get(interaction.commandName);
+  if (!command) {
+    logError(new Error(`Command "${interaction.commandName}" doesn't exist!`));
     return;
   }
-
-  if (command.textBound && queue && queue.textChannel && message.channel.id !== queue.textChannel.id) {
-    message.channel.send(`Bot is bound to ${queue.textChannel.name}, please use this channel to queue!`).then(botMsg => {
-      setTimeout(() => {
-        try {
-          botMsg.delete();
-          message.delete();
-        } catch (err) {
-          log('Unable to delete a text channel-bound command request...');
-        }
-      }, 10 * 1000);
-    });
+  const guildConfig = interaction.guild ? await config.get(interaction.guild) : null;
+  const queue = interaction.guild ? getQueue(interaction.guild) : null;
+  if (queue && !queue.textChannel && interaction.channel instanceof Discord.TextChannel) {
+    queue.textChannel = interaction.channel;
   }
 
-  if (!command.dmCompatible && message.channel.type === 'DM') {
-    message.reply('I can\'t execute that command inside DMs!');
-    return;
-  }
-
-  if (command.args && args.length < command.args) { // If command requires arguments and user supplied none
-    let reply = `You didn't provide correct arguments, ${message.author}!`;
-    reply += `\nThe proper usage would be: \`${guildConf?.prefix ?? DEFAULT_PREFIX}${command.name} ${command.usage}\``;
-
-    message.channel.send(reply);
-    return;
-  }
-
-  const voiceChannel = member?.voice.channel;
-  if (command.voiceConnection && !voiceChannel) {
-    message.reply('please join a voice channel to perform this action!');
-    return;
-  }
-  if (command.voiceConnection &&
-            voiceChannel &&
-            message.client.user &&
-            (!voiceChannel.permissionsFor(message.client.user)?.has(['CONNECT', 'SPEAK']) ?? false)) {
+  if (!command.ignoreBotChannel && interaction.member instanceof Discord.GuildMember && guildConfig && guildConfig.botChannels.size !== 0 && interaction.channel?.id && !guildConfig.botChannels.has(interaction.channel.id)) {
+    interaction.reply({ content: `Please use a bot channel to interact with me, such as ${guildConfig.botChannels.values().next().value.name}`, ephemeral: true });
+  } else if (command.textBound && queue && queue.textChannel && interaction.channel?.id !== queue.textChannel.id) {
+    interaction.reply({ content: `Bot is bound to ${queue.textChannel.name}, please use this channel to queue!`, ephemeral: true });
+  } else if (!command.dmCompatible && interaction.channel instanceof Discord.DMChannel) {
+    interaction.reply('I can\'t execute that command inside DMs!');
+  } else if (command.voiceConnection && interaction.member instanceof Discord.GuildMember && interaction.member.voice.channel) {
+    interaction.reply({ content: 'Please join a voice channel to perform this action!', ephemeral: true });
+    // eslint-disable-next-line no-dupe-else-if
+  } else if (command.voiceConnection &&
+      interaction.member instanceof Discord.GuildMember && interaction.member.voice.channel &&
+      interaction.client.user &&
+      (!interaction.member.voice.channel.permissionsFor(interaction.client.user)?.has(['CONNECT', 'SPEAK']) ?? false)) {
     // check permissions exist on bot user, if not assume no permissions
-    message.channel.send('I need permissions to join and speak in your voice channel!');
-    return;
-  }
-  try {
-    command.execute(message, args);
-  } catch (err) { // If any exceptions are thrown during the execution of a command, stop running the command and run the following
-    err.message = `SEVERE: Execution of "${commandName}" stopped! ${err.message}`;
-    logError(err); // For example when running a guild-related query in a DM environment without setting guildOnly to true.
-    message.reply('there was an error trying to execute that command!');
+    interaction.reply('I need permissions to join and speak in your voice channel!');
+  } else {
+    try {
+      command.execute(interaction);
+    } catch (err) { // If any exceptions are thrown during the execution of a command, stop running the command and run the following
+      err.message = `SEVERE: Execution of "${interaction.commandName}" stopped! ${err.message}`;
+      logError(err); // For example when running a guild-related query in a DM environment without setting guildOnly to true.
+    }
   }
 });
 

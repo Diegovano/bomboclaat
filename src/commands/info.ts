@@ -2,19 +2,20 @@
 
 import * as Discord from 'discord.js';
 import { bomboModule } from '../types';
+import { SlashCommandBuilder } from '@discordjs/builders';
 
 export const module: bomboModule = {
   name: 'personinfo',
-  aliases: ['person', 'pinfo'],
   description: 'Gives critical information about the person.',
-  args: null,
-  usage: null,
   dmCompatible: true,
   voiceConnection: false,
   textBound: false,
-  async execute (message, _args) {
+  ignoreBotChannel: false,
+  slashCommand: new SlashCommandBuilder().addUserOption(option => option.setName('person').setDescription('The person you would like to see info about.').setRequired(false)),
+  async execute (interaction) {
     let sexuality = 'Straight';
-    switch (message.author.username) {
+    const user = interaction.options.getUser('person') ?? interaction.user;
+    switch (user.username) {
       case 'Powered By Salt':
         sexuality = 'curvy';
         break;
@@ -42,13 +43,13 @@ export const module: bomboModule = {
 
     const embed = new Discord.MessageEmbed()
       .setTitle('User Info')
-      .addField('Playername', message.author.username)
+      .addField('Playername', user.username)
       .addField('Sexuality', sexuality)
       .setColor(0xF1C40F)
-      .setThumbnail(message.author.displayAvatarURL());
+      .setThumbnail(user.displayAvatarURL());
 
-    if (message.guild) embed.addField('Your favourite server is:', message.guild.name);
+    if (interaction.guild) embed.addField('Your favourite server is:', interaction.guild.name);
 
-    message.channel.send({ embeds: [embed] });
+    interaction.reply({ embeds: [embed] });
   }
 };
