@@ -1,20 +1,20 @@
 'use strict';
 
 import { getQueue } from '../audio';
-import { bomboModule } from '../types';
+import { bomboModule, VoiceCInteraction } from '../types';
+import { SlashCommandBuilder } from '@discordjs/builders';
 
 export const module: bomboModule = {
   name: 'shuffle',
   description: 'figure it out yourself it\'s not rocket science',
-  args: null,
-  usage: null,
   dmCompatible: false,
   voiceConnection: true,
   textBound: true,
-  async execute (message, _args) {
-    if (!message.guild) return;
-    const currentQueue = getQueue(message.guild);
+  ignoreBotChannel: false,
+  slashCommand: new SlashCommandBuilder(),
+  async execute (interaction:VoiceCInteraction) {
+    const currentQueue = getQueue(interaction.guild);
 
-    currentQueue.shuffle().then(response => message.channel.send(response));
+    currentQueue.shuffle().then(response => interaction.reply(response));
   }
 };

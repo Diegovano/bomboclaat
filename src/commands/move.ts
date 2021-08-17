@@ -1,32 +1,31 @@
 'use strict';
 
 import { getQueue } from '../audio';
-import { bomboModule } from '../types';
+import { bomboModule, VoiceCInteraction } from '../types';
 import { logError } from '../log';
+import { SlashCommandBuilder } from '@discordjs/builders';
 
 export const module: bomboModule = {
   name: 'move',
   description: 'Moves a track to a certain position in the queue',
-  args: 2,
-  usage: '<track position> <new position>',
+  slashCommand: new SlashCommandBuilder().addIntegerOption(option => option.setName('from').setDescription('Move track from').setRequired(true))
+    .addIntegerOption(option => option.setName('to').setDescription('Move track to').setRequired(true)),
   dmCompatible: false,
   voiceConnection: true,
   textBound: true,
-  async execute (message, args) {
-    if (!message.guild) return;
-    const currentQueue = getQueue(message.guild);
+  ignoreBotChannel: false,
+  async execute (interaction:VoiceCInteraction) {
+    const currentQueue = getQueue(interaction.guild);
 
-    const from = parseInt(args[0]);
-    const to = parseInt(args[1]);
-
-    if (isNaN(from) || isNaN(to)) message.channel.send('Cannot move track! Arguments must be numbers.');
+    const from = interaction.options.getInteger('from', true);
+    const to = interaction.options.getInteger('to', true);
 
     currentQueue.move(from - 1, to - 1).then(msg => {
-      if (msg) message.channel.send(msg);
+      if (msg) interaction.reply(msg);
     }, err => {
       err.message = `WARNING: Cannot move tracks! ${err.message}`;
       logError(err);
-      message.channel.send('Cannot move track!');
+      interaction.reply('Cannot move track!');
     });
   }
 };

@@ -9,9 +9,10 @@
     "@discordjs/rest": "^0.1.0-canary.0",
     "chokidar": "^3.5.2",
     "discord.js": "^13.1.0",
+    "ffmpeg-static": "^4.4.0",
     "googleapis": "^66.0.0",
     "semistandard": "^16.0.1",
-    "ytdl-core": "^4.8.3"
+    "ytdl-core": "^4.9.1"
   },
   "devDependencies": {
     "@discordjs/voice": "^0.5.5",
@@ -20,11 +21,14 @@
     "@typescript-eslint/parser": "^4.28.5",
     "discord-ytdl-core": "^5.0.4",
     "eslint-config-semistandard": "^15.0.1",
+    "rimraf": "^3.0.2",
     "typedoc": "^0.21.5",
     "typescript": "^4.3.5"
   },
   "scripts": {
     "start": "tsc && node ./build/src/index.js",
+    "clean": "rimraf ./build && tsc && node ./build/src/index.js",
+    "debug": "node --trace-warnings ./build/src/index.js",
     "test": "semistandard --parser @typescript-eslint/parser --plugin @typescript-eslint/eslint-plugin src/**/*.ts",
     "test-fix": "semistandard --fix --parser @typescript-eslint/parser --plugin @typescript-eslint/eslint-plugin src/**/*.ts",
     "run": "node ./build/src/index.js"

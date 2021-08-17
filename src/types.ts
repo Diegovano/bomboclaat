@@ -1,4 +1,6 @@
 import * as Discord from 'discord.js';
+import { SlashCommandBuilder } from '@discordjs/builders/dist/interactions/slashCommands/SlashCommandBuilder';
+import { StageChannel, TextBasedChannels, TextChannel, VoiceChannel } from 'discord.js';
 
 /**
  * Extension of discord.js's Message class, uses custom client with commands collection to allow access to all commands.
@@ -13,6 +15,58 @@ export class Message extends Discord.Message {
     this.client = client;
   }
 }
+
+/**
+ * Extension of discord.js's Interaction class, uses custom client with commands collection to allow access to all commands.
+ * @extends Discord.Interaction
+ */
+export class Interaction extends Discord.Interaction {
+  // eslint-disable-next-line no-use-before-define
+  client: Client;
+  // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types, @typescript-eslint/no-explicit-any
+  constructor (client: Client, data: any) { // cannot access APIMessage type
+    super(client, data);
+    this.client = client;
+  }
+}
+
+/**
+ * Extension of discord.js's Command Interaction class, uses custom client with commands collection to allow access to all commands.
+ * @extends Discord.CommandInteraction
+ */
+export class CommandInteraction extends Discord.CommandInteraction {
+  // eslint-disable-next-line no-use-before-define
+  client: Client;
+  // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types, @typescript-eslint/no-explicit-any
+  constructor (client: Client, data: any) { // cannot access APIMessage type
+    super(client, data);
+    this.client = client;
+  }
+}
+
+export interface CInteraction extends CommandInteraction {
+  member: Discord.GuildMember
+  readonly channel: TextBasedChannels
+}
+
+interface _GuildCInteraction extends CInteraction {
+  readonly guild: Discord.Guild
+  readonly channel: TextChannel
+}
+
+interface VoiceState extends Discord.VoiceState {
+  readonly channel: VoiceChannel | StageChannel
+}
+
+interface GuildMember extends Discord.GuildMember {
+  readonly voice: VoiceState
+}
+
+export interface VoiceCInteraction extends _GuildCInteraction {
+  readonly member: GuildMember
+}
+
+export type GuildCInteraction = _GuildCInteraction | VoiceCInteraction
 
 /**
  * Type of all bomboclaat modules. These modules are loaded from the `./commands` folder.
@@ -32,7 +86,7 @@ export interface bomboModule {
   /**
    * The individual arguments and choices for the slash command.
    */
-  readonly slashCommand: unknown;
+  readonly slashCommand: Omit<SlashCommandBuilder, 'addSubcommand' | 'addSubcommandGroup'>;
   // SlashCommandBuilder
 
   /**
@@ -63,6 +117,10 @@ export interface bomboModule {
    * @param interaction The Interaction that started the command.
    */
   execute(interaction: Discord.CommandInteraction): Promise<void>;
+  execute(interaction: CInteraction): Promise<void>;
+  execute(interaction: GuildCInteraction): Promise<void>;
+  execute(interaction: VoiceCInteraction): Promise<void>;
+
 }
 
 /**

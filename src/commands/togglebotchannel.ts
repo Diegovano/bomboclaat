@@ -1,51 +1,48 @@
 'use strict';
 
-import { TextChannel } from 'discord.js';
 import { config } from '../configFiles';
 import { logError } from '../log.js';
-import { bomboModule } from '../types';
+import { bomboModule, GuildCInteraction } from '../types';
+import { SlashCommandBuilder } from '@discordjs/builders';
 
 export const module: bomboModule = {
   name: 'togglebotchannel',
   description: 'Mark this channel as a bot channel, or vice-versa',
-  args: null,
-  usage: null,
+  slashCommand: new SlashCommandBuilder(),
   dmCompatible: false,
   voiceConnection: false,
   textBound: false,
-  async execute (message, _args) {
-    if (!message.guild || !(message.channel instanceof TextChannel)) return;
-    const objectHandle = await config.get(message.guild);
+  ignoreBotChannel: true,
+  async execute (interaction:GuildCInteraction) {
+    const objectHandle = await config.get(interaction.guild);
 
     if (!objectHandle) throw Error('Guild not initialised!');
 
     // if (objectHandle.botChannels.findIndex(element => element.id === message.channel.id) === -1)
-    if (!objectHandle.botChannels.get(message.channel.id)) {
+    if (!objectHandle.botChannels.get(interaction.channel.id)) {
       const botChannelObject =
             {
-              name: message.channel.name,
-              topic: message.channel.topic
+              name: interaction.channel.name,
+              topic: interaction.channel.topic
             };
 
-      objectHandle.botChannels.set(message.channel.id, botChannelObject);
+      objectHandle.botChannels.set(interaction.channel.id, botChannelObject);
       config.writeToJSON().then(() => {
-        if (!message.guild || !(message.channel instanceof TextChannel)) return;
-        message.channel.send(`${message.channel.name} added to bot channels!`);
+        interaction.reply(`${interaction.channel.name} added to bot channels!`);
       }, err => {
-        objectHandle.botChannels.delete(message.channel.id); // if unable to write reset
+        objectHandle.botChannels.delete(interaction.channel.id); // if unable to write reset
         err.message = `WARNING: Unable to update config file! ${err.message}`;
         logError(err);
       });
     } else {
-      const backupObject = objectHandle.botChannels.get(message.channel.id);
+      const backupObject = objectHandle.botChannels.get(interaction.channel.id);
 
-      objectHandle.botChannels.delete(message.channel.id);
+      objectHandle.botChannels.delete(interaction.channel.id);
       config.writeToJSON().then(() => {
-        if (!message.guild || !(message.channel instanceof TextChannel)) return;
-        message.channel.send(`${message.channel.name} was removed as a bot channel!`);
+        interaction.reply(`${interaction.channel.name} was removed as a bot channel!`);
       }, err => {
-        if (backupObject) objectHandle.botChannels.set(message.channel.id, backupObject); // if unable to write reset
-        else objectHandle.botChannels.delete(message.channel.id);
+        if (backupObject) objectHandle.botChannels.set(interaction.channel.id, backupObject); // if unable to write reset
+        else objectHandle.botChannels.delete(interaction.channel.id);
         err.message = `WARNING: Unable to update config file! ${err.message}`;
         logError(err);
       });

@@ -6,9 +6,9 @@ import { readdirSync, readFileSync } from 'fs';
 import { extname, join } from 'path';
 import { config, configObjectType } from './configFiles';
 import { log, logError } from './log';
-import { bomboModule, Message } from './types';
+import { bomboModule, Message, Interaction } from './types';
 import { REST } from '@discordjs/rest';
-import { Routes } from 'discord-api-types/v9';
+import { Routes, APIApplicationCommandOption } from 'discord-api-types/v9';
 
 export const DEFAULT_PREFIX = 'v3'; /// //////// DEBUG VALUE
 
@@ -62,7 +62,7 @@ if (process.env.TOKEN) {
 const commandFiles = readdirSync(`${join(process.cwd(), 'build', 'src', 'commands')}`).filter(file => extname(file) === '.js');
 const clientId = '697504121795641455';
 const guildId = '684842282926473287';
-const commands: JSON[] = [];
+const commands: { name: string; description: string; options: APIApplicationCommandOption[]; }[] = [];
 const imports: Promise<void>[] = [];
 for (const file of commandFiles) {
   // const command = require(`${join(process.cwd(), 'src', 'commands', file)}`);
@@ -70,7 +70,6 @@ for (const file of commandFiles) {
   imports.push(import(`${join(process.cwd(), 'build', 'src', 'commands', file)}`).then((command: { module: bomboModule }) => {
     client.commands.set(command.module.name, command.module);
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
     commands.push((command.module.slashCommand.setName(command.module.name).setDescription(command.module.description)).toJSON());
   }, err => {
     err.message = `WARNING: Could not load ${file}! ${err.message}`;
@@ -132,7 +131,7 @@ client.on('messageCreate', async (message: Message) => {
         // const clientGuildMem = message.client.user ? guild.members.fetch(message.client.user.id) : null;
 
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        return new Promise<configObjectType | null>((resolve, reject) => {
+        return new Promise<configObjectType | null>((resolve) => {
           // if (responseMessage) message.channel.send(responseMessage);
           //
           // if (message.content.startsWith(prefix)) isCommand = true;
@@ -177,7 +176,8 @@ client.on('messageCreate', async (message: Message) => {
   }
 });
 
-client.on('interactionCreate', async interaction => {
+// @ts-expect-error yes, discord message class does not have commands but we have added them. Message type will have commands property!
+client.on('interactionCreate', async (interaction:Interaction) => {
   if (!interaction.isCommand()) return;
   const command: bomboModule | undefined = client.commands.get(interaction.commandName);
   if (!command) {
@@ -190,14 +190,29 @@ client.on('interactionCreate', async interaction => {
     queue.textChannel = interaction.channel;
   }
 
+  // Sometimes Discord does not send us back all the info we need so we must ask for more
+  if (command.voiceConnection && interaction.member && !(interaction.member instanceof Discord.GuildMember)) {
+    const member = await interaction.guild?.members.fetch(interaction.member.user.id);
+    if (member) {
+      interaction.member = member;
+    }
+  }
+
   if (!command.ignoreBotChannel && interaction.member instanceof Discord.GuildMember && guildConfig && guildConfig.botChannels.size !== 0 && interaction.channel?.id && !guildConfig.botChannels.has(interaction.channel.id)) {
     interaction.reply({ content: `Please use a bot channel to interact with me, such as ${guildConfig.botChannels.values().next().value.name}`, ephemeral: true });
   } else if (command.textBound && queue && queue.textChannel && interaction.channel?.id !== queue.textChannel.id) {
     interaction.reply({ content: `Bot is bound to ${queue.textChannel.name}, please use this channel to queue!`, ephemeral: true });
   } else if (!command.dmCompatible && interaction.channel instanceof Discord.DMChannel) {
     interaction.reply('I can\'t execute that command inside DMs!');
-  } else if (command.voiceConnection && interaction.member instanceof Discord.GuildMember && interaction.member.voice.channel) {
+  } else if (command.voiceConnection && !(!(interaction.member instanceof Discord.GuildMember) || interaction.member.voice.channel)) {
     interaction.reply({ content: 'Please join a voice channel to perform this action!', ephemeral: true });
+    console.log(interaction.member);
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    console.log(interaction.member.voice);
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore
+    console.log(interaction.member.voice.channel);
     // eslint-disable-next-line no-dupe-else-if
   } else if (command.voiceConnection &&
       interaction.member instanceof Discord.GuildMember && interaction.member.voice.channel &&
@@ -206,6 +221,11 @@ client.on('interactionCreate', async interaction => {
     // check permissions exist on bot user, if not assume no permissions
     interaction.reply('I need permissions to join and speak in your voice channel!');
   } else {
+    if (command.voiceConnection && queue && !queue.voiceChannel) {
+      queue.setVoiceChannel(<Discord.StageChannel | Discord.VoiceChannel>(<Discord.GuildMember>interaction.member).voice.channel).catch(_err => {
+        logError(Error('WARNING: Cannot join voice channel.'));
+      });
+    }
     try {
       command.execute(interaction);
     } catch (err) { // If any exceptions are thrown during the execution of a command, stop running the command and run the following

@@ -2,32 +2,26 @@
 
 import { getQueue } from '../audio';
 import { logError } from '../log';
-import { bomboModule } from '../types';
+import { bomboModule, VoiceCInteraction } from '../types';
+import { SlashCommandBuilder } from '@discordjs/builders';
 
 const DEFAULT_VOLUME = 0.15;
 
 export const module: bomboModule = {
   name: 'volume',
-  aliases: ['v', 'vol'],
   description: 'earrape',
-  args: 1,
-  usage: '<volume level>',
+  slashCommand: new SlashCommandBuilder().addIntegerOption(option => option.setRequired(true).setName('level').setDescription('volume level')),
   dmCompatible: false,
   voiceConnection: true,
   textBound: true,
-  async execute (message, args) {
-    if (!message.guild) return;
-    // if (Number(args[0]) !== parseFloat(args[0])) return message.channel.send('Please provide a number!');
-    if (isNaN(parseFloat(args[0]))) {
-      message.channel.send('Pleave provide a number!');
-      return;
-    }
+  ignoreBotChannel: false,
+  async execute (interaction:VoiceCInteraction) {
+    const currentQueue = getQueue(interaction.guild);
 
-    const currentQueue = getQueue(message.guild);
-
+    const vol = interaction.options.getInteger('level', true);
     try {
-      await currentQueue.setVolume(parseFloat(args[0]) * DEFAULT_VOLUME);
-      message.channel.send(`Changed the volume to ${args[0]}.`);
+      await currentQueue.setVolume(vol * DEFAULT_VOLUME);
+      interaction.reply(`Changed the volume to ${vol}.`);
       return;
     } catch (error) {
       error.message = `What u trying to change the volume of idiot? ${error.message}`;

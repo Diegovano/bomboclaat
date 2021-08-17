@@ -1,21 +1,21 @@
 'use strict';
 
 import { getQueue } from '../audio';
-import { bomboModule } from '../types';
+import { bomboModule, VoiceCInteraction } from '../types';
+import { SlashCommandBuilder } from '@discordjs/builders';
 
 export const module: bomboModule = {
   name: 'switch',
   description: 'The bot will join the voice channel of the requestor.',
-  args: null,
-  usage: null,
+  slashCommand: new SlashCommandBuilder(),
   dmCompatible: false,
   voiceConnection: true,
   textBound: false,
-  async execute (message, _args) {
-    if (!message.guild) return;
-    const currentQueue = getQueue(message.guild);
+  ignoreBotChannel: false,
+  async execute (interaction:VoiceCInteraction) {
+    const currentQueue = getQueue(interaction.guild);
 
-    currentQueue.voiceChannel = message.member?.voice.channel ?? null;
+    currentQueue.voiceChannel = interaction.member.voice.channel;
     if (currentQueue.currentTrack) currentQueue.play(currentQueue.timestamp);
   }
 };

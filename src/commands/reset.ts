@@ -1,19 +1,19 @@
 'use strict';
 
 import { getQueue } from '../audio';
-import { bomboModule } from '../types';
+import { bomboModule, GuildCInteraction } from '../types';
+import { SlashCommandBuilder } from '@discordjs/builders';
 
 export const module: bomboModule = {
   name: 'reset',
   description: 'Reset the bot\'s audio systems in this guild!',
-  args: null,
-  usage: null,
   dmCompatible: false,
   voiceConnection: false,
   textBound: true,
-  async execute (message, _args) {
-    if (!message.guild) return;
-    const currentQueue = getQueue(message.guild);
+  slashCommand: new SlashCommandBuilder(),
+  ignoreBotChannel: false,
+  async execute (interaction:GuildCInteraction) {
+    const currentQueue = getQueue(interaction.guild);
 
     currentQueue.clean();
   }

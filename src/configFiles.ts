@@ -7,6 +7,7 @@ import { log, logError } from './log';
 import { watch } from 'chokidar';
 import { DEFAULT_PREFIX } from './index';
 import { version } from '../package.json';
+import { VoiceCInteraction } from './types';
 
 const configFolderPath = join('.', 'config');
 const configFilePath = join(configFolderPath, 'config.json');
@@ -190,31 +191,36 @@ export class Config {
     });
   }
 
-  async accentUser (message: Discord.Message, accent: string, overwrite = true) : Promise<string | null> {
+  async accentUser (interaction:VoiceCInteraction | Discord.Message, accent: string, overwrite = true) : Promise<string | null> {
     return new Promise<string | null>((resolve, reject) => {
-      if (!message.guild) return reject(Error('Cannot accent non-guild user!'));
-      const objectHandle = this.configObject.config.get(message.guild.id);
-      const accentHandle = objectHandle?.accents.get(message.author.id);
-      if (message.channel.type !== 'GUILD_TEXT') return reject(Error('Cannot accent non-guild user!'));
-      if (!this.configObject) return reject(Error('configObject invalid!'));
-      if (!objectHandle) return reject(Error('Guild is not initialised!'));
+      if (interaction.guild) {
+        const objectHandle = this.configObject.config.get(interaction.guild.id);
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        const accentHandle = objectHandle?.accents.get(interaction.user.id ?? interaction.author.id);
+        if (!this.configObject) return reject(Error('configObject invalid!'));
+        if (!objectHandle) return reject(Error('Guild is not initialised!'));
 
-      const username = `${message.author.tag}`;
-      let prevAccent: string;
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        const username = `${interaction.user.tag ?? interaction.author.tag}`;
+        let prevAccent: string;
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        if (!accentHandle) objectHandle.accents.set(interaction.user.id ?? interaction.author.id, { user: username, accent: accent });
+        else {
+          prevAccent = accentHandle.accent;
+          if (overwrite) accentHandle.accent = accent;
+        }
 
-      if (!accentHandle) objectHandle.accents.set(message.author.id, { user: username, accent: accent });
-      else {
-        prevAccent = accentHandle.accent;
-        if (overwrite) accentHandle.accent = accent;
+        this.writeToJSON().then(() => {
+          if (overwrite) return resolve(`Changed accent to ${accent}!`);
+          else return resolve(null);
+        }, err => {
+          if (accentHandle) accentHandle.accent = prevAccent;
+          return reject(err);
+        });
       }
-
-      this.writeToJSON().then(() => {
-        if (overwrite) return resolve(`Changed accent to ${accent}!`);
-        else return resolve(null);
-      }, err => {
-        if (accentHandle) accentHandle.accent = prevAccent;
-        return reject(err);
-      });
     });
   }
 }

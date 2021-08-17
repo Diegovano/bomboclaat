@@ -1,21 +1,21 @@
 'use strict';
 
 import { getQueue } from '../audio';
-import { bomboModule } from '../types';
+import { bomboModule, GuildCInteraction } from '../types';
+import { SlashCommandBuilder } from '@discordjs/builders';
 
 export const module: bomboModule = {
   name: 'clear',
-  aliases: ['empty'],
   description: 'Clear all tracks from the current queue except the current track.',
-  args: null,
-  usage: null,
+  slashCommand: new SlashCommandBuilder(),
   dmCompatible: false,
   voiceConnection: true,
   textBound: true,
-  async execute (message, _args) {
-    if (!message.guild) return;
-    const currentQueue = getQueue(message.guild);
+  ignoreBotChannel: false,
+  async execute (interaction:GuildCInteraction) {
+    const currentQueue = getQueue(interaction.guild);
 
     currentQueue.clear();
+    interaction.reply('Cleared!');
   }
 };

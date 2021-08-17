@@ -1,25 +1,24 @@
 'use strict';
 
 import { getQueue } from '../audio';
-import { bomboModule } from '../types';
+import { bomboModule, VoiceCInteraction } from '../types';
+import { SlashCommandBuilder } from '@discordjs/builders';
 
 export const module: bomboModule = {
   name: 'remove',
-  aliases: ['r'],
   description: 'Gets rid of a track in the queue',
-  args: 1,
-  usage: '<track position>',
+  slashCommand: new SlashCommandBuilder().addIntegerOption(option => option.setName('position').setDescription('position to remove').setRequired(true)),
   dmCompatible: false,
   voiceConnection: true,
   textBound: true,
-  async execute (message, args) {
-    if (!message.guild) return;
-    const currentQueue = getQueue(message.guild);
+  ignoreBotChannel: false,
+  async execute (interaction:VoiceCInteraction) {
+    const currentQueue = getQueue(interaction.guild);
 
-    currentQueue.remove(parseInt(args[0]) - 1).then(msg => {
-      message.channel.send(msg);
+    currentQueue.remove(interaction.options.getInteger('position', true) - 1).then(msg => {
+      interaction.reply(msg);
     }, err => {
-      message.channel.send(`Error removing track! ${err.message}`);
+      interaction.reply(`Error removing track! ${err.message}`);
       // err.message = `WARNING: Error removing track ${err.message}`;
       // l.logError(err);
     });

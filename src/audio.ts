@@ -2,6 +2,7 @@
 
 import * as Discord from 'discord.js';
 import * as Voice from '@discordjs/voice';
+import { StreamType } from '@discordjs/voice';
 import { google, youtube_v3 as youtubev3 } from 'googleapis';
 import { readFileSync } from 'fs';
 import { log, logError } from './log';
@@ -44,8 +45,7 @@ function ConvertIsoToSec (ISO: string) {
   const matches = ISO.match(regex);
   if (matches === null) return null;
   else {
-    const sum = parseInt(matches[16] ?? '0') + parseInt(matches[14] ?? '0') * 60 + parseInt(matches[12] ?? '0') * 3600 + parseInt(matches[9] ?? '0') * 86400;
-    return sum; // Doing up to a day
+    return parseInt(matches[16] ?? '0') + parseInt(matches[14] ?? '0') * 60 + parseInt(matches[12] ?? '0') * 3600 + parseInt(matches[9] ?? '0') * 86400; // Doing up to a day
   }
 }
 
@@ -59,8 +59,8 @@ function replaceUnicode (origStr: string) { // and escape markdown
     .replace(/&#39;/gi, '\'')
     .replace(/&quot;/gi, '"');
 
-  const unescaped = origStr.replace(/\\(\*|_|`|\||~|\\)/g, '$1');
-  return unescaped.replace(/(\*|_|`|~|\\)/g, '\\$1');
+  const unescaped = origStr.replace(/\\([*_`|~\\])/g, '$1');
+  return unescaped.replace(/([*_`~\\])/g, '\\$1');
 }
 
 /**
@@ -414,13 +414,8 @@ export class Queue {
       this.accentTimeoutId = undefined;
     }
 
-    try {
-      if (!this.voiceChannel) throw Error('WARNING: No voice channel allocated to this queue!');
-      this.connection = await connectVoice(this.voiceChannel);
-    } catch (err) {
-      return Promise.reject(err);
-    }
-
+    if (!this.voiceChannel) return Promise.reject(Error('WARNING: No voice channel allocated to this queue!'));
+    this.connection = <Voice.VoiceConnection>Voice.getVoiceConnection(this.voiceChannel.guildId);
     return new Promise<string | void>((resolve, reject) => {
       this.playing = true;
       this.subscription = this.connection?.subscribe(this.trackAudioPlayer);
@@ -432,7 +427,7 @@ export class Queue {
         filter: 'audioonly',
         quality: 'highestaudio',
         highWaterMark: 1 << 25
-      }));
+      }), { inputType: StreamType.Arbitrary });
       this.trackAudioPlayer.play(trackAudioResource);
       this.trackAudioPlayer
         .on('stateChange', (oldState, newState) => {
@@ -736,7 +731,7 @@ export class Queue {
 
   /**
    * Set the volume of the player.
-   * @param volumeAmount A number to set volume relative to a default value.
+   * @param _volumeAmount A number to set volume relative to a default value.
    */
   async setVolume (_volumeAmount: number) : Promise<void> {
     // not sure how to implement now
@@ -749,14 +744,14 @@ export class Queue {
    * @param seconds The number of seconds to seek to
    * @returns A promise which resolves to a confirmation message
    */
-  async seek (seconds: number) : Promise<string | void> {
-    return new Promise<string | void>((resolve, reject) => {
+  async seek (seconds: number) : Promise<string> {
+    return new Promise<string>((resolve, reject) => {
       if (!this.playing) reject(Error('Nothing playing!'));
       if (this.paused) reject(Error('Player is paused!'));
       if (seconds < (this.trackList[this.queuePos].duration)) {
         this.seekTime = seconds;
         this.play(seconds, true);
-        return resolve();
+        return resolve('Seeked!');
       } else {
         return resolve('Can\'t seek this far its too long bitch');
       }

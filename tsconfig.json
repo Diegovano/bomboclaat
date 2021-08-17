@@ -2,19 +2,19 @@
     "compilerOptions": {
         "module": "commonjs",
         "target": "ES2020",
-        "jsx": "preserve",
+        "removeComments": true,
         "allowJs": false,
         "strictFunctionTypes": true,
         "sourceMap": true,
-        "strict": true,
         "outDir": "./build",
         "resolveJsonModule": true,
-        "esModuleInterop": true
+        "strict": true,
+        "esModuleInterop": true,
+        "skipLibCheck": true,
+        "forceConsistentCasingInFileNames": true
     },
     "exclude": [
         "node_modules",
-        "**/node_modules/*",
-        "./build/**/*"
     ],
     "include": [
         "./src/**/*"
