@@ -1,14 +1,14 @@
 'use strict';
 
-import { getQueue } from '../audio';
-import { bomboModule, VoiceCInteraction } from '../types';
-import { logError } from '../log';
-import { SlashCommandBuilder } from '@discordjs/builders';
+import { getQueue } from '../../audio';
+import { bomboModule, VoiceCInteraction } from '../../types';
+import { logError } from '../../log';
+import { SlashCommandSubcommandBuilder } from '@discordjs/builders';
 
 export const module: bomboModule = {
   name: 'move',
   description: 'Moves a track to a certain position in the queue',
-  slashCommand: new SlashCommandBuilder().addIntegerOption(option => option.setName('from').setDescription('Move track from').setRequired(true))
+  slashCommand: new SlashCommandSubcommandBuilder().addIntegerOption(option => option.setName('from').setDescription('Move track from').setRequired(true))
     .addIntegerOption(option => option.setName('to').setDescription('Move track to').setRequired(true)),
   dmCompatible: false,
   voiceConnection: true,

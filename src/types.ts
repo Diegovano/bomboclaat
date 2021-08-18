@@ -1,6 +1,10 @@
 import * as Discord from 'discord.js';
-import { SlashCommandBuilder } from '@discordjs/builders/dist/interactions/slashCommands/SlashCommandBuilder';
+import {
+  SlashCommandBuilder,
+  SlashCommandSubcommandsOnlyBuilder
+} from '@discordjs/builders/dist/interactions/slashCommands/SlashCommandBuilder';
 import { StageChannel, TextBasedChannels, TextChannel, VoiceChannel } from 'discord.js';
+import { SlashCommandSubcommandBuilder } from '@discordjs/builders';
 
 /**
  * Extension of discord.js's Message class, uses custom client with commands collection to allow access to all commands.
@@ -108,7 +112,7 @@ export interface bomboModule {
   /**
    * The individual arguments and choices for the slash command.
    */
-  readonly slashCommand: Omit<SlashCommandBuilder, 'addSubcommand' | 'addSubcommandGroup'>;
+  readonly slashCommand: SlashCommandSubcommandsOnlyBuilder | SlashCommandSubcommandBuilder | Omit<SlashCommandBuilder, 'addSubcommand' | 'addSubcommandGroup'>;
   // SlashCommandBuilder
 
   /**

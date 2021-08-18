@@ -69,7 +69,6 @@ for (const file of commandFiles) {
 
   imports.push(import(`${join(process.cwd(), 'build', 'src', 'commands', file)}`).then((command: { module: bomboModule }) => {
     client.commands.set(command.module.name, command.module);
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     commands.push((command.module.slashCommand.setName(command.module.name).setDescription(command.module.description)).toJSON());
   }, err => {
     err.message = `WARNING: Could not load ${file}! ${err.message}`;
@@ -83,15 +82,15 @@ Promise.allSettled([imports]).then(() => {
 
     (async () => {
       try {
-        console.log('Started refreshing application slash commands.');
+        log('Started refreshing application slash commands.');
 
         await rest.put(
           Routes.applicationGuildCommands(clientId, guildId), { body: commands }
         );
 
-        console.log('Successfully reloaded application slash commands.');
+        log('Successfully reloaded application slash commands.');
       } catch (error) {
-        console.error(error);
+        logError(error);
       }
     })();
   }
@@ -184,8 +183,8 @@ client.on('interactionCreate', async (interaction:Interaction) => {
     logError(new Error(`Command "${interaction.commandName}" doesn't exist!`));
     return;
   }
-  const guildConfig = interaction.guild ? await config.get(interaction.guild) : null;
-  const queue = interaction.guild ? getQueue(interaction.guild) : null;
+  const guildConfig = interaction.inGuild() ? await config.get(<Discord.Guild>interaction.guild) : null;
+  const queue = interaction.inGuild() ? getQueue(<Discord.Guild>interaction.guild) : null;
   if (queue && !queue.textChannel && interaction.channel instanceof Discord.TextChannel) {
     queue.textChannel = interaction.channel;
   }
@@ -206,13 +205,6 @@ client.on('interactionCreate', async (interaction:Interaction) => {
     interaction.reply('I can\'t execute that command inside DMs!');
   } else if (command.voiceConnection && !(!(interaction.member instanceof Discord.GuildMember) || interaction.member.voice.channel)) {
     interaction.reply({ content: 'Please join a voice channel to perform this action!', ephemeral: true });
-    console.log(interaction.member);
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    console.log(interaction.member.voice);
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-ignore
-    console.log(interaction.member.voice.channel);
     // eslint-disable-next-line no-dupe-else-if
   } else if (command.voiceConnection &&
       interaction.member instanceof Discord.GuildMember && interaction.member.voice.channel &&

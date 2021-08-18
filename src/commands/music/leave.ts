@@ -1,13 +1,13 @@
 'use strict';
 
-import { getQueue } from '../audio';
-import { bomboModule, GuildCInteraction } from '../types';
-import { SlashCommandBuilder } from '@discordjs/builders';
+import { getQueue } from '../../audio';
+import { bomboModule, GuildCInteraction } from '../../types';
+import { SlashCommandSubcommandBuilder } from '@discordjs/builders';
 
 export const module: bomboModule = {
   name: 'leave', // If this name is changed, change the function call in the clear.js command file.
   description: 'Tells the bot to disconnect from the voice channel.',
-  slashCommand: new SlashCommandBuilder(),
+  slashCommand: new SlashCommandSubcommandBuilder(),
   dmCompatible: false,
   voiceConnection: true,
   textBound: true,

@@ -1,9 +1,9 @@
 'use strict';
 
-import { getQueue } from '../audio';
-import { logError } from '../log';
-import { bomboModule, VoiceCInteraction } from '../types';
-import { SlashCommandBuilder } from '@discordjs/builders';
+import { getQueue } from '../../audio';
+import { logError } from '../../log';
+import { bomboModule, VoiceCInteraction } from '../../types';
+import { SlashCommandSubcommandBuilder } from '@discordjs/builders';
 
 export const module: bomboModule = {
   name: 'skip',
@@ -12,7 +12,7 @@ export const module: bomboModule = {
   voiceConnection: true,
   textBound: true,
   ignoreBotChannel: false,
-  slashCommand: new SlashCommandBuilder(),
+  slashCommand: new SlashCommandSubcommandBuilder(),
   async execute (interaction:VoiceCInteraction) {
     const currentQueue = getQueue(interaction.guild);
 

@@ -1,8 +1,8 @@
 'use strict';
 
-import { getQueue } from '../audio';
-import { bomboModule, VoiceCInteraction } from '../types';
-import { SlashCommandBuilder } from '@discordjs/builders';
+import { getQueue } from '../../audio';
+import { bomboModule, VoiceCInteraction } from '../../types';
+import { SlashCommandSubcommandBuilder } from '@discordjs/builders';
 
 export const module: bomboModule = {
   name: 'loop',
@@ -11,7 +11,7 @@ export const module: bomboModule = {
   voiceConnection: true,
   textBound: true,
   ignoreBotChannel: false,
-  slashCommand: new SlashCommandBuilder().addStringOption(option => option.setName('loop').setDescription('Thing to loop').setRequired(false).addChoices([['none', 'none'], ['track', 'track'], ['queue', 'queue']])),
+  slashCommand: new SlashCommandSubcommandBuilder().addStringOption(option => option.setName('loop').setDescription('Thing to loop').setRequired(false).addChoices([['none', 'none'], ['track', 'track'], ['queue', 'queue']])),
   async execute (interaction:VoiceCInteraction) {
     const currentQueue = getQueue(interaction.guild);
     const arg = interaction.options.getString('loop');

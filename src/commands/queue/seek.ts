@@ -1,9 +1,9 @@
 'use strict';
 
-import { getQueue } from '../audio';
-import { bomboModule, VoiceCInteraction } from '../types';
-import { SlashCommandBuilder } from '@discordjs/builders';
-import { logError } from '../log';
+import { getQueue } from '../../audio';
+import { bomboModule, VoiceCInteraction } from '../../types';
+import { SlashCommandSubcommandBuilder } from '@discordjs/builders';
+import { logError } from '../../log';
 
 export const module: bomboModule = {
   name: 'seek',
@@ -12,7 +12,7 @@ export const module: bomboModule = {
   voiceConnection: true,
   textBound: true,
   ignoreBotChannel: false,
-  slashCommand: new SlashCommandBuilder().addIntegerOption(option => option.setName('value').setDescription('Amount of seconds to seek').setRequired(true)),
+  slashCommand: new SlashCommandSubcommandBuilder().addIntegerOption(option => option.setName('value').setDescription('Amount of seconds to seek').setRequired(true)),
   async execute (interaction: VoiceCInteraction) {
     const currentQueue = getQueue(interaction.guild);
 

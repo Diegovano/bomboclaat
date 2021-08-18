@@ -13,7 +13,7 @@ const youtube = google.youtube('v3');
 export const module: bomboModule = {
   name: 'play',
   description: 'If paused, unpause, otherwise add track to queue.',
-  slashCommand: new SlashCommandBuilder().addStringOption(option => option.setName('track').setDescription('Add a youtube link, playlist (youtube/spotify) or search term to the queue').setRequired(false)),
+  slashCommand: new SlashCommandBuilder().addStringOption(option => option.setName('track').setDescription('Add a youtube link, playlist (youtube/spotify) or search term to the queue').setRequired(false)).addBooleanOption(option => option.setName('next').setDescription('Whether the bot should play the track next instead of adding it to the end of the queue').setRequired(false)),
   dmCompatible: false,
   voiceConnection: true,
   textBound: true,
@@ -30,8 +30,9 @@ export const module: bomboModule = {
     }
 
     await getTrackObjects(interaction, arg).then(async function addTracksToQueue (tracks) {
+      const next = interaction.options.getBoolean('next') ?? false;
       if (tracks.length === 1) {
-        await currentQueue.add(tracks[0], false, false).then(msg => {
+        await currentQueue.add(tracks[0], false, next).then(msg => {
           if (msg) {
             interaction.replied ? interaction.editReply({ content: msg, embeds: [], components: [] }) : interaction.reply(msg);
           }
@@ -46,7 +47,7 @@ export const module: bomboModule = {
         interaction.replied ? interaction.editReply({ content: msg, embeds: [], components: [] }) : interaction.reply(msg);
 
         for (let i = 0; i < tracks.length; i++) {
-          await currentQueue.add(tracks[i], true, false).then(msg => {
+          await currentQueue.add(tracks[i], true, next).then(msg => {
             if (msg) interaction.followUp(msg);
           }, err => {
             err.message = `WARNING: Cannot add track to playlist! ${err.message}`;

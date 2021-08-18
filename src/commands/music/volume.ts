@@ -1,16 +1,16 @@
 'use strict';
 
-import { getQueue } from '../audio';
-import { logError } from '../log';
-import { bomboModule, VoiceCInteraction } from '../types';
-import { SlashCommandBuilder } from '@discordjs/builders';
+import { getQueue } from '../../audio';
+import { logError } from '../../log';
+import { bomboModule, VoiceCInteraction } from '../../types';
+import { SlashCommandSubcommandBuilder } from '@discordjs/builders';
 
 const DEFAULT_VOLUME = 0.15;
 
 export const module: bomboModule = {
   name: 'volume',
   description: 'earrape',
-  slashCommand: new SlashCommandBuilder().addIntegerOption(option => option.setRequired(true).setName('level').setDescription('volume level')),
+  slashCommand: new SlashCommandSubcommandBuilder().addIntegerOption(option => option.setRequired(true).setName('level').setDescription('volume level')),
   dmCompatible: false,
   voiceConnection: true,
   textBound: true,

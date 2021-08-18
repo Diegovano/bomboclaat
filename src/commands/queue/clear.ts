@@ -1,13 +1,13 @@
 'use strict';
 
-import { getQueue } from '../audio';
-import { bomboModule, GuildCInteraction } from '../types';
-import { SlashCommandBuilder } from '@discordjs/builders';
+import { getQueue } from '../../audio';
+import { bomboModule, GuildCInteraction } from '../../types';
+import { SlashCommandSubcommandBuilder } from '@discordjs/builders';
 
 export const module: bomboModule = {
   name: 'clear',
   description: 'Clear all tracks from the current queue except the current track.',
-  slashCommand: new SlashCommandBuilder(),
+  slashCommand: new SlashCommandSubcommandBuilder(),
   dmCompatible: false,
   voiceConnection: true,
   textBound: true,
