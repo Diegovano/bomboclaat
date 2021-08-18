@@ -132,7 +132,7 @@ export class Config {
   async writeToJSON () : Promise<void> {
     return new Promise<void>((resolve, reject) => {
       const serialised = JSON.stringify(this.configObject, replacer, 2);
-      if (serialised === '') throw emptyJSONError; // shouldnt write empty
+      if (serialised === '') throw emptyJSONError; // shouldn't write empty
       fs.writeFile(configFilePath, serialised, (err) => {
         if (err) {
           err.message = `WARNING: Unable to update config file! ${err.message}`;

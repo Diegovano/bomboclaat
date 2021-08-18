@@ -43,29 +43,51 @@ export class CommandInteraction extends Discord.CommandInteraction {
     this.client = client;
   }
 }
-
+/**
+ * Extension of discord.js's Command Interaction class, promises ts that the Interaction is complete (Does not only use the Discord API response).
+ * @extends Discord.CommandInteraction
+ */
 export interface CInteraction extends CommandInteraction {
   member: Discord.GuildMember
   readonly channel: TextBasedChannels
 }
 
+/**
+ * Extension of our Complete Interaction class, promises ts that the Interaction is in a guild.
+ * @extends CInteraction
+ */
 interface _GuildCInteraction extends CInteraction {
   readonly guild: Discord.Guild
   readonly channel: TextChannel
 }
 
+/**
+ * Extension of discord.js's Voice class, promises ts that the VoiceChannel exists.
+ * @extends Discord.VoiceState
+ */
 interface VoiceState extends Discord.VoiceState {
   readonly channel: VoiceChannel | StageChannel
 }
 
+/**
+ * Extension of discord.js's GuildMember class, promises ts that the member is in a VoiceChannel.
+ * @extends Discord.GuildMember
+ */
 interface GuildMember extends Discord.GuildMember {
   readonly voice: VoiceState
 }
 
+/**
+ * Extension of our Guild interaction class, promises ts that the guild member is in a VoiceChannel.
+ * @extends _GuildCInteraction
+ */
 export interface VoiceCInteraction extends _GuildCInteraction {
   readonly member: GuildMember
 }
 
+/**
+ * Type of any Guild Complete Interaction as the user may or may not be in a voice channel.
+ */
 export type GuildCInteraction = _GuildCInteraction | VoiceCInteraction
 
 /**

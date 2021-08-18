@@ -19,13 +19,14 @@ export const module: bomboModule = {
     const userVoiceChannel = interaction.member.voice.channel;
 
     // If the bot isn't in a voiceChannel, don't execute any other code
-    if (!queueVoiceChannel) return;
+    if (!queueVoiceChannel) return interaction.reply({ content: 'I\'m not in a voice chat stoopid', ephemeral: true });
 
     // Compare the voiceChannels
     if (userVoiceChannel === queueVoiceChannel) {
-      currentQueue.disconnect();
+      await currentQueue.disconnect();
+      interaction.reply('Bye Bye!');
     } else {
-      interaction.reply('Connect to the same voice channel as me to get me to leave!');
+      interaction.reply({ content: 'Connect to the same voice channel as me to get me to leave!', ephemeral: true });
     }
   }
 };

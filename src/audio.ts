@@ -20,7 +20,7 @@ function pad (num: number | string) {
 }
 
 /**
- * Convert duration in seconds to fomatted string.
+ * Convert duration in seconds to formatted string.
  * @param duration Number of seconds
  * @returns string formatted in HH:MM:SS
  */
@@ -52,7 +52,7 @@ function ConvertIsoToSec (ISO: string) {
 /**
  * Replace HTML character codes with UTF-8 equivalents and escape markdown.
  * @param origStr string to precess
- * @returns prrocessed string
+ * @returns processed string
  */
 function replaceUnicode (origStr: string) { // and escape markdown
   origStr = origStr.replace(/&amp;/gi, '&')
@@ -64,7 +64,7 @@ function replaceUnicode (origStr: string) { // and escape markdown
 }
 
 /**
- * Attemps to join a voice channel.
+ * Attempts to join a voice channel.
  * @param channel the voice channel to connect to
  */
 async function connectVoice (channel: Discord.VoiceChannel | Discord.StageChannel) {
@@ -72,7 +72,7 @@ async function connectVoice (channel: Discord.VoiceChannel | Discord.StageChanne
     const connection = Voice.joinVoiceChannel({
       channelId: channel.id,
       guildId: channel.guild.id,
-      // @ts-expect-error InternalDiscordGatwayAdapterCreator and DiscordGatewayAdapterCreator seem to be comaptible...
+      // @ts-expect-error InternalDiscordGatewayAdapterCreator and DiscordGatewayAdapterCreator seem to be compatible...
       adapterCreator: channel.guild.voiceAdapterCreator
     }).on('error', error => reject(error))
       .on('stateChange', async (_, newState) => { // using code from discord.js/voice examples
@@ -113,7 +113,7 @@ async function connectVoice (channel: Discord.VoiceChannel | Discord.StageChanne
 }
 
 /**
- * Fetch the queue asociated to the guild. If none exists creates one.
+ * Fetch the queue associated to the guild. If none exists creates one.
  * @param guild The guild whose queue to retrieve
  * @returns The queue associated to the guild given as an argument
  */
@@ -254,7 +254,7 @@ export class Queue {
   /**
    * ID of the guild to which this queue is assigned.
    */
-  private guildId: string;
+  readonly guildId: string;
 
   /**
    * A handle to the bot client.
@@ -299,7 +299,7 @@ export class Queue {
   /**
    * The player that is responsible for track playback.
    */
-  private trackAudioPlayer: Voice.AudioPlayer;
+  private readonly trackAudioPlayer: Voice.AudioPlayer;
 
   /**
    * The subscription to an audio player.
@@ -312,7 +312,7 @@ export class Queue {
   private volume: number;
 
   /**
-   * The number of senconds to seek to.
+   * The number of seconds to seek to.
    */
   private seekTime: number;
 
@@ -329,7 +329,7 @@ export class Queue {
   /**
    * The audio player responsible for playing accents and text to speech.
    */
-  private accentAudioPlayer: Voice.AudioPlayer;
+  private readonly accentAudioPlayer: Voice.AudioPlayer;
 
   /**
    * The array containing the list of accents.
@@ -396,7 +396,7 @@ export class Queue {
           getQueue(guild).voiceChannel = voiceChannel;
           getQueue(guild).connection = await connectVoice(voiceChannel);
           return resolve();
-        } else return reject(Error('Insufficent permissions in that voice channel!'));
+        } else return reject(Error('Insufficient permissions in that voice channel!'));
       });
     });
   }
@@ -404,8 +404,8 @@ export class Queue {
   /**
    * Connect to a voice channel, then current track in the queue.
    * @param seconds the number of seconds to start playing at
-   * @param isSeek whether or not the current operation is a seek operation. If not then a confimation message will be sent to the bound text channel
-   * @param repeated the number of attemps to play that have taken place
+   * @param isSeek whether or not the current operation is a seek operation. If not then a confirmation message will be sent to the bound text channel
+   * @param repeated the number of attempts to play that have taken place
    * @returns {Promise<string | void>} the string represents the message to be sent describing the operation, for example "now playing x", or void if no message
    */
   async play (seconds = 0, isSeek = false, repeated = 0) : Promise<string | void> {
@@ -607,7 +607,7 @@ export class Queue {
   async skip () : Promise<string> {
     return new Promise<string>((resolve, reject) => {
       if (this.trackList.length === 0 || this.queuePos > this.trackList.length - 1) return resolve('No track to skip!');
-      if (this.queuePos > this.trackList.length - 2) { // -2 becuase the last track is being played
+      if (this.queuePos > this.trackList.length - 2) { // -2 because the last track is being played
         if (!this.loopQueue) {
           this.playing = false;
           this.subscription?.unsubscribe();
@@ -660,7 +660,9 @@ export class Queue {
    */
   async disconnect () : Promise<void> {
     this.trackAudioPlayer.pause();
+
     this.accentAudioPlayer.stop();
+
     this.subscription?.unsubscribe();
 
     this.connection?.disconnect();
@@ -761,7 +763,7 @@ export class Queue {
   /**
    * Remove a track at a given index from the queue.
    * @param index Index of track to remove from the queue
-   * @returns A promise which resolves to a confirmation messsage
+   * @returns A promise which resolves to a confirmation message
    */
   async remove (index: number) : Promise<string> {
     return new Promise<string>((resolve, reject) => {
@@ -817,18 +819,18 @@ export class Queue {
 
       const PROGRESS_BAR_LENGTH = 25;
 
-      const timestampLitteral = pos === this.queuePos ? `&t=${Math.floor(this.timestamp)}` : '';
+      const timestampLiteral = pos === this.queuePos ? `&t=${Math.floor(this.timestamp)}` : '';
 
       const infoEmbed = new Discord.MessageEmbed()
         .setColor('#ff0000')
         .setTitle('Track Information')
-        .addField('Track Title', `[${this.trackList[pos].title}](${this.trackList[pos].sourceLink}${timestampLitteral}) [${ConvertSecToFormat(this.trackList[pos].duration)}]`);
+        .addField('Track Title', `[${this.trackList[pos].title}](${this.trackList[pos].sourceLink}${timestampLiteral}) [${ConvertSecToFormat(this.trackList[pos].duration)}]`);
 
       try {
         if (pos === this.queuePos && this.currentTrack) {
           let progressBar = '>';
           let i = 0;
-          for (; i < Math.round((this.timestamp / (this.currentTrack.duration)) * PROGRESS_BAR_LENGTH); i++) { // if pos is queuepos there is a current track
+          for (; i < Math.round((this.timestamp / (this.currentTrack.duration)) * PROGRESS_BAR_LENGTH); i++) { // if pos is queue pos there is a current track
             progressBar += '█';
           }
           for (; i < PROGRESS_BAR_LENGTH; i++) {
@@ -918,7 +920,7 @@ export class Queue {
    * @returns A void promise
    */
   async playAccents () : Promise<void> {
-    if (!this.voiceChannel) return Promise.reject(Error('Queue must be bound to a voice channel to play acccents!'));
+    if (!this.voiceChannel) return Promise.reject(Error('Queue must be bound to a voice channel to play accents!'));
     if (!this.playingAccent) this.stopTimestamp = null;
     if (this.accentTimeoutId) {
       clearTimeout(this.accentTimeoutId);

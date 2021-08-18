@@ -13,7 +13,7 @@ import { Routes, APIApplicationCommandOption } from 'discord-api-types/v9';
 export const DEFAULT_PREFIX = 'v3'; /// //////// DEBUG VALUE
 
 /**
- * Ensure environement is running correct version of Node.JS for discord.js.
+ * Ensure environment is running correct version of Node.JS for discord.js.
  */
 
 function checkNodeVersion () {

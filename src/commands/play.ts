@@ -74,8 +74,8 @@ export async function getTrackObjects (interaction: VoiceCInteraction, searchTer
   return new Promise<Track[]>((resolve, reject) => {
     const tracksToAdd: Track[] = [];
 
-    const videoIdMatch = searchTerm.match(/(?:youtu)(?:.*?)(?:^|\/|v=)([a-z0-9_-]{11})(?:.*)/i);
-    const timestampMatch = searchTerm.match(/(?:[?&]t=)(.*?)(?:&|$)/i);
+    const videoIdMatch = searchTerm.match(/youtu.*?(?:^|\/|v=)([a-z0-9_-]{11}).*/i);
+    const timestampMatch = searchTerm.match(/[?&]t=(.*?)(?:&|$)/i);
     const playlistIdMatch = searchTerm.match(/(?<=[&?]list=)(.*?)(?=(&|$))/i);
 
     if (videoIdMatch) {
