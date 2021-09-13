@@ -121,15 +121,13 @@ client.on('messageCreate', async (message: Message) => {
               if (message.content.split(' ')[0].toLowerCase().slice(prefix.length).trim() === 'togglebotchannel') return resolve(guildConfig);
               message.channel.send(`Please use a bot channel to interact with me, such as ${guildConfig.botChannels.values().next().value.name}`).then(reply => {
                 wait(10 * 1000).then(() => {
-                  try {
-                    reply.delete();
-                    message.delete();
-                  } catch (err) {
+                  Promise.all([reply.delete(), message.delete()]).catch(err => {
                     err.message = `WARNING: Unable to delete message! Has it already been deleted? ${err.message}`;
                     logError(err);
-                  }
+                  });
                 }).catch(err => reject(err));
               });
+
               isCommand = false; // to skip execution
               return resolve(guildConfig);
             } else if (!queue.textChannel) {

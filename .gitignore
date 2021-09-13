@@ -1,8 +1,3 @@
-# .vscode
-.vscode
-.eslintrc*
-
-
 # Ignore file with token
 *token*
 .*token*

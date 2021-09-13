@@ -4,25 +4,25 @@
   "description": "A Discord bot using discord.js",
   "main": "./build/src/index.js",
   "dependencies": {
-    "@discordjs/opus": "^0.5.3",
-    "@discordjs/voice": "^0.5.6",
+    "@discordjs/opus": "^0.6.0",
+    "@discordjs/voice": "^0.6.0",
     "chokidar": "^3.5.2",
     "discord-ytdl-core": "^5.0.4",
-    "discord.js": "^13.0.1",
+    "discord.js": "^13.1.0",
     "ffmpeg-static": "^4.4.0",
-    "googleapis": "^84.0.0",
+    "googleapis": "^85.0.0",
     "tweetnacl": "^1.0.3",
-    "typescript": "^4.3.5",
+    "typescript": "^4.4.3",
     "ytdl-core": "^4.9.1"
   },
   "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "^4.29.1",
-    "@typescript-eslint/parser": "^4.29.1",
+    "@typescript-eslint/eslint-plugin": "^4.31.0",
+    "@typescript-eslint/parser": "^4.31.0",
     "eslint": "^7.32.0",
     "eslint-config-semistandard": "^16.0.0",
     "semistandard": "^16.0.1",
-    "source-map-support": "^0.5.19",
-    "typedoc": "^0.21.5"
+    "source-map-support": "^0.5.20",
+    "typedoc": "^0.22.3"
   },
   "scripts": {
     "start": "tsc && node ./built/src/index.js",

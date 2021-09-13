@@ -29,9 +29,11 @@ export const module: bomboModule = {
       await currentQueue.setVolume(parseFloat(args[0]) * DEFAULT_VOLUME);
       message.channel.send(`Changed the volume to ${args[0]}.`);
       return;
-    } catch (error) {
-      error.message = `What u trying to change the volume of idiot? ${error.message}`;
-      logError(error);
+    } catch (err) {
+      if (err instanceof Error) {
+        err.message = `What u trying to change the volume of idiot? ${err.message}`;
+        logError(err);
+      } else logError(Error('WARNING: Logging non-error typed error!'));
     }
   }
 };

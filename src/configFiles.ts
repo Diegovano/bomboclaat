@@ -16,6 +16,10 @@ const emptyJSONError = Error('JSON template read as empty!');
 
 const CONFIG_VERSION = '2';
 
+function isNodeError (error: Error): error is NodeJS.ErrnoException {
+  return error instanceof Error;
+}
+
 /**
  * Structure of a bot channel
  */
@@ -80,20 +84,24 @@ export class Config {
         if (configTemplateString === '') throw emptyJSONError; // should never write empty
         fs.writeFileSync(configFilePath, configTemplateString, { flag: 'wx' });
       } catch (err) {
-        if (err.code === 'EEXIST') {
-          if (configTemplateString === '') throw emptyJSONError; // should never write empty
-          fs.writeFileSync(configFilePath, configTemplateString, { flag: 'wx' });
-        } else {
-          err.message = `WARNING: Cannot create config file! ${err.message}`;
-          logError(err);
+        if (err instanceof Error && isNodeError(err)) {
+          if (err.code === 'EEXIST') {
+            if (configTemplateString === '') throw emptyJSONError; // should never write empty
+            fs.writeFileSync(configFilePath, configTemplateString, { flag: 'wx' });
+          } else {
+            err.message = `WARNING: Cannot create config file! ${err.message}`;
+            logError(err);
+          }
         }
       }
 
       try {
         data = fs.readFileSync(configFilePath, 'utf8');
       } catch (err) {
-        err.message = `WARNING: Cannot read config file! ${err.message}`;
-        logError(err);
+        if (err instanceof Error) {
+          err.message = `WARNING: Cannot read config file! ${err.message}`;
+          logError(err);
+        } else logError(Error('WARNING: Logging non-error typed error!'));
       }
     }
 
@@ -103,8 +111,10 @@ export class Config {
         fs.writeFileSync(configFilePath, configTemplateString);
         log('Reset config file');
       } catch (err) {
-        err.message = `WARNING: Cannot reset config file to template! ${err.message}`;
-        logError(err);
+        if (err instanceof Error) {
+          err.message = `WARNING: Cannot reset config file to template! ${err.message}`;
+          logError(err);
+        } else logError(Error('WARNING: Logging non-error typed error!'));
       }
     }
 
@@ -121,9 +131,14 @@ export class Config {
           });
         });
     } catch (err) {
-      err.message = `WARNING: Cannot parse JSON info while creating config object! ${err.message}`;
-      logError(err);
-      throw err;
+      if (err instanceof Error) {
+        err.message = `WARNING: Cannot parse JSON info while creating config object! ${err.message}`;
+        logError(err);
+        throw err;
+      } else {
+        logError(Error('WARNING: Logging non-error typed error!'));
+        throw Error('WARNING: Logging non-error typed error!');
+      }
     }
   }
 
@@ -147,9 +162,12 @@ export class Config {
         try {
           this.configObject = JSON.parse(data, reviver);
         } catch (err) {
-          if (data !== '') err.message += `\n\nRead data was:\n${data}`; // temporary debugging code
-          else err.message += 'No data read!';
-          reject(err);
+          if (err instanceof Error) {
+            if (data !== '') err.message += `\n\nRead data was:\n${data}`; // temporary debugging code
+            else err.message += 'No data read!';
+            reject(err);
+          }
+          reject(Error('WARNING: Logging non-error typed error!'));
         }
 
         resolve();

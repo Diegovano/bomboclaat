@@ -882,8 +882,10 @@ export class Queue {
           .setTimestamp();
         return resolve(infoEmbed);
       } catch (err) {
-        err.message = `WARNING: Cannot send embed: ${err.message}`;
-        logError(err);
+        if (err instanceof Error) {
+          err.message = `WARNING: Cannot send embed: ${err.message}`;
+          logError(err);
+        } else logError(Error('WARNING: Logging non-error typed error!'));
         return reject(err);
       }
     });

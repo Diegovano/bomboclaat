@@ -26,11 +26,13 @@ export const module: bomboModule = {
     try {
       const newCommand = await import(`./${command.name}.js`);
       message.client.commands.set(newCommand.name, newCommand);
-      message.channel.send(`Command "${command.name}" was successfully reloaded!`);
+      message.channel.send(`Command "${command.name}" was successfully reloaded!`).catch(err => logError(err));
       log(`Reloaded "${command.name}" successfully!`);
-    } catch (error) {
-      error.message = `SEVERE: "${commandName}" could not be reloaded! ${command.name}: ${error.message}`;
-      logError(error);
+    } catch (err) {
+      if (err instanceof Error) {
+        err.message = `SEVERE: "${commandName}" could not be reloaded! ${command.name}: ${err.message}`;
+        logError(err);
+      } else logError(Error('WARNING: Logging non-error typed error!'));
       message.channel.send('There was an error while reloading a command ');
     }
   }
