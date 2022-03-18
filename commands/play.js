@@ -64,7 +64,7 @@ module.exports = {
 const getTrackObjects = async (message, searchTerm) => {
   return new Promise((resolve, reject) => {
     const tracksToAdd = [];
-    const match = searchTerm[0].match(/youtu(?:\.be|be\.com)\/(?:playlist\?|[a-zA-Z0-9_-]{11}&|watch\?v=[a-zA-Z0-9_-]{11}&|v\/[a-zA-Z0-9_-]{11}&)list=([a-zA-Z0-9_-]{34})/);
+    const match = searchTerm[0].match(/youtu(?:\.be|be\.com)\/(?:playlist\?|[a-zA-Z0-9_-]+&|watch\?v=[a-zA-Z0-9_-]+&|v\/[a-zA-Z0-9_-]+&)list=([a-zA-Z0-9_-]+)/);
     const promises = [];
     if (match) {
       const playlistId = match[1];
