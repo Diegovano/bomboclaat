@@ -1,6 +1,7 @@
 'use strict';
 
 import * as Discord from 'discord.js';
+import { client } from '../index'
 import { config } from '../configFiles';
 import { bomboModule } from '../types';
 import { DEFAULT_PREFIX } from '../index';
@@ -15,7 +16,7 @@ export const module: bomboModule = {
   voiceConnection: false,
   textBound: false,
   async execute (message, args) {
-    const commands: Discord.Collection<string, bomboModule> = message.client.commands;
+    const commands: Discord.Collection<string, bomboModule> = client.commands;
     let prefix: string;
     if (message.guild) prefix = (await config.get(message.guild))?.prefix ?? DEFAULT_PREFIX;
     prefix ??= DEFAULT_PREFIX;

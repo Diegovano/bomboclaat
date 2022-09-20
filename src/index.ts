@@ -6,7 +6,7 @@ import { readdirSync, readFileSync } from 'fs';
 import { extname, join } from 'path';
 import { config, configObjectType } from './configFiles';
 import { log, logError } from './log';
-import { bomboModule, Message, wait } from './types';
+import { bomboModule, wait } from './types';
 
 export const DEFAULT_PREFIX = 'v3'; /////////// DEBUG VALUE
 
@@ -37,7 +37,7 @@ class Client extends Discord.Client {
   commands: Discord.Collection<string, bomboModule>;
 }
 
-const client = new Client({
+export const client = new Client({
   intents: [Discord.GatewayIntentBits.Guilds, Discord.GatewayIntentBits.GuildMessages,
     Discord.GatewayIntentBits.GuildMessageReactions, Discord.GatewayIntentBits.DirectMessages,
     Discord.GatewayIntentBits.GuildVoiceStates]
@@ -83,8 +83,8 @@ async function initialiseGuildConfig (guildConfig: configObjectType | null, mess
 
 client.once('ready', () => log('Ready!'));
 
-// @ts-expect-error yes, discord message class does not have commands but we have added them. Message type will have commands property!
-client.on('messageCreate', async (message: Message) => {
+// @disabled-ts-expect-error-disabled yes, discord message class does not have commands but we have added them. Message type will have commands property!
+client.on('messageCreate', async (message: Discord.Message) => {
   if (message.author.bot) return;
 
   let isCommand = false;
@@ -108,7 +108,7 @@ client.on('messageCreate', async (message: Message) => {
 
         const prefix = guildConfig ? guildConfig.prefix : DEFAULT_PREFIX;
         const queue = getQueue(guild);
-        const clientGuildMem = message.client.user ? guild.members.fetch(message.client.user.id) : null;
+        const clientGuildMem = client.user ? guild.members.fetch(client.user.id) : null;
 
         return new Promise<configObjectType | null>((resolve, reject) => {
           if (responseMessage) message.channel.send(responseMessage);
@@ -228,8 +228,8 @@ client.on('messageCreate', async (message: Message) => {
   }
   if (command.voiceConnection &&
             voiceChannel &&
-            message.client.user &&
-            (!voiceChannel.permissionsFor(message.client.user)?.has([Discord.PermissionFlagsBits.Connect, Discord.PermissionFlagsBits.Speak]) ?? false)) {
+            client.user &&
+            (!voiceChannel.permissionsFor(client.user)?.has([Discord.PermissionFlagsBits.Connect, Discord.PermissionFlagsBits.Speak]) ?? false)) {
     // check permissions exist on bot user, if not assume no permissions
     message.channel.send('I need permissions to join and speak in your voice channel!');
     return;

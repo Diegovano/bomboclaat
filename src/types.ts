@@ -1,20 +1,6 @@
 import * as Discord from 'discord.js';
 
 /**
- * Extension of discord.js's Message class, uses custom client with commands collection to allow access to all commands.
- * @extends Discord.Message
- */
-export class Message extends Discord.Message {
-  // eslint-disable-next-line no-use-before-define
-  client: Client;
-  // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types, @typescript-eslint/no-explicit-any
-  constructor (client: Client, data: any) { // cannot access APIMessage type
-    super(client, data);
-    this.client = client;
-  }
-}
-
-/**
  * Type of all bomboclaat modules. These modules are loaded from the `./commands` folder.
  */
 export interface bomboModule {
@@ -69,7 +55,7 @@ export interface bomboModule {
    * @param message the message that invoked the command
    * @param args the arguments that the user may or may not have given
    */
-  execute(message: Message, args: string[]): Promise<void>;
+  execute(message: Discord.Message, args: string[]): Promise<void>;
 }
 
 /**

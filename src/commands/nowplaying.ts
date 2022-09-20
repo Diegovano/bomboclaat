@@ -1,5 +1,6 @@
 'use strict';
 
+import { client } from '../index'
 import { getQueue } from '../audio';
 import { bomboModule } from '../types';
 
@@ -16,6 +17,6 @@ export const module: bomboModule = {
     if (!message.guild) return;
     const currentQueue = getQueue(message.guild);
 
-    message.client.commands.get('trackinfo')?.execute(message, [`${currentQueue.queuePos}`]);
+    client.commands.get('trackinfo')?.execute(message, [`${currentQueue.queuePos}`]);
   }
 };
