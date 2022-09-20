@@ -297,13 +297,13 @@ async function userSelect (results: Track[], message: Discord.Message) {
       results.length = reactionList.length;
     }
 
-    const trackSelection = new Discord.MessageEmbed()
+    const trackSelection = new Discord.EmbedBuilder()
       .setTitle('Please make a selection: ')
       .setColor('#ff0000');
 
     for (let i = 0; i < results.length; i++) {
-      trackSelection.addField(`${i + 1} - ${results[i].title},
-            Channel: ${results[i].author}`, `https://www.youtube.com/watch?v=${results[i].videoId}`);
+      trackSelection.addFields({ name: `${i + 1} - ${results[i].title},
+            Channel: ${results[i].author}`, value: `https://www.youtube.com/watch?v=${results[i].videoId}` });
     }
 
     message.channel.send({ embeds: [trackSelection] }).then(async function collectReaction (msg) {
@@ -345,7 +345,7 @@ async function userSelect (results: Track[], message: Discord.Message) {
           }).catch(err => {
             err.message = `WARNING: Cannot delete search result embed! ${err.message}`;
             logError(err);
-            if (!msg.deleted) msg.delete();
+            // if (!msg.deleted) msg.delete();
           });
           resolve(results[i]);
         });

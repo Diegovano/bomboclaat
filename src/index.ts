@@ -38,9 +38,9 @@ class Client extends Discord.Client {
 }
 
 const client = new Client({
-  intents: [Discord.Intents.FLAGS.GUILDS, Discord.Intents.FLAGS.GUILD_MESSAGES,
-    Discord.Intents.FLAGS.GUILD_MESSAGE_REACTIONS, Discord.Intents.FLAGS.DIRECT_MESSAGES,
-    Discord.Intents.FLAGS.GUILD_VOICE_STATES]
+  intents: [Discord.GatewayIntentBits.Guilds, Discord.GatewayIntentBits.GuildMessages,
+    Discord.GatewayIntentBits.GuildMessageReactions, Discord.GatewayIntentBits.DirectMessages,
+    Discord.GatewayIntentBits.GuildVoiceStates]
   // disableMentions: 'all',
   // messageCacheLifetime: 120,
   // messageSweepInterval: 60
@@ -93,7 +93,7 @@ client.on('messageCreate', async (message: Message) => {
   const member = message.member;
   let guildConf: null | configObjectType = null;
 
-  if (message.channel.type !== 'GUILD_TEXT' || !guild || !member) {
+  if (message.channel.type !== Discord.ChannelType.GuildText || !guild || !member) {
     if (!message.content.startsWith(DEFAULT_PREFIX)) return;
   } else {
     guildConf = await config.get(guild) // setup guild in config file
@@ -147,7 +147,7 @@ client.on('messageCreate', async (message: Message) => {
             if (queue.voiceChannel && queue.voiceChannel.members.has(message.author.id)) {
               if (clientGuildMem) {
                 clientGuildMem.then(member => {
-                  if (member && queue.voiceChannel && !queue.voiceChannel.permissionsFor(member).has(['CONNECT', 'SPEAK'])) {
+                  if (member && queue.voiceChannel && !queue.voiceChannel.permissionsFor(member).has([Discord.PermissionFlagsBits.Connect, Discord.PermissionFlagsBits.Speak])) {
                     message.channel.send('I need permissions to join and speak in your voice channel!');
                     return reject(Error('Insufficient Permissions'));
                   }
@@ -208,7 +208,7 @@ client.on('messageCreate', async (message: Message) => {
     }, err => { err.message = `WARNING: Cannot send message! ${err.message}`; logError(err); });
   }
 
-  if (!command.dmCompatible && message.channel.type === 'DM') {
+  if (!command.dmCompatible && message.channel.type === Discord.ChannelType.DM) {
     message.reply('I can\'t execute that command inside DMs!');
     return;
   }
@@ -229,7 +229,7 @@ client.on('messageCreate', async (message: Message) => {
   if (command.voiceConnection &&
             voiceChannel &&
             message.client.user &&
-            (!voiceChannel.permissionsFor(message.client.user)?.has(['CONNECT', 'SPEAK']) ?? false)) {
+            (!voiceChannel.permissionsFor(message.client.user)?.has([Discord.PermissionFlagsBits.Connect, Discord.PermissionFlagsBits.Speak]) ?? false)) {
     // check permissions exist on bot user, if not assume no permissions
     message.channel.send('I need permissions to join and speak in your voice channel!');
     return;

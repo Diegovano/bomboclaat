@@ -40,14 +40,14 @@ export const module: bomboModule = {
         break;
     }
 
-    const embed = new Discord.MessageEmbed()
+    const embed = new Discord.EmbedBuilder()
       .setTitle('User Info')
-      .addField('Playername', message.author.username)
-      .addField('Sexuality', sexuality)
+      .addFields({ name: 'Playername', value: message.author.username })
+      .addFields({ name: 'Sexuality', value: sexuality })
       .setColor(0xF1C40F)
       .setThumbnail(message.author.displayAvatarURL());
 
-    if (message.guild) embed.addField('Your favourite server is:', message.guild.name);
+    if (message.guild) embed.addFields({ name: 'Your favourite server is:', value: message.guild.name });
 
     message.channel.send({ embeds: [embed] });
   }

@@ -468,7 +468,7 @@ export class Queue {
     return new Promise<void>((resolve, reject) => {
       this.client.guilds.fetch(this.guildId).then(async /* function getClientGuildMember */(guild) => {
         const clientGuildMem = guild.client.user ? await guild.members.fetch(guild.client.user?.id).catch(err => reject(err)) : null;
-        if (clientGuildMem && voiceChannel.permissionsFor(clientGuildMem).has(['CONNECT', 'SPEAK'])) {
+        if (clientGuildMem && voiceChannel.permissionsFor(clientGuildMem).has([Discord.PermissionFlagsBits.Connect, Discord.PermissionFlagsBits.Speak])) {
           this.voiceChannel = voiceChannel;
           this.connection = await connectVoice(voiceChannel).catch(err => reject(err)) ?? null;
           return resolve();
@@ -548,8 +548,8 @@ export class Queue {
    * Get embeds containing the full queue, past, current, and upcoming tracks.
    * @returns A promise that resolves to the array of embeds containing the queue or the message "Queue is empty!"
    */
-  async getQueueMessage () : Promise<Discord.MessageEmbed[] | string> {
-    return new Promise<Discord.MessageEmbed[] | string>(resolve => {
+  async getQueueMessage () : Promise<Discord.EmbedBuilder[] | string> {
+    return new Promise<Discord.EmbedBuilder[] | string>(resolve => {
       if (this.trackList.length === 0) return resolve('Queue is empty!');
 
       const pastTracks = [''];
@@ -582,44 +582,44 @@ export class Queue {
         }
       }
 
-      const queueEmbeds = [new Discord.MessageEmbed()
+      const queueEmbeds = [new Discord.EmbedBuilder()
         .setColor('#0000ff')
         .setTitle(`Queue [${this.queueDuration !== 0 ? ConvertSecToFormat(this.queueDuration) : ' no upcoming tracks '}]`)
         .setDescription(`Looping: ${this.loopTrack ? 'Track' : this.loopQueue ? 'Queue' : 'Disabled'}`)];
 
-      if (this.textChannel?.client.user) queueEmbeds[0].setAuthor('Bomborastclaat', this.textChannel.client.user.displayAvatarURL());
+      if (this.textChannel?.client.user) queueEmbeds[0].setAuthor({name: 'Bomborastclaat', iconURL: this.textChannel.client.user.displayAvatarURL()});
 
       let i2 = 0;
       if (pastTracks[0] !== '') {
         for (let i = 0; i < pastTracks.length; i++) {
           const fieldToAdd = { name: i === 0 ? `Past Track${this.queuePos > 1 ? 's' : ''}:` : 'continued...', value: pastTracks[i] };
-          const authorName = queueEmbeds[i2].author?.name;
-          if (queueEmbeds[i2].length + (authorName ? authorName.length : 0) + fieldToAdd.name.length + fieldToAdd.value.length < 6000) queueEmbeds[i2].addField(fieldToAdd.name, fieldToAdd.value);
+          const authorName = queueEmbeds[i2].data.author?.name;
+          if (Discord.embedLength(queueEmbeds[i2].data) + (authorName ? authorName.length : 0) + fieldToAdd.name.length + fieldToAdd.value.length < 6000) queueEmbeds[i2].addFields(fieldToAdd);
           else {
-            queueEmbeds.push(new Discord.MessageEmbed().setColor('#0000ff'));
+            queueEmbeds.push(new Discord.EmbedBuilder().setColor('#0000ff'));
 
-            queueEmbeds[++i2].addField(fieldToAdd.name, fieldToAdd.value);
+            queueEmbeds[++i2].addFields(fieldToAdd);
           }
         }
       }
       if (currentTrack[0] !== '') {
         const fieldToAdd = { name: 'Current Track:', value: currentTrack[0] };
-        const authorName = queueEmbeds[i2].author?.name;
-        if (queueEmbeds[i2].length + (authorName ? authorName.length : 0) + fieldToAdd.name.length + fieldToAdd.value.length < 6000) queueEmbeds[i2].addField(fieldToAdd.name, fieldToAdd.value);
+        const authorName = queueEmbeds[i2].data.author?.name;
+        if (Discord.embedLength(queueEmbeds[i2].data) + (authorName ? authorName.length : 0) + fieldToAdd.name.length + fieldToAdd.value.length < 6000) queueEmbeds[i2].addFields(fieldToAdd);
         else {
-          queueEmbeds.push(new Discord.MessageEmbed().setColor('#0000ff'));
-          queueEmbeds[++i2].addField(fieldToAdd.name, fieldToAdd.value);
+          queueEmbeds.push(new Discord.EmbedBuilder().setColor('#0000ff'));
+          queueEmbeds[++i2].addFields(fieldToAdd);
         }
         queueEmbeds[i2].setThumbnail(this.trackList[this.queuePos].icon);
       }
       if (nextTracks[0] !== '') {
         for (let i = 0; i < nextTracks.length; i++) {
           const fieldToAdd = { name: i === 0 ? `Upcoming Track${this.queuePos < this.trackList.length - 2 ? 's' : ''}:` : 'continued...', value: nextTracks[i] };
-          const authorName = queueEmbeds[i2].author?.name;
-          if (queueEmbeds[i2].length + (authorName ? authorName.length : 0) + fieldToAdd.name.length + fieldToAdd.value.length < 6000) queueEmbeds[i2].addField(fieldToAdd.name, fieldToAdd.value);
+          const authorName = queueEmbeds[i2].data.author?.name;
+          if (Discord.embedLength(queueEmbeds[i2].data) + (authorName ? authorName.length : 0) + fieldToAdd.name.length + fieldToAdd.value.length < 6000) queueEmbeds[i2].addFields(fieldToAdd);
           else {
-            queueEmbeds.push(new Discord.MessageEmbed().setColor('#0000ff'));
-            queueEmbeds[++i2].addField(fieldToAdd.name, fieldToAdd.value);
+            queueEmbeds.push(new Discord.EmbedBuilder().setColor('#0000ff'));
+            queueEmbeds[++i2].addFields(fieldToAdd);
           }
         }
       }
@@ -844,18 +844,18 @@ export class Queue {
    * @param pos The position of the track for which to retrieve information
    * @returns A promise which resolves to the embeds containing the information
    */
-  async infoEmbed (pos = this.queuePos) : Promise<Discord.MessageEmbed> {
-    return new Promise<Discord.MessageEmbed>((resolve, reject) => {
+  async infoEmbed (pos = this.queuePos) : Promise<Discord.EmbedBuilder> {
+    return new Promise<Discord.EmbedBuilder>((resolve, reject) => {
       if (pos >= this.trackList.length) return reject(Error('Track number out of range!'));
 
       const PROGRESS_BAR_LENGTH = 25;
 
       const timestampLitteral = pos === this.queuePos ? `&t=${Math.floor(this.timestamp)}` : '';
 
-      const infoEmbed = new Discord.MessageEmbed()
+      const infoEmbed = new Discord.EmbedBuilder()
         .setColor('#ff0000')
         .setTitle('Track Information')
-        .addField('Track Title', `[${this.trackList[pos].title}](${this.trackList[pos].sourceLink}${timestampLitteral}) [${ConvertSecToFormat(this.trackList[pos].duration)}]`);
+        .addFields({ name: 'Track Title', value: `[${this.trackList[pos].title}](${this.trackList[pos].sourceLink}${timestampLitteral}) [${ConvertSecToFormat(this.trackList[pos].duration)}]` });
 
       try {
         if (pos === this.queuePos && this.currentTrack) {
@@ -869,11 +869,11 @@ export class Queue {
           }
           progressBar += '<';
 
-          infoEmbed.addField('Track Progress', `${progressBar} \u0009 [${ConvertSecToFormat(Math.round(this.timestamp))} / ${ConvertSecToFormat(this.currentTrack.duration)}]`);
+          infoEmbed.addFields({ name: 'Track Progress', value: `${progressBar} \u0009 [${ConvertSecToFormat(Math.round(this.timestamp))} / ${ConvertSecToFormat(this.currentTrack.duration)}]` });
         } else if (pos > this.queuePos && this.currentTrack) {
           let cumulativeSeconds = 0;
           for (let i = 1; i < pos - this.queuePos; i++) cumulativeSeconds += this.trackList[pos + i].duration;
-          infoEmbed.addField('Time to Play', `${ConvertSecToFormat((this.currentTrack.duration) - this.timestamp + cumulativeSeconds)}`);
+          infoEmbed.addFields({ name: 'Time to Play', value: `${ConvertSecToFormat((this.currentTrack.duration) - this.timestamp + cumulativeSeconds)}` });
         }
 
         infoEmbed.addFields([{ name: 'Author', value: this.trackList[pos].author },

@@ -21,9 +21,9 @@ export const module: bomboModule = {
     prefix ??= DEFAULT_PREFIX;
 
     if (!args.length) { // Show help for all commands
-      const helpEmbed = new Discord.MessageEmbed()
+      const helpEmbed = new Discord.EmbedBuilder()
         .setTitle('Here\'s a list of all commands:')
-        .addField(commands.map((cmd: bomboModule) => cmd.name).join('\n'), `\nYou can send \`${prefix}help [command name]\` to get info on a specific command!`);
+        .addFields({name: commands.map((cmd: bomboModule) => cmd.name).join('\n'), value: `\nYou can send \`${prefix}help [command name]\` to get info on a specific command!` });
 
       message.channel.send({ embeds: [helpEmbed] }); // split true means that should the message be too long, it will be cut into multiple messages.
     } else {
@@ -35,14 +35,14 @@ export const module: bomboModule = {
         return;
       }
 
-      const helpEmbed = new Discord.MessageEmbed()
+      const helpEmbed = new Discord.EmbedBuilder()
         .setTitle(`NAME:\n${command.name}`)
         .setColor(0xF1C40F)
         .setThumbnail(message.client.user?.displayAvatarURL() ?? '');
 
-      if (command.aliases) helpEmbed.addField('ALIASES:', `${command.aliases.join(', ')}`);
-      if (command.description) helpEmbed.addField('DESCRIPTION:', `${command.description}`);
-      if (command.usage) helpEmbed.addField('USAGE:', `\`${prefix}${command.name} ${command.usage}\``);
+      if (command.aliases) helpEmbed.addFields({ name: 'ALIASES:', value: `${command.aliases.join(', ')}` });
+      if (command.description) helpEmbed.addFields({ name: 'DESCRIPTION:', value: `${command.description}` });
+      if (command.usage) helpEmbed.addFields({ name: 'USAGE:', value: `\`${prefix}${command.name} ${command.usage}\`` });
 
       message.channel.send({ embeds: [helpEmbed] });
     }

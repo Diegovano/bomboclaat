@@ -15,6 +15,8 @@ export const module: bomboModule = {
     if (!message.guild) return;
     const currentQueue = getQueue(message.guild);
 
-    currentQueue.shuffle().then(response => message.channel.send(response));
+    currentQueue.shuffle().then(response => {
+      message.channel.send(response)
+    });
   }
 };

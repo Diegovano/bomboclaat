@@ -19,7 +19,7 @@ export const module: bomboModule = {
 
     currentQueue.infoEmbed(args[0] ? (!isNaN(parseInt(args[0])) ? parseInt(args[0]) - 1 : currentQueue.queuePos) : currentQueue.queuePos).then(embed => {
       if (!embed) return;
-      message.channel.send({ embeds: [embed.setAuthor('Bomborastaclaat', message.client?.user?.displayAvatarURL() ?? '')] })
+      message.channel.send({ embeds: [embed.setAuthor({ name: 'Bomborastaclaat', iconURL: message.client?.user?.displayAvatarURL() ?? '' })] })
         .catch(error => {
           error.message = `WARNING: Could not send information embed! ${error.message}`;
           logError(error);

@@ -212,7 +212,7 @@ export class Config {
       if (!message.guild) return reject(Error('Cannot accent non-guild user!'));
       const objectHandle = this.configObject.config.get(message.guild.id);
       const accentHandle = objectHandle?.accents.get(message.author.id);
-      if (message.channel.type !== 'GUILD_TEXT') return reject(Error('Cannot accent non-guild user!'));
+      if (message.channel.type !== Discord.ChannelType.GuildText) return reject(Error('Cannot accent non-guild user!'));
       if (!this.configObject) return reject(Error('configObject invalid!'));
       if (!objectHandle) return reject(Error('Guild is not initialised!'));
 

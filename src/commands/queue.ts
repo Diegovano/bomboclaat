@@ -16,12 +16,15 @@ export const module: bomboModule = {
   async execute (message, _args) {
     if (!message.guild) return;
     getQueue(message.guild).getQueueMessage().then(messageContent => {
-      if (typeof messageContent === 'string') return message.channel.send(messageContent);
-      message.channel.send({ embeds: messageContent }).catch(err => {
-        message.channel.send('Unable to send queue message');
-        err.message = `WARNING: Cannot send queue embeds! ${err.message}`;
-        logError(err);
-      });
+      if (typeof messageContent === 'string') {
+        message.channel.send(messageContent);
+      } else {
+        message.channel.send({ embeds: messageContent }).catch(err => {
+          message.channel.send('Unable to send queue message');
+          err.message = `WARNING: Cannot send queue embeds! ${err.message}`;
+          logError(err);
+        });
+      }
     }, err => {
       message.channel.send('Unable to get queue message');
       err.message = `WARNING: Cannot get queue message! ${err.message}`;
